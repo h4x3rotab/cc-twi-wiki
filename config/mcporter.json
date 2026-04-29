@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "llmwiki-twi": {
+      "command": "/home/h4x/tmp/llm-wiki-exp-twi/llmwiki/llmwiki",
+      "args": [
+        "mcp",
+        "/home/h4x/tmp/llm-wiki-exp-twi/data/threads"
+      ],
+      "description": "Local llmwiki MCP for the TWI SIG mailing-list workspace"
+    }
+  },
+  "imports": []
+}
