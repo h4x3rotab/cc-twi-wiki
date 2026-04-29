@@ -257,9 +257,14 @@ def cmd_mcp(workspace: str) -> None:
     if not (ws / ".llmwiki" / "index.db").exists():
         cmd_init(str(ws))
 
-    os.execvp(
-        sys.executable,
-        [sys.executable, "-m", "local_server", "--workspace", str(ws)],
+    # Use the mcp/ venv's python so the `mcp[cli]` deps are importable, and
+    # run with cwd=mcp/ so `python -m local_server` resolves the module.
+    venv_python = MCP_DIR / ".venv" / "bin" / "python"
+    interpreter = str(venv_python) if venv_python.exists() else sys.executable
+    os.chdir(str(MCP_DIR))
+    os.execv(
+        interpreter,
+        [interpreter, "-m", "local_server", "--workspace", str(ws)],
     )
 
 

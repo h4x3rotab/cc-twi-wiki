@@ -6,12 +6,15 @@ __pycache__/
 venv/
 .python-version
 
-# Scraper raw cache (Firecrawl JSON responses, failures log)
+# Scraper raw cache (HTML responses, failures log)
 data/raw/
 
-# llmwiki runtime artifacts
-llmwiki/.llmwiki/
-llmwiki/wiki/
+# llmwiki workspace-derived state (rebuilt by `llmwiki init`).
+# We DO commit data/threads/wiki/ — that's the wiki output.
+data/threads/.llmwiki/
+
+# llmwiki runtime artifacts inside the vendored copy
+llmwiki/api/.venv/
 llmwiki/node_modules/
 llmwiki/web/node_modules/
 llmwiki/web/.next/

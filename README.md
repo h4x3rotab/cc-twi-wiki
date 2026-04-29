@@ -16,11 +16,14 @@ $EDITOR .env   # paste cookie into GROUPSIO_COOKIE
 make install
 
 # 3. llmwiki has its own setup (Python + Node)
+#    Two Python venvs because api/ and mcp/ have different deps.
 cd llmwiki
-python3 -m venv api/.venv && . api/.venv/bin/activate
-pip install -r api/requirements.txt
+python3 -m venv api/.venv && . api/.venv/bin/activate && \
+  pip install -r api/requirements.txt && deactivate
+python3 -m venv mcp/.venv && . mcp/.venv/bin/activate && \
+  pip install -r mcp/requirements.txt && deactivate
 ( cd web && npm install )
-deactivate && cd ..
+cd ..
 ```
 
 ## Use
@@ -35,6 +38,32 @@ make serve    # llmwiki serve data/threads → http://localhost:3000
 `data/raw/` is a raw-HTML cache (gitignored). Reruns of `make scrape` skip already-fetched URLs. `make clean-cache` wipes it.
 
 If you start seeing 402 errors during `make scrape`, your cookie has expired — paste a fresh one into `.env` and rerun.
+
+## Connect Claude (MCP)
+
+Once threads are scraped and `llmwiki init` has indexed them, hand the workspace to Claude over MCP so Claude can author the wiki:
+
+```bash
+cd llmwiki
+./llmwiki mcp-config ../data/threads
+```
+
+This prints a `mcpServers` snippet. For Claude Code, save it as `.mcp.json` at the repo root (or merge it into `~/.claude.json`):
+
+```json
+{
+  "mcpServers": {
+    "llmwiki-threads": {
+      "command": "/abs/path/to/llmwiki/llmwiki",
+      "args": ["mcp", "/abs/path/to/data/threads"]
+    }
+  }
+}
+```
+
+Restart Claude Code so it picks up the new MCP server, then ask: *"Read the guide, then ingest my sources and start building the wiki."*
+
+The MCP server uses `mcp/.venv` for its deps — running `make install` in this repo doesn't set that up, only the llmwiki step in **Setup** above does.
 
 ## Layout
 
