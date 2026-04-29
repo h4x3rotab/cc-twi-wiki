@@ -1,0 +1,18 @@
+.env
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+.python-version
+
+# Scraper raw cache (Firecrawl JSON responses, failures log)
+data/raw/
+
+# llmwiki runtime artifacts
+llmwiki/.llmwiki/
+llmwiki/wiki/
+llmwiki/node_modules/
+llmwiki/web/node_modules/
+llmwiki/web/.next/
+llmwiki/api/__pycache__/
