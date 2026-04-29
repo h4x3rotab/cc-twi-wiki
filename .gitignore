@@ -15,7 +15,9 @@ data/threads/.llmwiki/
 
 # llmwiki runtime artifacts inside the vendored copy
 llmwiki/api/.venv/
+llmwiki/mcp/.venv/
 llmwiki/node_modules/
 llmwiki/web/node_modules/
 llmwiki/web/.next/
 llmwiki/api/__pycache__/
+llmwiki/mcp/__pycache__/
