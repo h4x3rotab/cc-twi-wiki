@@ -174,9 +174,13 @@ async def _local_lifespan(app: FastAPI):
 
 app = FastAPI(title="LLM Wiki API", lifespan=lifespan)
 
+# APP_URL may be a single URL or a comma-separated list. The latter is
+# useful when the same llmwiki instance is reached from multiple origins
+# (e.g., a tailnet IP, a MagicDNS hostname, and localhost simultaneously).
+_app_origins = [u.strip() for u in settings.APP_URL.split(",") if u.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.APP_URL],
+    allow_origins=_app_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

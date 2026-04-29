@@ -197,22 +197,32 @@ def cmd_serve(workspace: str, open_browser: bool = True) -> None:
 
     api_port = os.environ.get("LLMWIKI_API_PORT", "8000")
     web_port = os.environ.get("LLMWIKI_WEB_PORT", "3000")
-    # Host used in URLs the browser will hit (and CORS allow-origin). When
-    # serving over a tailnet/LAN set this to the reachable hostname or IP.
-    host = os.environ.get("LLMWIKI_HOST", "localhost")
-    # Bind interface for the API + web servers themselves.
-    bind = os.environ.get("LLMWIKI_BIND", "0.0.0.0" if host != "localhost" else "127.0.0.1")
+    # Hosts the browser may use to reach this instance. Comma-separated
+    # for tailnet/LAN setups where the same server is reachable as both
+    # an IP and a MagicDNS hostname. The first host wins for the
+    # browser-side NEXT_PUBLIC_API_URL bundle. All hosts are added to
+    # the API's CORS allow-origin list.
+    hosts_raw = os.environ.get("LLMWIKI_HOST", "localhost")
+    hosts = [h.strip() for h in hosts_raw.split(",") if h.strip()]
+    primary = hosts[0]
+    # Bind interface — auto-set to 0.0.0.0 if any host is non-local.
+    only_localhost = all(h in ("localhost", "127.0.0.1") for h in hosts)
+    bind = os.environ.get("LLMWIKI_BIND", "127.0.0.1" if only_localhost else "0.0.0.0")
+
+    app_urls = ",".join(f"http://{h}:{web_port}" for h in hosts)
 
     env = os.environ.copy()
     env["MODE"] = "local"
     env["WORKSPACE_PATH"] = str(ws)
     env["DATABASE_URL"] = ""
-    env["APP_URL"] = f"http://{host}:{web_port}"
-    env["API_URL"] = f"http://{host}:{api_port}"
+    env["APP_URL"] = app_urls
+    env["API_URL"] = f"http://{primary}:{api_port}"
 
     print(f"Starting LLM Wiki for: {ws}")
-    print(f"  API: http://{host}:{api_port}  (bind {bind})")
-    print(f"  Web: http://{host}:{web_port}  (bind {bind})")
+    print(f"  API: http://{primary}:{api_port}  (bind {bind})")
+    print(f"  Web: http://{primary}:{web_port}  (bind {bind})")
+    if len(hosts) > 1:
+        print(f"  CORS origins: {app_urls}")
     print(f"  MCP: llmwiki mcp-config {ws}")
     print()
 
@@ -228,7 +238,7 @@ def cmd_serve(workspace: str, open_browser: bool = True) -> None:
     # Set LLMWIKI_PROD=1 to use a production build (`next start`) instead.
     web_env = env.copy()
     web_env["NEXT_PUBLIC_MODE"] = "local"
-    web_env["NEXT_PUBLIC_API_URL"] = f"http://{host}:{api_port}"
+    web_env["NEXT_PUBLIC_API_URL"] = f"http://{primary}:{api_port}"
     web_env["PORT"] = web_port
     web_env["HOSTNAME"] = bind
     npm = shutil.which("pnpm") or shutil.which("npm")
@@ -249,7 +259,7 @@ def cmd_serve(workspace: str, open_browser: bool = True) -> None:
     if open_browser:
         import time
         time.sleep(3)
-        webbrowser.open(f"http://{host}:{web_port}/wikis")
+        webbrowser.open(f"http://{primary}:{web_port}/wikis")
 
     try:
         api_proc.wait()
