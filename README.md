@@ -33,6 +33,9 @@ make scrape   # scrape archive → data/threads/<id>-<slug>.md
 make build    # llmwiki init data/threads
 make serve    # llmwiki serve data/threads → http://localhost:3000
               # ports collide? `make serve LLMWIKI_API_PORT=8001 LLMWIKI_WEB_PORT=3001`
+              # Expose over tailnet/LAN (binds 0.0.0.0, builds for prod):
+              #   make serve LLMWIKI_HOST=<tailnet-ip> LLMWIKI_PROD=1 \
+              #              LLMWIKI_API_PORT=8001 LLMWIKI_WEB_PORT=3001
 ```
 
 `data/raw/` is a raw-HTML cache (gitignored). Reruns of `make scrape` skip already-fetched URLs. `make clean-cache` wipes it.

@@ -197,43 +197,59 @@ def cmd_serve(workspace: str, open_browser: bool = True) -> None:
 
     api_port = os.environ.get("LLMWIKI_API_PORT", "8000")
     web_port = os.environ.get("LLMWIKI_WEB_PORT", "3000")
+    # Host used in URLs the browser will hit (and CORS allow-origin). When
+    # serving over a tailnet/LAN set this to the reachable hostname or IP.
+    host = os.environ.get("LLMWIKI_HOST", "localhost")
+    # Bind interface for the API + web servers themselves.
+    bind = os.environ.get("LLMWIKI_BIND", "0.0.0.0" if host != "localhost" else "127.0.0.1")
 
     env = os.environ.copy()
     env["MODE"] = "local"
     env["WORKSPACE_PATH"] = str(ws)
     env["DATABASE_URL"] = ""
-    env["APP_URL"] = f"http://localhost:{web_port}"
-    env["API_URL"] = f"http://localhost:{api_port}"
+    env["APP_URL"] = f"http://{host}:{web_port}"
+    env["API_URL"] = f"http://{host}:{api_port}"
 
     print(f"Starting LLM Wiki for: {ws}")
-    print(f"  API: http://localhost:{api_port}")
-    print(f"  Web: http://localhost:{web_port}")
+    print(f"  API: http://{host}:{api_port}  (bind {bind})")
+    print(f"  Web: http://{host}:{web_port}  (bind {bind})")
     print(f"  MCP: llmwiki mcp-config {ws}")
     print()
 
     # Start API server
     api_proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", api_port],
+        [sys.executable, "-m", "uvicorn", "main:app", "--host", bind, "--port", api_port],
         cwd=str(API_DIR),
         env=env,
     )
 
-    # Start web dev server
+    # Start web server. `dev` mode uses Next's HMR WebSocket which assumes
+    # the browser hostname matches the bind — that breaks over LAN/tailnet.
+    # Set LLMWIKI_PROD=1 to use a production build (`next start`) instead.
     web_env = env.copy()
     web_env["NEXT_PUBLIC_MODE"] = "local"
-    web_env["NEXT_PUBLIC_API_URL"] = f"http://localhost:{api_port}"
+    web_env["NEXT_PUBLIC_API_URL"] = f"http://{host}:{api_port}"
     web_env["PORT"] = web_port
+    web_env["HOSTNAME"] = bind
     npm = shutil.which("pnpm") or shutil.which("npm")
-    web_proc = subprocess.Popen(
-        [npm, "run", "dev"],
-        cwd=str(WEB_DIR),
-        env=web_env,
-    )
+    use_prod = os.environ.get("LLMWIKI_PROD") == "1"
+    if use_prod:
+        # Build once if .next/ is missing, then `next start`.
+        next_dir = WEB_DIR / ".next"
+        if not next_dir.exists():
+            print("  (building web for production — first run only)", flush=True)
+            build = subprocess.run([npm, "run", "build"], cwd=str(WEB_DIR), env=web_env)
+            if build.returncode != 0:
+                print("Web build failed.", file=sys.stderr)
+                sys.exit(build.returncode)
+        web_proc = subprocess.Popen([npm, "run", "start"], cwd=str(WEB_DIR), env=web_env)
+    else:
+        web_proc = subprocess.Popen([npm, "run", "dev"], cwd=str(WEB_DIR), env=web_env)
 
     if open_browser:
         import time
         time.sleep(3)
-        webbrowser.open(f"http://localhost:{web_port}/wikis")
+        webbrowser.open(f"http://{host}:{web_port}/wikis")
 
     try:
         api_proc.wait()
