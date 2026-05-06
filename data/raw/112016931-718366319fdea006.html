@@ -1,0 +1,5591 @@
+
+	
+	<!DOCTYPE html>
+	<html lang="en-US">
+		<head>
+			<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+			<meta http-equiv="X-UA-Compatible" content="IE=edge">
+			
+				<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+			
+			<meta name="theme-color" content="#2f6fa7">
+			<meta name="pinterest" content="nopin" />
+			<meta name="pinterest" content="nohover" />
+			
+			<meta name="3778517eb4810dfb5d143ed8f1b359b3b5a82923" content="0f56257c3db4a222e91b11bc6871c4df2e263b28" />
+			<link rel="apple-touch-icon" sizes="57x57" href="/orgimg/org.82/favicons/apple-icon-57x57.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="60x60" href="/orgimg/org.82/favicons/apple-icon-60x60.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="72x72" href="/orgimg/org.82/favicons/apple-icon-72x72.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="76x76" href="/orgimg/org.82/favicons/apple-icon-76x76.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="114x114" href="/orgimg/org.82/favicons/apple-icon-114x114.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="120x120" href="/orgimg/org.82/favicons/apple-icon-120x120.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="144x144" href="/orgimg/org.82/favicons/apple-icon-144x144.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="152x152" href="/orgimg/org.82/favicons/apple-icon-152x152.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="180x180" href="/orgimg/org.82/favicons/apple-icon-180x180.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="192x192"  href="/orgimg/org.82/favicons/android-icon-192x192.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="32x32" href="/orgimg/org.82/favicons/favicon-32x32.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="96x96" href="/orgimg/org.82/favicons/favicon-96x96.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="16x16" href="/orgimg/org.82/favicons/favicon-16x16.png?v=1680450446973255792">
+			<link rel="manifest" href="/orgimg/org.82/favicons/manifest.json?v=1680450446973255792">
+			<meta name="msapplication-TileColor" content="#ffffff">
+			<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+			
+			
+			
+
+<script>
+/* stubs */
+	const hapticsImpactHeavy = async () => {
+	};
+	const hapticsImpactMedium = async () => {
+	};
+	const hapticsImpactLight = async () => {
+	};
+	const hapticsVibrate = async () => {
+	};
+	const hapticsSelectionStart = async () => {
+	};
+	const hapticsSelectionChanged = async () => {
+	};
+	const hapticsSelectionEnd = async () => {
+	};
+</script>
+
+			
+<script>
+	
+		function setPullToRefresh() {}
+	
+	function gotoURL(inurl) {
+		window.location.href = inurl;
+		return;
+	}
+	function contentLoaded(isHTMX, f, caller = "") {
+		console.log("contentLoaded: " + isHTMX + " " + caller);
+		if (isHTMX == true) {
+			document.body.addEventListener('htmx:afterSettle', f, {once: true});
+		} else {
+			if (document.readyState !== 'loading') {
+				console.log('document is already ready, just execute code here');
+				f();
+			} else {
+				console.log('document was not ready, place code here');
+				document.addEventListener('DOMContentLoaded', f, {once: true});
+			}
+		}
+	}
+
+	function HideAppSidebarOnKeyboard() {
+		console.log("In HideAppSidebarOnKeyboard");
+		
+	}
+	// stub
+	function logError(data, url, linenumber) {
+		console.log(data)
+		return;
+	}
+	var pushSubToken;
+	var ignoreErrors = false;
+	var lastError = "";
+
+	// Auto-hide the fixed app top navbar on reading-heavy pages. The
+	// navbar tracks scroll delta 1:1 in both directions: scrolling down
+	// slides it off at the same pixel rate as the page; scrolling up —
+	// even one pixel — starts bringing it back at the same rate. When
+	// the user is at the very top, it's always fully visible. Opt-in
+	// per page; xs only. Bottom tab bar is untouched.
+	function EnableTopbarAutoHide() {
+		if (document.documentElement.clientWidth > 767) return;
+		var body = document.body;
+		body.classList.add('auto-hide-topbar');
+		// Measure the actual headerbar height so notched devices (iOS)
+		// hide the full bar including the safe-area-inset-top padding,
+		// not just the 50px content row. Fall back to 50 if the
+		// element isn't found for any reason.
+		var headerEl = document.getElementById('headerbar');
+		var navHeight = headerEl ? headerEl.offsetHeight : 50;
+		var offset = 0;
+		var lastY = window.scrollY;
+		function onScroll() {
+			var y = window.scrollY;
+			var dy = y - lastY;
+			lastY = y;
+			if (y <= 0) {
+				offset = 0;
+			} else {
+				offset -= dy;
+				if (offset > 0) offset = 0;
+				if (offset < -navHeight) offset = -navHeight;
+			}
+			body.style.setProperty('--topbar-offset', offset + 'px');
+		}
+		window.addEventListener('scroll', onScroll, { passive: true });
+		gioDestroy(function() {
+			window.removeEventListener('scroll', onScroll);
+			body.classList.remove('auto-hide-topbar');
+			body.style.removeProperty('--topbar-offset');
+		});
+	}
+	
+		window.onerror = function(errorMessage, errorUrl, errorLine, errorColumn, errorObj) {
+			let column;
+			let stack;
+			if (console && console.log) {
+				console.log("msg:", errorMessage);
+				console.log("url:", errorUrl);
+				console.log("line:", errorLine);
+				if (errorColumn !== undefined && errorObj != null) {
+					console.log("column:", errorColumn);
+					column = errorColumn;
+				}
+				if (errorObj !== undefined && errorObj != null) {
+					console.log("stack:", errorObj.stack);
+					stack = errorObj.stack;
+				}
+				console.log("client_id:", "web.app02-g2.1901198.1777503710989622505");
+				console.log("last_error:", lastError);
+				console.log("stack:", stack);
+			}
+			if (errorUrl == "" || errorUrl === null) {
+				errorUrl = window.location.href;
+			}
+			if (errorMessage.includes("SecurityError:") == true) {
+				ignoreErrors = true;
+			}
+			if (ignoreErrors == true) {
+				console.log("cookies, disabled, ignoring");
+				lastError = errorMessage;
+				return;
+			}
+			var ignoreMessages = ["ResizeObserver loop limit exceeded",
+				"TypeError: can't redefine non-configurable property \"userAgent\"",
+				"TypeError: can't redefine non-configurable property \"getChannelData\"",
+				"ReferenceError: tinymce is not defined",
+				"Uncaught ReferenceError: timeoutId is not defined",
+				"ReferenceError: Can't find variable: tinymce"];
+			for (var i = 0; i < ignoreMessages.length; i++) {
+				if (errorMessage === ignoreMessages[i]) {
+					lastError = errorMessage;
+					return;
+				}
+			}
+			if (errorUrl.indexOf("safari-extension:") === 0 || errorUrl.indexOf("moz-extension:") === 0 || errorUrl.indexOf("chrome-extension:") === 0) {
+				lastError = errorMessage;
+				return;
+			}
+			if (errorUrl.indexOf("googletagmanager.com") !== -1 || errorUrl.indexOf("socialsearch.com") !== -1) {
+				lastError = errorMessage;
+				return;
+			}
+			if (errorLine === 0 || errorLine === 1) {
+				lastError = errorMessage;
+				return;
+			}
+			jQuery.ajax({
+				type: 'POST',
+				url: '/jsclienterror',
+				data: {
+					msg: errorMessage,
+					url: errorUrl,
+					line: errorLine,
+					column: column,
+					stack: stack,
+					last_error: lastError,
+					client_id: "web.app02-g2.1901198.1777503710989622505"
+				},
+				success: function() {
+					if (console && console.log) {
+						console.log('JS error report successful.');
+					}
+					lastError = errorMessage;
+				},
+				error: function() {
+					if (console && console.error) {
+						console.error('JS error report submission failed!');
+					}
+					lastError = errorMessage;
+				}
+			});
+			return true;
+		}
+	
+</script>
+			
+			
+			<script src="/tinymce-5.10.9/tinymce.min.js"></script>
+			<script src="/js/browser-image-compression-2.0.2.min.js"></script>
+			<link href="/css/application-24dcf155f8cf9ca30214ea64f62961b4.css" rel="stylesheet" id="groupsio-css">
+			<script src="/js/application-7800e976860b357df405a3ea22aa72b1.js" id="groupsio-js"></script>
+			<script src="/js/run_prettify.js"></script>
+			<title>Trustworthy-Workload-Identity-SIG@lists.confidentialcomputing.io | [TWI] Agenda for April 1, 2025 (please read, no joke!)</title>
+			
+
+			
+				
+			
+			
+<link rel="canonical" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/twi_agenda_for_april_1/112016931">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "DiscussionForumPosting",
+  "headline": "[TWI] Agenda for April 1, 2025 (please read, no joke!)",
+  "text": "Hello all, This is the last TWI-specific email sent to the TAC mailing list. All future emails will go to our new mailing list (the To: line of this email). To subscribe,",
+  "datePublished": "2025-03-31T17:49:37-07:00",
+  "author": {
+    "@type": "Person",
+    "name": "Mark Novak"
+  },
+  "url": "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/112016931"
+}
+</script>
+
+<meta property="og:title" content="[TWI] Agenda for April 1, 2025 (please read, no joke!)" />
+<meta property="og:description" content="" />
+<meta property="og:image" content="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/coverphoto" />
+
+<script>
+	htmx.config.scrollBehavior = "instant";
+	htmx.config.historyCacheSize = 0;
+	htmx.config.defaultSettleDelay = 0;
+	console.log("FULL PAGE LOAD");
+
+	// Short fade-in on #maincontent-refresh after every HTMX swap — adds zero latency
+	// because it runs AFTER the new content has arrived. We listen to afterRequest
+	// (fires once per HTMX request) rather than afterSwap (fires once per swapped
+	// element, including every hx-swap-oob badge — which would cancel the animation).
+	// Listen on document because this script runs in <head> before <body> exists.
+	document.addEventListener('htmx:afterRequest', function(evt) {
+		if (!evt.detail || !evt.detail.successful) return;
+		var refresh = document.getElementById('maincontent-refresh');
+		if (!refresh) return;
+		refresh.classList.remove('gio-fade-in');
+		// force reflow so removing then adding re-starts the animation each time
+		void refresh.offsetWidth;
+		refresh.classList.add('gio-fade-in');
+	});
+
+	// Top-of-viewport progress bar shown while an HTMX request is in flight.
+	// Provides immediate visual feedback for taps even before content arrives.
+	document.addEventListener('htmx:beforeRequest', function() {
+		var bar = document.getElementById('gio-progress-bar');
+		if (bar) bar.classList.add('active');
+	});
+	document.addEventListener('htmx:afterRequest', function() {
+		var bar = document.getElementById('gio-progress-bar');
+		if (bar) bar.classList.remove('active');
+	});
+
+	// Haptic feedback on mobile-native chrome taps: bottom-nav tabs, back
+	// chevron, and the navbar overflow action slot. Uses the shared helpers
+	// from qtutils/appfunctions.qtpl — they no-op on non-Capacitor runtimes,
+	// so this is safe on the plain web too.
+	document.addEventListener('click', function(ev) {
+		if (typeof hapticsSelectionChanged !== 'function') return;
+		var target = ev.target;
+		if (!target || !target.closest) return;
+		if (target.closest('.mobilesidebar-item') ||
+			target.closest('#logo a') ||
+			target.closest('#header-action-slot a')) {
+			hapticsSelectionChanged();
+		}
+	}, true);
+</script>
+		</head>
+		<body id="body" class="" hx-headers='{"Accept-Version": "b858fa59387f4a686a81ca384b5fc7b0792d9864"}' hx-ext="preload" hx-boost="false">
+			<div id="gio-progress-bar" aria-hidden="true"></div>
+			
+				<script>
+					if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						document.body.classList.add('dark-mode');
+					}
+				</script>
+			
+
+			
+				<div class="navbar navbar-head navbar-fixed-top" role="navigation" id="headerbar" style="border:0">
+					<div class="container-fluid" style="padding-left:0px;">
+						<span id="logo">
+							
+								<a href="https://lists.confidentialcomputing.io" class="navbar-left">
+									<img src="https://lists.confidentialcomputing.io/orgimg/org.82/mainlogo.png?v=1680450446973255792" height="50" alt="Groups.io">
+								</a>
+							
+						</span>
+						<ul class="nav navbar-nav hidden-xs">
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="your-groups-dropdown">
+									Your Groups
+									<span id="your-groups-badge" class="badge"></span>
+									<b class="caret"></b>
+								</a>
+								<ul id="your-groups-list" class="dropdown-menu scrollable-groups-menu">
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/main/topics"id="your-group-confidentialcomputing">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;CCC main group
+												</a>
+											</li>
+										
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/general-members/topics"id="your-group-confidentialcomputing--general-members">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;General Members
+												</a>
+											</li>
+										
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/tac/topics"id="your-group-confidentialcomputing--tac">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;tac
+												</a>
+											</li>
+										
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics"id="your-group-confidentialcomputing--trustworthy-workload-identity-sig">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;Trustworthy-Workload-Identity-SIG
+												</a>
+											</li>
+										
+									
+									<li role="separator" class="divider"></li>
+									<li>
+										<a href="https://lists.confidentialcomputing.io/groups">
+											<i class="fa-fw fa fa-users"></i>
+											Manage My Subscriptions
+										</a>
+									</li>
+								</ul>
+							</li>
+							
+							
+						</ul>
+						<ul class="nav navbar-nav pull-right visible-xs navbar-actions-xs">
+							<li id="header-action-slot" style="display:none;float:left;"></li>
+							<li style="float:left;">
+								<a href="#" data-toggle="modal" data-target="#mobileAccount" class="navbar-action-xs">
+									
+										<i class="fa-fw fa fa-lg fa-user"></i>
+									
+								</a>
+							</li>
+						</ul>
+						<ul class="nav navbar-nav navbar-right hidden-xs">
+							<li>
+								<a class="hidden-xs hidden-sm" href="https://lists.confidentialcomputing.io/helpcenter" target="_blank">
+									Help
+								</a>
+							</li>
+							<li class="dropdown">
+								<a id="user-dropdown" href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									
+										<span title="hangyin@phala.network">
+											Hang Yin
+										</span>
+									
+									<b class="caret"></b>
+								</a>
+								<ul class="dropdown-menu">
+									<li class="dropdown-header">
+										
+											<span style="display: flex;align-items: center; margin-bottom:10px;">
+												<i class="fa fa-user" style="font-size:40px; padding-right:2px; padding-left:2px;margin-right:10px;"></i>
+												<div>
+													
+														<strong>
+															Hang Yin
+														</strong>
+														
+													
+												</div>
+											</span>
+											hangyin@phala.network
+										
+									</li>
+									<li role="separator" class="divider"></li>
+									
+									<li>
+										<a id="user-settings" href="https://lists.confidentialcomputing.io/settings">
+											<i class="pull-right fa-fw fa fa-user"></i>
+											Settings
+										</a>
+									</li>
+									<li>
+										<a href="https://lists.confidentialcomputing.io/logout">
+											<i class="pull-right fa-fw fa fa-power-off"></i>
+											Log Out
+										</a>
+									</li>
+									
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="modal fade" id="mobileAccount" role="dialog">
+					<div class="modal-dialog" style="margin-top:50px;">
+						<div class="modal-content">
+							<div class="modal-body">
+
+									<ul class="list-group noborderlist">
+										<li class="dropdown-header">
+											
+												<span style="display: flex;align-items: center; margin-bottom:10px;">
+													<i class="fa fa-user" style="font-size:40px; padding-right:2px; padding-left:2px;margin-right:10px;"></i>
+													<div>
+														
+															<strong>
+																Hang Yin
+															</strong>
+															
+														
+													</div>
+												</span>
+												hangyin@phala.network
+											
+										</li>
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/groups">
+												<i class="pull-right fa-fw fa fa-users"></i>
+												Manage My Subscriptions
+											</a>
+										</li>
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/helpcenter" target="_blank">
+												<i class="pull-right fa-fw fa fa-question-circle"></i>
+												Help
+											</a>
+										</li>
+										
+										
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/settings">
+												<i class="pull-right fa-fw fa fa-user"></i>
+												Settings
+											</a>
+										</li>
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/logout">
+												<i class="pull-right fa-fw fa fa-power-off"></i>
+												Log Out
+											</a>
+										</li>
+										
+									</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+
+
+			
+<script>
+var groupnavigatorData = [
+
+	
+	{
+		name: "CCC main group",
+		url: "https://lists.confidentialcomputing.io/g/main/topics"
+	},
+	
+
+	
+	{
+		name: "General Members",
+		url: "https://lists.confidentialcomputing.io/g/general-members/topics"
+	},
+	
+
+	
+	{
+		name: "tac",
+		url: "https://lists.confidentialcomputing.io/g/tac/topics"
+	},
+	
+
+	
+	{
+		name: "Trustworthy-Workload-Identity-SIG",
+		url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics"
+	},
+	
+
+];
+</script>
+
+
+<!-- Modal Dialog for Autocomplete -->
+<div class="modal fade" id="groupnavigatorModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <input type="text" class="form-control" id="groupnavigatorInput" placeholder="Go to group..." style="margin-bottom:10px">
+        <div id="groupnavigatorContainer" class="autocompleteResults" style="max-height:250px; overflow-y: auto;"></div>
+		<div class="text-center" style="margin-top:10px; font-size:12px;"><i class="fa-sharp fa-arrow-up-arrow-down"></i> to navigate&nbsp;&nbsp;&nbsp;<i class="fa-sharp fa-arrow-turn-down-left"></i> to use&nbsp;&nbsp;&nbsp;<strong>esc</strong> to dismiss</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// Keep track of the currently selected index
+var selectedIndex = -1;
+
+// Function to highlight the matched substring
+function highlightSubstring(str, substring) {
+  var index = str.toLowerCase().indexOf(substring.toLowerCase());
+  if (index !== -1) {
+    var before = str.substring(0, index);
+    var middle = str.substring(index, index + substring.length);
+    var after = str.substring(index + substring.length);
+    return before + '<span class="autocomplete-highlight">' + middle + '</span>' + after;
+  }
+  return str;
+}
+
+// Function to highlight the selected item and ensure it is visible in the scrollable list
+function highlightSelectedItem(modalName) {
+  var listContainer = document.getElementById(modalName + 'Container');
+  var items = document.getElementsByClassName(modalName + '-list-item');
+  Array.from(items).forEach(function(item, idx) {
+    item.className = idx === selectedIndex ? modalName + '-list-item autocomplete-list-item btn-primary no-hover' : modalName + '-list-item autocomplete-list-item no-hover'; // Apply btn-primary class to the selected item
+  });
+  if (items.length > 0 && selectedIndex >= 0) {
+    var selectedItem = items[selectedIndex];
+    var containerTop = listContainer.scrollTop;
+    var containerBottom = containerTop + listContainer.clientHeight;
+    var itemTop = selectedItem.offsetTop;
+    var itemBottom = itemTop + selectedItem.offsetHeight;
+	const fudge = 59;
+    if (selectedIndex > 0 && itemTop > containerBottom) {
+      // If there are items below the selected item and the selected item is not fully visible, scroll down
+      listContainer.scrollTop = itemTop - listContainer.clientHeight + items[selectedIndex - 1].offsetHeight;
+    } else if (selectedIndex < items.length - 1 && (itemTop - fudge) < containerTop) {
+      // If there are items above the selected item and the selected item is not fully visible, scroll up
+      listContainer.scrollTop = itemTop - fudge - items[selectedIndex + 1].offsetHeight;
+    }
+  }
+}
+
+// function to populate the list based on the input
+function populateList(modalName, data) {
+  var input = document.getElementById(modalName+'Input').value;
+  var listContainer = document.getElementById(modalName+'Container');
+  listContainer.innerHTML = '';
+  data.forEach(function(item) {
+    if (item.name.toLowerCase().includes(input.toLowerCase())) {
+      var div = document.createElement('div');
+      div.innerHTML = highlightSubstring(item.name, input);
+      div.className = modalName+'-list-item autocomplete-list-item no-hover'; // Apply no-hover class
+      div.addEventListener('click', function() {
+        // Navigate to the specified URL when a list item is clicked
+        window.location.href = item.url;
+      });
+      div.addEventListener('mousemove', function() {
+        // Remove no-hover class from all items when the mouse is moved over any item
+		console.log("mouse move");
+        var items = document.getElementsByClassName(modalName+'-list-item');
+        Array.from(items).forEach(function(item) {
+          item.classList.remove('no-hover');
+        });
+      });
+      listContainer.appendChild(div);
+    }
+  });
+  highlightSelectedItem(modalName);
+}
+
+function InitAutocomplete(modalName, data) {
+	// Focus the input field when the modal is shown and populate the list
+	$('#' + modalName + 'Modal').on('shown.bs.modal', function () {
+		$('#' + modalName + 'Input').focus().val('');
+		populateList(modalName, data);
+		selectedIndex = 0;
+		highlightSelectedItem(modalName);
+	});
+
+	// Event listener for input field typing
+	document.getElementById(modalName + 'Input').addEventListener('input', function() {
+		populateList(modalName, data);
+		selectedIndex = 0;
+	});
+
+	// Event listener for arrow keys and enter key
+	document.getElementById(modalName + 'Input').addEventListener('keydown', function(event) {
+		var items = document.getElementsByClassName(modalName + '-list-item');
+		if (event.key === 'ArrowDown') {
+			event.preventDefault();
+			if (selectedIndex < items.length - 1) selectedIndex++;
+			highlightSelectedItem(modalName);
+		} else if (event.key === 'ArrowUp') {
+			event.preventDefault();
+			if (selectedIndex > 0) selectedIndex--;
+			highlightSelectedItem(modalName);
+		} else if (event.key === 'Enter' && selectedIndex >= 0 && selectedIndex < items.length) {
+			event.preventDefault();
+			items[selectedIndex].click();
+		}
+	});
+}
+
+function showAutocompleteModal(modalName) {
+	$('#' + modalName + 'Modal').modal('show');
+	selectedIndex = -1;
+}
+</script>
+
+			<div id="content" class="container-fluid">
+<script>
+	InitAutocomplete("groupnavigator", groupnavigatorData);
+
+	document.body.addEventListener("showReloadPageDialog", function(evt) {
+		console.log("Forced reload");
+		location.reload();
+	});
+
+	function ShowBackButton(label, url, subtitle) {
+		var logoElement = document.getElementById("logo");
+		if (!logoElement) {
+			return;
+		}
+		logoElement.innerHTML = '';
+
+		var span = document.createElement('span');
+		span.style.cssText = "color:#fff;margin-top:14px;margin-left:12px;float:left !important;height:36px;";
+		var a = document.createElement('a');
+		a.style.color = '#fff';
+		if (url) {
+			a.href = url;
+			// HTMX-boost only when the target is still inside the same group — then the
+			// bottom nav (which sits outside #maincontent-refresh) is the same layout and
+			// can stay put. Cross-context targets (e.g. /groups) need a full page load so
+			// the bottom nav actually switches.
+			if (/\/g\//.test(url)) {
+				a.setAttribute('hx-boost', 'true');
+				a.setAttribute('hx-target', '#maincontent-refresh');
+				a.setAttribute('hx-push-url', 'true');
+				a.setAttribute('hx-history', 'false');
+				// Reset window scroll to the top after the swap, otherwise the
+				// user lands on the previous page at whatever Y they were at on
+				// the current one — typically mid-page, behind the fixed
+				// navbar/notch in the iOS app.
+				a.setAttribute('hx-on::after-request', 'window.scrollTo({top:0, behavior:"instant"})');
+				if (window.htmx) {
+					htmx.process(a);
+				}
+			}
+		} else {
+			a.onclick = goBack;
+			a.style.cursor = 'pointer';
+		}
+		var icon = document.createElement('i');
+		icon.className = 'fa-fw fa-solid fa-chevron-left fa-lg';
+		a.appendChild(icon);
+		span.appendChild(a);
+		logoElement.appendChild(span);
+
+		if (label) {
+			var titleDiv = document.createElement('div');
+			// The navbar in the iOS app gets padding-top equal to the safe-area
+			// inset, so the outer box can be taller than the visible content
+			// strip. Centering at 50% of the outer box lands the title inside
+			// the notch — offset the center down by half the inset so the
+			// title sits in the visible strip. On non-app contexts
+			// env(safe-area-inset-top) is 0 and this is a no-op.
+			titleDiv.style.cssText = "position:absolute;left:50%;top:calc(50% + env(safe-area-inset-top) / 2);transform:translate(-50%,-50%);text-align:center;color:#ecf0f1;max-width:60%;overflow:hidden;";
+			var h4 = document.createElement('h4');
+			h4.style.cssText = "margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;";
+			h4.textContent = label;
+			titleDiv.appendChild(h4);
+			if (subtitle) {
+				var sub = document.createElement('div');
+				sub.style.cssText = "font-size:11px;line-height:1.2;margin-top:1px;opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+				sub.textContent = subtitle;
+				titleDiv.appendChild(sub);
+			}
+			logoElement.appendChild(titleDiv);
+		}
+	}
+
+	// ShowNavbarTitle sets a centered title (and optional subtitle) in the
+	// mobile navbar without any back arrow — used on top-level tab pages
+	// (/feed, /groups) where there's nowhere to go back to.
+	function ShowNavbarTitle(label, subtitle) {
+		var logoElement = document.getElementById("logo");
+		if (!logoElement) {
+			return;
+		}
+		logoElement.innerHTML = '';
+		if (label) {
+			var titleDiv = document.createElement('div');
+			titleDiv.style.cssText = "position:absolute;left:50%;top:calc(50% + env(safe-area-inset-top) / 2);transform:translate(-50%,-50%);text-align:center;color:#ecf0f1;max-width:70%;overflow:hidden;";
+			var h4 = document.createElement('h4');
+			h4.style.cssText = "margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;";
+			h4.textContent = label;
+			titleDiv.appendChild(h4);
+			if (subtitle) {
+				var sub = document.createElement('div');
+				sub.style.cssText = "font-size:11px;line-height:1.2;margin-top:1px;opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+				sub.textContent = subtitle;
+				titleDiv.appendChild(sub);
+			}
+			logoElement.appendChild(titleDiv);
+		}
+	}
+
+	// ShowHeaderAction adds an icon button (e.g. settings cog) to the mobile navbar,
+	// to the left of the profile icon. modalTarget is optional — if given, clicking
+	// opens that Bootstrap modal. ariaLabel is for accessibility.
+	function ShowHeaderAction(iconClass, modalTarget, ariaLabel) {
+		var slot = document.getElementById("header-action-slot");
+		if (!slot) {
+			return;
+		}
+		slot.innerHTML = '';
+		var a = document.createElement('a');
+		a.href = '#';
+		a.className = 'navbar-action-xs';
+		if (ariaLabel) {
+			a.setAttribute('aria-label', ariaLabel);
+		}
+		if (modalTarget) {
+			a.setAttribute('data-toggle', 'modal');
+			a.setAttribute('data-target', modalTarget);
+		}
+		var icon = document.createElement('i');
+		icon.className = iconClass;
+		a.appendChild(icon);
+		slot.appendChild(a);
+		slot.style.display = '';
+	}
+
+	function HideHeaderAction() {
+		var slot = document.getElementById("header-action-slot");
+		if (slot) {
+			slot.innerHTML = '';
+			slot.style.display = 'none';
+			slot.style.float = 'left';
+		}
+	}
+
+	function HideBackButton() {
+		var logoElement = document.getElementById("logo");
+		if (logoElement) {
+			logoElement.innerHTML = `
+				<a href="https://lists.confidentialcomputing.io" class="navbar-left">
+					<img src="https://lists.confidentialcomputing.io/orgimg/org.82/mainlogo.png?v=1680450446973255792" height="50" alt="Groups.io">
+				</a>`;
+		}
+	}
+
+	function goBack() {
+		history.back();
+	}
+
+	// --- Native date/time picker helpers -----------------------------------
+	// On touch devices we swap flatpickr-wrapped <input type="text"> fields
+	// for native <input type="date"> / type="time" so iOS / Android bring up
+	// their OS pickers (wheel, spinner, Material dialog). On pointer
+	// devices we leave the flatpickr popover in place, since Chrome's
+	// default date popover looks out of place. Both helpers are global so
+	// every page with a date/time input can call them the same way.
+	window.__isTouchPicker = function() {
+		return window.matchMedia && window.matchMedia('(any-pointer: coarse)').matches;
+	};
+	// Fallback formats if data.User is nil on this page (logged out, etc).
+	window.__userDateFmt = "MM/DD/YYYY";
+	window.__userTimeFmt = "h:mma";
+	// Hybrid native picker: the field is shown to the user as a plain
+	// type=text input holding the date/time formatted per the user's
+	// Groups.io preference (e.g., "19/04/2026" for an International
+	// user). When the user taps the field, we briefly swap the input's
+	// type to 'date' or 'time' so the OS brings up its native picker
+	// (iOS wheel, Android calendar/spinner). When the user finishes
+	// picking and blurs the field, we swap back to text and reformat
+	// the value in the user's chosen format. The server sees the
+	// user-format value on submit, same as with flatpickr.
+	//
+	// `kind` is 'date' or 'time'. `onHumanChange(humanStr, momentObj)`
+	// fires whenever the user picks a new value, with the value already
+	// in the user's format.
+	window.useNativePicker = function(id, kind, onHumanChange) {
+		var input = document.getElementById(id);
+		if (!input) return null;
+		var userFmt = kind === 'time' ? window.__userTimeFmt : window.__userDateFmt;
+		var isoFmt = kind === 'time' ? 'HH:mm' : 'YYYY-MM-DD';
+		// Page loads with input type=text holding a user-format value —
+		// leave it as is until the user actually taps.
+		function toPicker() {
+			if (input.type !== kind) {
+				var m = moment(input.value, userFmt);
+				input.type = kind;
+				input.value = m.isValid() ? m.format(isoFmt) : '';
+			}
+		}
+		function toDisplay() {
+			if (input.type === kind) {
+				var m = moment(input.value, isoFmt);
+				input.type = 'text';
+				input.value = m.isValid() ? m.format(userFmt) : '';
+			}
+		}
+		// pointerdown fires before focus/click so we can swap the type
+		// in time for the browser's default tap-handling to open the
+		// correct native picker. Fall back to 'focus' for keyboard users.
+		input.addEventListener('pointerdown', toPicker);
+		input.addEventListener('focus', toPicker);
+		input.addEventListener('change', function() {
+			if (input.type === kind) {
+				var m = moment(input.value, isoFmt);
+				if (m.isValid() && onHumanChange) {
+					onHumanChange(m.format(userFmt), m);
+				}
+			}
+		});
+		input.addEventListener('blur', toDisplay);
+		// Make sure the server always sees the user-format value.
+		var form = input.closest('form');
+		if (form) form.addEventListener('submit', toDisplay);
+		return input;
+	};
+	// Set a field's value as a user-format string, whether the field is a
+	// flatpickr-wrapped text input (desktop) or a native type=date/time
+	// input (touch). Used by onChange handlers that update sibling fields.
+	window.setFieldHuman = function(id, humanStr, kind) {
+		var input = document.getElementById(id);
+		if (!input) return;
+		if (input._flatpickr) {
+			input._flatpickr.setDate(humanStr);
+		} else if (input.type === 'date' || input.type === 'time') {
+			var userFmt = kind === 'time' ? window.__userTimeFmt : window.__userDateFmt;
+			var isoFmt = kind === 'time' ? 'HH:mm' : 'YYYY-MM-DD';
+			var m = moment(humanStr, userFmt);
+			if (m.isValid()) input.value = m.format(isoFmt);
+		} else {
+			input.value = humanStr;
+		}
+	};
+
+	// submitEvent acts like .submit(), except it is compatible with the app, by using events instead.
+	function submitEvent(ele) {
+		console.log("in submitEvent");
+		if (ele.startsWith('#')) {
+    		ele = ele.slice(1);
+		}
+		document.getElementById(ele).submit();
+		return;
+		/*
+		const theEvent = new CustomEvent('submit', {
+			bubbles: true,
+			cancelable: true
+		});
+		if (typeof ele === 'string' || ele instanceof String) {
+			if (ele.startsWith("#") == true) {
+				ele = ele.slice(1);
+			}
+			if (document.getElementById(ele).dispatchEvent(theEvent) == true) {
+				// if not cancelled, do normal submit
+				console.log("calling submit");
+				document.getElementById(ele).submit();
+			}
+			return;
+		}
+		// assume ele is the element
+		if (ele.dispatchEvent(theEvent) == true) {
+			// if not cancelled, do normal submit
+			console.log("calling submit");
+			ele.submit();
+		}
+		*/
+	}
+
+	// gioDestroy is a convenience function for destroy callbacks
+	function gioDestroy(eventCB) {
+		let internalGioDestroy = function(evt) {
+			// do not activate on infinite scroll events
+			if (evt.detail.target !== undefined && evt.detail.target.id != "maincontent-refresh") {
+				console.log("Ignoring infinite scroll event");
+				return;
+			}
+			console.log("Calling destroy callback");
+			eventCB(evt);
+		}
+		document.body.addEventListener("htmx:beforeSwap", internalGioDestroy, {once: true});
+		document.body.addEventListener("htmx:historyCacheMiss", internalGioDestroy, {once: true});
+	}
+			
+	var drawerCloseFunc = function(evt) {
+		console.log("in drawerCloseFunc");
+		// Find all elements with the class 'drawer'
+		var drawers = document.querySelectorAll('.drawer');
+
+		// Iterate over each element and call closeDrawer() on each
+		drawers.forEach(function(obj) {
+			drawerObj.closeDrawer(obj);
+		});
+		$('.modal').modal('hide');
+	}
+	document.body.addEventListener('htmx:beforeSwap', drawerCloseFunc);
+	document.body.addEventListener('htmx:historyCacheMiss', drawerCloseFunc);
+
+	var keydownFunc = function(event) {
+		var tagName = event.target.tagName.toLowerCase();
+		if (tagName === 'input' || tagName === 'textarea' || event.target.isContentEditable) {
+			if (event.key === 'Escape') {
+				event.target.blur();
+			}
+			return;
+		}
+		// check if the viewimages viewer is up
+		let element = document.getElementById('overlay');
+		if (element && element.classList.contains('visible')) {
+			return;
+		}
+		console.log("HERE: " + event.key + " " + event.ctrlKey + " " + event.shiftKey + " " + event.metaKey);
+		if (event.ctrlKey && event.shiftKey && (event.key === '?' || event.key === '/')) {
+			event.preventDefault(); // Prevent the default action
+			// Show the modal dialog for keyboard shortcuts
+			$('#shortcutModal').modal('show');
+			return;
+		}
+		$('#shortcutModal').modal('hide');
+
+		if (event.key.toLowerCase() === 'g') {
+			// For Windows and Linux
+			if (event.ctrlKey) {
+				event.preventDefault();
+				showAutocompleteModal("groupnavigator");
+				return;
+			}
+		}
+
+		// Check if the pressed key is '/'
+		if ((event.key === 'f' || event.key === 'F') && event.shiftKey) {
+			if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+				if (event.metaKey) {
+					event.preventDefault(); // Prevent the default action
+					// Focus on the search box
+					let box = document.getElementById('searchbox')
+					if (box != null) {
+						document.getElementById('searchbox').focus();
+					}
+				}
+			} else {
+				// For Windows and Linux
+				if (event.ctrlKey) {
+					event.preventDefault(); // Prevent the default action
+					// Focus on the search box
+					let box = document.getElementById('searchbox')
+					if (box != null) {
+						document.getElementById('searchbox').focus();
+					}
+				}
+			}
+		}
+	}
+	document.addEventListener('keydown', keydownFunc);
+	var removeDrawerCloseFunc = function(evt) {
+		document.body.removeEventListener('htmx:beforeSwap', drawerCloseFunc);
+		document.body.removeEventListener('htmx:historyCacheMiss', drawerCloseFunc);
+		document.removeEventListener('keydown', keydownFunc);
+	}
+	document.body.addEventListener("htmx:historyCacheMiss", removeDrawerCloseFunc, {once: true});
+
+	// Check for passkey enrollment prompt after cross-device authentication
+	$(function() {
+		if (sessionStorage.getItem('passkeyPromptAfterCDA') === 'true') {
+			console.log('Passkey CDA flag detected, showing enrollment modal');
+
+			// Show the modal
+			$('#passkeyEnrollmentModal').modal('show');
+
+			// Clear the flag when modal is dismissed
+			$('#passkeyEnrollmentModal').on('hidden.bs.modal', function() {
+				console.log('Modal dismissed, clearing flag');
+				sessionStorage.removeItem('passkeyPromptAfterCDA');
+			});
+
+			// Set up enrollment button handler
+			var enrollBtn = document.getElementById('enrollLocalPasskeyBtn');
+			if (enrollBtn) {
+				enrollBtn.addEventListener('click', function() {
+					console.log('Enrollment button clicked');
+					// Redirect to settings page where they can add a passkey
+					sessionStorage.removeItem('passkeyPromptAfterCDA');
+					window.location.href = 'https://lists.confidentialcomputing.io/settings/security';
+				});
+			}
+		}
+	});
+</script>
+<!-- Passkey Enrollment Modal -->
+<div class="modal fade webauthn-only" id="passkeyEnrollmentModal" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<i class="fa fa-fingerprint"></i>
+					Add a Passkey to This Device
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					You logged in using a passkey from another device. For faster access next time, add a passkey to this device.
+				</p>
+				<p>
+					<strong>Benefits:</strong>
+				</p>
+				<ul>
+					<li>Faster login with just your fingerprint or face</li>
+					<li>No need to use your phone each time</li>
+					<li>Works even when offline</li>
+				</ul>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					Maybe Later
+				</button>
+				<button type="button" class="btn btn-primary" id="enrollLocalPasskeyBtn">
+					<i class="fa fa-plus"></i>
+					Add Passkey Now
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Modal Dialog for Keyboard Shortcuts -->
+<div class="modal fade" id="shortcutModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="myModalLabel">Keyboard Shortcuts</h4>
+      </div>
+      <div class="modal-body">
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong>ctrl</strong> + <strong>shift</strong> + <strong>?</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Show all keyboard shortcuts</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong>ctrl</strong> + <strong>g</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Navigate to a group</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong class="ctrlmeta">ctrl</strong> + <strong>shift</strong> + <strong>f</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Find</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong class="ctrlmeta">ctrl</strong> + <strong>/</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Quick actions</div>
+		</div>
+		</div>
+		<div class="text-center" style="margin-top:10px; margin-bottom:10px; font-size:12px;"><strong>esc</strong> to dismiss</div>
+    </div>
+  </div>
+</div>
+				
+	
+	<div id="mainrow" class="row"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div id="groupsidebar" class="scrollbar hidden-print">
+			<div class="scrollbar-content">
+				<div id="accordion" role="tablist" aria-multiselectable="true" style="margin-bottom:20px;">
+					<div class="list-group noborderlist" style="border:0;margin-bottom:0px">
+						
+
+
+	<a title="Group Home" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG" class="list-group-item sidebar-item">
+		<i class="fa-fw fa fa-home fa-lg"></i>
+		Home
+		
+			
+				
+				
+			
+		
+	</a>
+
+	
+		<a id="sidebar-subscription" href="#submenu0" class="noborderitem list-group-item sidebar-section navbar-vertical dropdown-indicator" data-toggle="collapse" data-parent="#accordion" aria-expanded="false" aria-controls="submenu0">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Subscription
+		</a>
+		<div class="collapse" id="submenu0">
+			
+
+	<a title="Edit Subscription Settings" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editsub" id="sidebar-editsub" class="noborderitem list-group-item sidebar-item sidebar-item-editsub">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Settings
+			<span id="sidebar-editsub-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Group Profile" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG//profile/6115309" id="sidebar-profileview" class="noborderitem list-group-item sidebar-item sidebar-item-profileview">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-user fa-lg"></i>
+			Group Profile
+			<span id="sidebar-profileview-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Delivery History" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subdeliveries" id="sidebar-subdeliveries" class="noborderitem list-group-item sidebar-item sidebar-item-subdeliveries">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-envelope fa-lg"></i>
+			Delivery History
+			<span id="sidebar-subdeliveries-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Integrations" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subintegrations" id="sidebar-subintegrations" class="noborderitem list-group-item sidebar-item sidebar-item-subintegrations">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-exchange-alt fa-lg"></i>
+			Integrations
+			<span id="sidebar-subintegrations-badge" class="badge"></span>
+		</span>
+	</a>
+
+		</div>
+	
+
+	
+
+	
+		
+	
+		
+
+	<a title="Messages" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?sidebar=true" id="sidebar-archives" class="noborderitem list-group-item sidebar-item sidebar-item-archives active"> 
+		<i class="fa-fw fa fa-comments fa-lg"></i>
+		Messages
+		<span id="sidebar-archives-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Topic" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post" id="sidebar-post" class="noborderitem list-group-item sidebar-item sidebar-item-post"> 
+		<i class="fa-fw fa fa-edit fa-lg"></i>
+		New Topic
+		<span id="sidebar-post-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="Drafts" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/drafts" id="sidebar-drafts" class="noborderitem list-group-item sidebar-item sidebar-item-drafts"> 
+		<i class="fa-fw fa fa-inbox fa-lg"></i>
+		Drafts
+		<span id="sidebar-drafts-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Poll" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/addpoll" id="sidebar-addpoll" class="noborderitem list-group-item sidebar-item sidebar-item-addpoll"> 
+		<i class="fa-fw fa fa-chart-bar fa-lg"></i>
+		New Poll
+		<span id="sidebar-addpoll-badge" class="badge"></span>
+	</a>
+
+	
+	
+	
+		
+
+	<a title="Hashtags" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/hashtags" id="sidebar-hashtags" class="noborderitem list-group-item sidebar-item sidebar-item-hashtags"> 
+		<i class="fa-fw fa fa-hashtag fa-lg"></i>
+		Hashtags
+		<span id="sidebar-hashtags-badge" class="badge"></span>
+	</a>
+
+	
+
+		
+	
+		
+			
+
+	<a title="Chats" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats" id="sidebar-chats" class="noborderitem list-group-item sidebar-item sidebar-item-chats"> 
+		<i class="fa-fw fa fa-message-dots fa-lg"></i>
+		Chats
+		<span id="sidebar-chats-badge" class="badge chatbadge"></span>
+	</a>
+
+		
+	
+
+	
+
+	
+
+	
+			
+
+	<a title="Subgroups" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subgroups" id="sidebar-subgroups" class="noborderitem list-group-item sidebar-item sidebar-item-subgroups"> 
+		<i class="fa-fw fa fa-chart-pie fa-lg"></i>
+		Subgroups
+		<span id="sidebar-subgroups-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+	
+
+	
+		
+
+	<a title="Member Directory" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/directory" id="sidebar-directory" class="noborderitem list-group-item sidebar-item sidebar-item-directory"> 
+		<i class="fa-fw fa fa-users fa-lg"></i>
+		Directory
+		<span id="sidebar-directory-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+	<a title="Calendar" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/calendar" id="sidebar-calendar" class="noborderitem list-group-item sidebar-item sidebar-item-calendar"> 
+		<i class="fa-fw fa fa-calendar-alt fa-lg"></i>
+		Calendar
+		<span id="sidebar-calendar-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+			
+
+	<a title="Photos" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/photos" id="sidebar-photos" class="noborderitem list-group-item sidebar-item sidebar-item-photos"> 
+		<i class="fa-fw fa fa-file-image fa-lg"></i>
+		Photos
+		<span id="sidebar-photos-badge" class="badge"></span>
+	</a>
+
+		
+		
+			
+
+	<a title="Files" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/files" id="sidebar-files" class="noborderitem list-group-item sidebar-item sidebar-item-files"> 
+		<i class="fa-fw fa fa-copy fa-lg"></i>
+		Files
+		<span id="sidebar-files-badge" class="badge"></span>
+	</a>
+
+		
+
+		
+			
+
+	<a title="Databases" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/database" id="sidebar-database" class="noborderitem list-group-item sidebar-item sidebar-item-database"> 
+		<i class="fa-fw fa fa-database fa-lg"></i>
+		Databases
+		<span id="sidebar-database-badge" class="badge"></span>
+	</a>
+
+		
+		
+	
+
+	
+		
+
+	<a title="Wiki" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/wiki" id="sidebar-wiki" class="noborderitem list-group-item sidebar-item sidebar-item-wiki"> 
+		<i class="fa-fw fa fa-book fa-lg"></i>
+		Wiki
+		<span id="sidebar-wiki-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+			
+
+		
+
+	
+
+					</div>
+				</div>
+				
+	<div class="text-center" style="font-size:13px;margin-bottom:30px">
+		<div style="padding-bottom:10px;">
+			<strong>ctrl</strong> + <strong>shift</strong> + <strong>?</strong> for shortcuts
+		</div>
+		<div style="padding-bottom:5px;">
+			<a href="https://groups.io/static/about">
+				About
+			</a> &middot;
+			<a href="https://groups.io/static/features">
+				Features
+			</a> &middot;
+			<a href="https://groups.io/static/pricing">
+				Pricing
+			</a>
+		</div>
+		<div style="padding-bottom:5px;">
+			<a href="https://groups.io/home">
+				Home
+			</a> &middot;
+			<a rel="nofollow" href="https://groups.io/changelog">
+				Changelog
+			</a> &middot;
+			<a href="https://groups.io/static/tos">
+				Terms
+			</a>
+		</div>
+		<div style="padding-bottom:5px;">
+			<a href="https://groups.io/helpcenter" target="_blank">
+				Help
+			</a>
+		</div>
+		<div style="padding-bottom:5px;">
+			&copy; 2026 Groups.io
+		</div>
+	</div>
+
+			</div>
+		</div>
+		<div id="maincontent" class="groupmaincontent">
+			<div id="maincontent-refresh">
+				<div id="maincontent-column" class="col-xs-12 maincontent-column">
+					
+	
+	
+	
+
+	
+		
+		
+	
+
+	
+	<div id="alertdiv"></div>
+	<div class="noticetemplate template">
+		<div class="alert alert-success alert-dismissible" role="alert">
+			<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				<span aria-hidden="true">
+					&times;
+				</span>
+			</button>
+			<span class="flashmsg"></span>
+		</div>
+	</div>
+	<div class="alerttemplate template">
+		<div class="alert alert-danger alert-dismissible" role="alert">
+			<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				<span aria-hidden="true">
+					&times;
+				</span>
+			</button>
+			<span class="flashmsg"></span>
+		</div>
+	</div>
+	<div class="alertnoclosetemplate template">
+		<div class="alert alert-danger" role="alert">
+			<span class="flashmsg"></span>
+		</div>
+	</div>
+
+
+
+ 
+<script>
+function dismiss() {
+    console.log("dismiss");
+    $.get( "/dismissalert");
+}
+
+var $alerttemplate = $(".alerttemplate");
+var $alertnoclosetemplate = $(".alertnoclosetemplate");
+var $noticetemplate = $(".noticetemplate");
+function createAlert(msg, isError, autoClose, noClose) {
+	if (isError == false) {
+		$newPanel = $noticetemplate.clone();
+	} else {
+        if (noClose) {
+		  $newPanel = $alertnoclosetemplate.clone();
+        } else {
+		  $newPanel = $alerttemplate.clone();
+        }
+	}
+	$newPanel.find(".flashmsg").html(msg);
+	if (autoClose == true) {
+		$("#alertdiv").append($newPanel.fadeTo(2000, 500).slideUp(500, function(){
+		    $newPanel.slideUp(500);
+		    $newPanel.remove();
+		}));  	
+	} else {
+		$("#alertdiv").append($newPanel.fadeIn());
+	}
+    return $newPanel;
+}
+
+
+
+
+</script>
+
+
+
+	
+
+<script>
+  // doLike toggles a like for a person.
+  function doLike(groupname, numlikes, msgid, like, csrf) {
+    $.ajax({
+      url: groupname+"/like?msgid="+msgid+"&like="+like+"&csrf="+csrf,
+      cache: false,
+    });
+    if (like == true) {
+      numlikes++
+    } else {
+      numlikes--
+    }
+    displayLikes(groupname, numlikes, msgid, like, csrf);
+    displayLikeStats(groupname, numlikes, msgid, like);
+  }
+
+  // displayLikes displays the Like/Unlike link button.
+  function displayLikes(groupname, numlikes, msgid, hasliked, csrf) {
+    var label = hasliked ? "Unlike" : "Like";
+    var count = numlikes > 0 ? " <span class=\"msg-action-count\">" + numlikes + "</span>" : "";
+    var link = "<a class=\"msg-action\" href=\"#\" aria-label=\"" + label + "\" onclick='doLike(\""+groupname+"\","+numlikes+","+msgid+", " + (hasliked ? "false" : "true") + ", \""+csrf+"\");return false;'><i class=\"fa fa-thumbs-up\"></i><span class=\"msg-action-label\"> " + label + "</span>" + count + "</a>";
+    $("#likebutton"+msgid).html("<span id='likebutton"+msgid+"'>" + link + "</span>");
+  }
+
+  // displayLikeStats displays the line that shows how many people have liked this.
+  function displayLikeStats(groupname, numlikes, msgid, hasliked) {
+    if (hasliked == false && numlikes == 0) {
+      $("#likestats"+msgid).html("<span id='likestats"+msgid+"'class='likestats'></span>");
+      return
+    }
+    likedata = "<span id='likestats" + msgid + "' class='likestats'><i class='fa fa-thumbs-up'></i> "
+    if (hasliked == true) {
+      likedata += "You"
+      if (numlikes > 1) {
+        likedata = likedata + " and <a href='#' onclick='showLikes(\"" + groupname + "\"," + msgid + ");return false;'>" + (numlikes-1)
+        if (numlikes == 2) {
+          likedata = likedata + " Other"
+        } else {
+          likedata = likedata + " Others"
+        }
+      }
+    } else {
+        likedata += "<a href='#' onclick='showLikes(\"" + groupname + "\"," + msgid + ");return false;'>" + numlikes
+        if (numlikes == 1) {
+          likedata = likedata + " Person"
+        } else {
+          likedata = likedata + " People"
+        }
+    }
+    likedata = likedata + "</a> liked this</span>"
+    $("#likestats"+msgid).html(likedata);
+  }
+
+  // showLikes fetches all the likes for a message and pops up the dialog box to show them.
+  function showLikes(groupname, msgid) {
+    console.log(groupname)
+    $.getJSON(groupname+"/getlikes?msgid="+msgid, function( data ) {
+        htmldata = '<ul class="list-group">'
+        jQuery.each(data, function() {
+          htmldata += '<li class="list-group-item" style="display: flex;align-items: center;">' + this.Icon + ' <span style="margin-left: 10px;">' + this.Profile + '</span></li>'
+        });
+        htmldata += '</ul>'
+        $("#showlikesbody").html(htmldata);
+        $('#showlikesmodal').modal({show:true})
+      }
+    );
+  }
+</script>
+
+	<!-- show likes modal -->
+	<div class="modal fade" id="showlikesmodal" tabindex="-1" role="dialog" aria-labelledby="showlikesmodalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">
+						<span aria-hidden="true">
+							&times;
+						</span>
+						<span class="sr-only">
+							Close
+						</span>
+					</button>
+					<h4 class="modal-title" id="showlikesmodalLabel">
+						Likes
+					</h4>
+				</div>
+				<div class="modal-body">
+					<div id="showlikesbody"></div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+						<i class="fa fa-times"></i>
+						Close
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+
+	
+
+	<div class="row breadcrumb-row hidden-xs" style="margin-bottom: 10px">
+		<div class="col-xs-12 col-sm-9">
+			<span class="hidden-sm hidden-md hidden-lg pull-right" style="padding:8px 15px;"><a data-toggle="modal" data-target="#searchModal"><i class="fa fa-search"></i></a></span>
+			<div class="breadcrumb-container hidden-xs">
+				
+					<ol class="breadcrumb scroll-breadcrumb">
+						<li><a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG"><i class="fa fa-home"></i> Trustworthy-Workload-Identity-SIG</a></li>
+						
+						<li class="active"><a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?index=112016931"><i class="fa fa-inbox"></i> Topics</a></li>
+					</ol>
+				
+			</div>
+		</div>
+		<div class="col-sm-3 hidden-xs" style="padding-right:0px">
+			<form class="form-inline pull-right" method="get" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/search">
+				<input type="hidden" name="p" value="Created,,,20,1,0,0">
+				
+				<div class="input-group">
+					<input id="searchbox" type="text" class="form-control" placeholder="Search" title="Search" name="q" size="20" value="" style="height:37px">
+					<div class="input-group-btn">
+						<button class="btn btn-primary" type="submit" style="height:37px;" aria-label="Search">
+							<span class="fa fa-search"></span>
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+
+
+	<div class="modal fade" id="searchModal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">
+						<span aria-hidden="true">
+							&times;
+						</span>
+						<span class="sr-only">
+							Close
+						</span>
+					</button>
+					<h4 class="modal-title" id="searchModalLabel">
+						Search
+					</h4>
+				</div>
+				<form class="form-horizontal" method="get" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/search">
+					
+					<div class="modal-body">
+						<div class="form-group">
+							<div class="col-sm-12">
+								<input type="text" class="form-control" placeholder="Search" title="Search" name="q" value="">
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-primary btn-sm" aria-label="Search">
+							<i class="fa fa-search"></i>
+							Search
+						</button>
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+
+	<div class="pull-right">
+		<form class="form-inline">
+			
+				<a class="button-link" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/twi_agenda_for_april_1/112016931?dir=desc">
+					Date
+					<i class="fa fa-xs fa-sort-up"></i>
+				</a>
+			
+			<span class="hidden-xs">&nbsp;&nbsp;</span>
+			
+	
+		<span class="hidden-xs">
+			<span class="form-group">
+			1 - 1 of 1
+			</span>
+			&nbsp;
+			<ul class="pagination form-group" style="margin: 0px !important;">
+				
+					<li class="disabled">
+						<a href="#">
+							<i class="fa fa-chevron-left">
+								<span class="sr-only">
+									previous page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+				
+					<li class="disabled">
+						<a href="#">
+							<i class="fa fa-chevron-right">
+								<span class="sr-only">
+									next page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+			</ul>
+		</span>
+	
+
+		</form>
+	</div>
+	<div class="form-group button-link-group">
+		
+
+		
+			
+				<a class="btn btn-sm btn-warning"  href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/ft/112016931?csrf=3637796335680031353&mute=1&p=Created%2C%2C%2C20%2C1%2C0%2C0">
+					Mute
+				</a>
+			
+		
+	</div>
+	<h4 class="hidden-xs" style="padding-top:10px;padding-bottom:10px;">
+		
+		
+		
+		[TWI] Agenda for April 1, 2025 (please read, no joke!)
+		
+		
+	</h4>
+	<table id="records" class="table table-condensed table-striped table-fixed" hx-disinherit="*">
+		<tr></tr>
+		
+			
+				
+	<tr class="background-color" >
+		<td style="padding-left:0px;padding-right:0px;padding-bottom:0px;border:0px;">
+			<div class="table-background-color expanded-message">
+			
+			<hr class="sr-only">
+			<a name="msg2" id="msg2"></a>
+			
+			<div class="row expanded-sender-row">
+				<div class="col-xs-12 expanded-sender-col">
+					
+					<div class="expanded-sender-meta">
+						<font size="-1" class="text-muted">
+							
+<script id="timedispmsg250648843">
+	$('#timedispmsg250648843').replaceWith(DisplayShortTime(1743468577787406160, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+						</font>
+						<a rel="nofollow" class="hidden-xs" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/message/2">
+							&nbsp;#2&nbsp;&nbsp;
+							<i class="fa fa-link fa-lg"></i>
+						</a>
+						
+					</div>
+
+						
+							<div class="dropdown">
+								<a class="dropdown-toggle user-chip" href="#" role="button" id="dropdownMenu250648843" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<span class="user-chip-inner">
+										
+											<img src="https://s3-us-west-1.amazonaws.com/groupsiotestprofilephotos/profilephoto.6464902?AWSAccessKeyId=AKIAJECNKOVMCCU3ATNQ&amp;Expires=1777503771&amp;Signature=nYuF3M9gk5N1s2HB4lzkbLecBUk%3D" class="img-rounded user-chip-avatar" width="32" height="32">
+										
+										<span class="user-chip-name">
+											
+												Mark Novak
+											
+										</span>
+										<span class="caret"></span>
+									</span>
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="dropdownMenu250648843">
+									
+									
+										
+										<li>
+											<a rel="nofollow" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/search?q=posterid:6464902">
+												<i class="fa-fw fa fa-comments"></i>
+												All Messages By This Member
+											</a>
+										</li>
+									
+								</ul>
+						</div>
+					
+				</div>
+			</div>
+			<br />
+			<div id="msgbody250648843" class="user-content">
+				<div class="forcebreak" dir="auto"><html><head><meta http-equiv="Content-Type"/>
+<meta name="Generator"/>
+
+
+</head><body lang="EN-US">
+<div class="WordSection1">
+<p class="MsoNormal"><span style="">Hello all,</span></p>
+<p class="MsoNormal"><span style=""> </span></p>
+<p class="MsoNormal"><span style="">This is the last TWI-specific email sent to the TAC mailing list. All future emails will go to our new mailing list (the To: line of this email). To subscribe, email
+<a href="mailto:Trustworthy-Workload-Identity-SIG+subscribe@..." rel="nofollow noopener" target="_blank">
+Trustworthy-Workload-Identity-SIG+subscribe@...</a>.</span></p>
+<p class="MsoNormal"><span style=""> </span></p>
+<p class="MsoNormal"><span style="">The SIG is now live! Our first official meeting, with agenda and all, will take place tomorrow at 6am Pacific. The daylight savings debacle is behind us so no more confusion until fall!</span></p>
+<p class="MsoNormal"><span style=""> </span></p>
+<p class="MsoNormal"><span style="">Tomorrow we’re going to address the following items (and as usual, feel free to bring your own!)</span></p>
+<p class="MsoNormal"><span style=""> </span></p>
+<ul style="" type="disc">
+<li class="MsoListParagraph" style=""><span style="">Outstanding work like
+<a href="https://drive.google.com/drive/folders/1TBxBgADGu0ifQCPICT93QB7cgD7gpafM?usp=drive_link" rel="nofollow noopener" target="_blank">
+gap analyses</a>, this is becoming more urgent by the week.</span></li><li class="MsoListParagraph" style=""><span style="">One hopefully final review of
+<a href="https://docs.google.com/document/d/1HyvC9B7PkS3jst-FExDnd0qigo6pPMnns3a8v82nIzA/edit?usp=drive_link" rel="nofollow noopener" target="_blank">
+TWI Requirements</a></span></li><li class="MsoListParagraph" style=""><span style="">Another look at TWI Reference Architecture early draft to see if anyone wants to author any subsections thereof</span></li><li class="MsoListParagraph" style=""><span style="">Last but not least, a discussion about what content we can author for IETF Madrid; time will fly and authoring informational drafts takes time</span></li></ul>
+<p class="MsoNormal"><span style=""> </span></p>
+<p class="MsoNormal"><span style="">See you all tomorrow!</span></p>
+<p class="MsoNormal"><span style=""> </span></p>
+</div>
+
+</div>
+				
+				
+				
+			</div>
+			
+			<p></p>
+	
+
+	
+			<div class="table-highlight-background-color expanded-message-footer">
+			<div class="row">
+				
+					<div class="col-xs-4 text-left">
+						
+							<a class="msg-action" data-toggle="collapse" href="#window-250648843" aria-expanded="false" aria-controls="window-250648843" aria-label="Reply">
+								<i class="fa fa-reply"></i>
+								<span class="msg-action-label">Reply</span>
+							</a>
+						
+					</div>
+					<div class="col-xs-4 text-center">
+						<span id="likebutton250648843"></span>
+					</div>
+				
+				
+				<div class="col-xs-4">
+
+						
+	
+		<div class="btn-group dropup pull-right" style="display:inline-block">
+	
+			
+				<a id="wide-moredrop250648843" href="#" class="dropdown-wide dropdown-toggle msg-more-drop" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					
+						<i class="fa fa-ellipsis-h"></i>
+					
+					More
+					
+				</a>
+			
+			<ul class="dropdown-menu" role="menu">
+				
+					
+						<li>
+							<a title="View Source" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/original/2" hx-boost="false" hx-disinherit="*">
+								
+									<i class="fa fa-file-code"></i>
+								View Source
+							</a>
+						</li>
+					
+				
+					
+						<li>
+							<a title="Report This Message" href="javascript:void(0)" data-toggle="modal" data-target="#reportMessageModal" data-message-id="250648843">
+								
+									<i class="fa fa-flag"></i>
+								Report This Message
+							</a>
+						</li>
+					
+				
+			</ul>
+	</div>
+	<div class="btn-group pull-right">
+		
+			<a id="narrow-moredrop250648843" href="javascript:void(0)" class="dropdown-narrow  msg-more-drop"  data-drawer-trigger aria-controls="moredrop250648843-drawer" aria-expanded="false">
+				
+					<i class="fa fa-ellipsis-h"></i>
+				
+				More
+				
+			</a>
+		
+	</div>
+	<section class="drawer drawer-bottom" id="moredrop250648843-drawer" data-drawer-target>
+		<div class="drawer-overlay" data-drawer-close tabindex="-1"></div>
+		<div class="drawer-wrapper">
+			<div class="drawer-content">
+				<div class="list-group">
+					
+						<a href="#" class="list-group-item disabled" title="More">
+							
+								<i class="fa fa-ellipsis-h"></i>
+							More
+						</a>
+					
+					
+						
+						
+							<a class="list-group-item" title="View Source" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/original/2" hx-boost="false" hx-disinherit="*">
+								
+									<i class="fa fa-file-code"></i>
+								View Source
+							</a>
+						
+					
+						
+						
+							<button type="button" class="list-group-item" title="Report This Message" data-toggle="modal" data-target="#reportMessageModal" onclick="modalmoredrop250648843('#reportMessageModal')" data-message-id="250648843">
+								
+									<i class="fa fa-flag"></i>
+								Report This Message
+							</button>
+						
+					
+				</div>
+			</div>
+		</div>
+	</section>
+<script>
+function modalmoredrop250648843(target) {
+	drawer = document.getElementById('moredrop250648843-drawer');
+	if (drawer != null) {
+		drawerObj.closeDrawer(drawer);
+	}
+	//$(target).modal('show');
+}
+</script>
+
+				</div>
+				
+			</div>
+			<div class="row">
+				<div class="col-xs-12">
+					<div id="likestats250648843"></div>
+				</div>
+			</div>
+			
+				<div id="window-250648843" class="collapse">
+					<div class="panel panel-default" style="margin-bottom:0px;margin-top:10px;">
+				  		<div class="panel-body">
+					<form class="form" id="form250648843" method="POST" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/reply?p=Created,,,20,1,0,0" accept-charset="UTF-8">
+						
+							<input type="hidden" id="csrf250648843" name="csrf" value="3637796335680031353">
+						
+						<input type="hidden" name="mid" value="250648843">
+						<input type="hidden" id="groupname250648843" name="groupname" value="/g/Trustworthy-Workload-Identity-SIG">
+						<input type="hidden" id="draftid250648843" name="draftid" value="">
+						<input type="hidden" name="single" value="">
+						<input type="hidden" id="origsubject250648843" value="Re: [TWI] Agenda for April 1, 2025 (please read, no joke!)">
+						<input type="hidden" name="from250648843" id="from250648843" value="0">
+
+			<div class="form-group" style="margin-top:15px;">
+				<div class="dropdown">
+					<a class="dropdown-toggle user-chip" href="#" role="button" id="dropdownReplyMenu250648843" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<span id="userHeader250648843" class="user-chip-inner">
+							
+								
+									<i class="fa fa-user-circle user-chip-avatar-icon"></i>
+								
+								<span class="user-chip-name">
+									
+										Hang Yin
+									
+								</span>
+								<span class="caret"></span>
+							
+						</span>
+						<span id="modHeader250648843" class="user-chip-inner">
+							<i class="fa fa-user-circle user-chip-avatar-icon"></i>
+							<span class="user-chip-name">Group Owner</span>
+							<span class="caret"></span>
+						</span>
+					</a>
+					<ul class="dropdown-menu" aria-labelledby="dropdownReplyMenu250648843">
+						
+							<li class="dropdown-header userOptions">
+								hangyin@phala.network
+							</li>
+							<li class="dropdown-header modOptions">
+								Trustworthy-Workload-Identity-SIG+owner@lists.confidentialcomputing.io
+							</li>
+							
+						
+					</ul>
+				</div>
+		</div>
+<script>
+function swapToMod250648843() {
+	$("#userHeader250648843").hide();
+	$("#modHeader250648843").show();
+	$(".userOptions").hide();
+	$(".modOptions").show();
+	$('#from250648843').val("1");
+}
+function swapToUser250648843() {
+	$("#userHeader250648843").show();
+	$("#modHeader250648843").hide();
+	$(".userOptions").show();
+	$(".modOptions").hide();
+	$('#from250648843').val("0");
+}
+contentLoaded(false, function() {
+
+	swapToUser250648843();
+
+});
+</script>
+					<div class="form-group">
+					<select class="form-control" name="replyto" id="replyto250648843" onchange="replyToChange250648843(this);" aria-label="Reply to">
+						
+							<option value="0" selected>
+								Reply to Group
+							</option>
+							
+								
+									<option value="1">
+										Reply to Sender
+									</option>
+									
+								
+								<option value="2">
+									Reply to Moderators
+								</option>
+							
+						
+					</select>
+					</div>
+						<div class="form-group">
+							<input name="subject" class="form-control" id="subject250648843" type="text" placeholder="Subject" value="Re: [TWI] Agenda for April 1, 2025 (please read, no joke!)" spellcheck="true">
+						</div>
+						
+	<div class="form-group">
+
+		
+		
+			<div id="editwindow250648843">
+				<textarea id="editor250648843" name="editor250648843" class="form-control" rows="10" dir="auto"></textarea>
+			</div>
+		
+		<div id="previewWindow250648843"></div>
+		
+
+		
+
+	</div>
+
+	<div id="attachments250648843"></div>
+
+						<div class="form-group" style="margin-bottom:0px;">
+							
+								<input type="hidden" name="bodytype" id="bodytype250648843" value="html">
+							
+							<div id="bccme250648843" class="checkbox" style="display:none;">
+								<label for="bccmecheck250648843">
+									<input type="checkbox" id="bccmecheck250648843" name="bccme" value="1">
+									BCC Me
+								</label>
+							</div>
+							
+							<div class="row">
+								<div class="col-xs-12 btn-toolbar">
+									<button class="btn btn-success btn-sm bottom10" name="send">
+										<i class="fa fa-paper-plane"></i>
+										Send
+									</button>
+									<span id="markdownbuttons250648843" style="display:none;">
+										<a href="javascript:void(0)" class="btn btn-default btn-sm bottom10" id="preview250648843" name="preview" onclick='editor.PreviewMarkdown(250648843,"/g/Trustworthy-Workload-Identity-SIG")' style="margin-left:5px;">
+											<i class="fa fa-search"></i>
+											Preview
+										</a>
+										<a href="javascript:void(0)" class="btn btn-default btn-sm bottom10" id="return250648843" name="return" onclick="editor.ReturnMarkdown(250648843)" style="margin-left:5px;">
+											<i class="fa fa-search"></i>
+											Edit
+										</a>
+									</span>
+									<button type="button" class="pull-right btn btn-danger btn-sm bottom10" name="cancel" value="Cancel" id="cancel-250648843" data-toggle="collapse" data-target="#window-250648843">
+										<i class="fa fa-trash-alt"></i>
+										Discard
+									</button>
+								</div>
+							</div>
+						</div>
+					</form>
+					</div>
+					</div>
+				</div>
+				
+	<!-- Add Attachments Modal -->
+	<div class="modal fade" id="addAttachmentsModal250648843" tabindex="-1" role="dialog" aria-labelledby="addAttachmentsModalLabel250648843">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">
+						<span aria-hidden="true">
+							&times;
+						</span>
+						<span class="sr-only">
+							Done
+						</span>
+					</button>
+					<h4 class="modal-title" id="addAttachmentsModalLabel250648843">
+						Upload Attachments
+					</h4>
+				</div>
+				<div class="modal-body">
+					<form id="attachmentupload250648843" class="dropzone dropzone-multiple" style="padding:0; min-height:0;">
+						<div class="dz-message" data-dz-message><i class="fa-regular fa-cloud-arrow-up"></i> Drag and drop files here, or <u>click to choose files</u></div>
+						<div class="progress" style="margin-top:10px;margin-bottom:0px;display:none;">
+							<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+								<span class="sr-only">0% Complete</span>
+							</div>
+						</div>
+						<div class="dz-preview dz-preview-multiple d-flex flex-column">
+							<div class="d-flex media pb-1" style="border-bottom-width:1px; border-bottom-color:rgb(204, 204, 204); border-bottom-style:solid;">
+								<div class="dz-image">
+									<i class="fas fa-file-image fa-3x"></i>
+								</div>
+								<div class="flex-1 d-flex flex-between-center">
+									<div>
+										<div class="fs-7" data-dz-name="data-dz-name"></div>
+										<div class="d-flex align-items-center">
+											<p class="mb-0 fs-7 text-muted" data-dz-size="data-dz-size"></p>
+										</div><span class="fs-7 text-danger" data-dz-errormessage="data-dz-errormessage"></span>
+									</div>
+									<a href="#" class="fs-7" data-dz-remove="data-dz-remove">Remove</a>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-sm btn-default" data-dismiss="modal">
+						<i class="fa fa-times"></i>
+						Cancel
+					</button>
+					<button type="button" class="btn btn-sm btn-primary" id="attachmentupload-submit250648843" disabled onclick='if (window.attachmentDropzone250648843) window.attachmentDropzone250648843.processQueue();'>
+						<i class="fa fa-file"></i>
+						Add
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- Add Pictures Modal -->
+	<div class="modal fade" id="addPicturesModal250648843" tabindex="-1" role="dialog" aria-labelledby="addPicturesModalLabel250648843">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">
+						<span aria-hidden="true">
+							&times;
+						</span>
+						<span class="sr-only">
+							Done
+						</span>
+					</button>
+					<h4 class="modal-title" id="addPicturesModalLabel250648843">
+						Insert Images
+					</h4>
+				</div>
+				<div class="modal-body">
+					<form id="pictureupload250648843" class="dropzone dropzone-multiple" style="padding:0; min-height:0;">
+						<div class="dz-message" data-dz-message><i class="fa-regular fa-cloud-arrow-up"></i> Drag and drop images here, or <u>click to choose images</u></div>
+						<div class="progress" style="margin-top:10px;margin-bottom:0px;display:none;">
+							<div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+								<span class="sr-only">0% Complete</span>
+							</div>
+						</div>
+						<div class="dz-preview dz-preview-multiple d-flex flex-column">
+							<div class="d-flex media pb-1" style="border-bottom-width:1px; border-bottom-color:rgb(204, 204, 204); border-bottom-style:solid;">
+								<div class="dz-image">
+									<i class="fas fa-file-image fa-3x"></i>
+								</div>
+								<div class="flex-1 d-flex flex-between-center">
+									<div>
+										<div class="fs-7" data-dz-name="data-dz-name"></div>
+										<div class="d-flex align-items-center">
+											<p class="mb-0 fs-7 text-muted" data-dz-size="data-dz-size"></p>
+										</div><span class="fs-7 text-danger" data-dz-errormessage="data-dz-errormessage"></span>
+									</div>
+									<a href="#" class="fs-7" data-dz-remove="data-dz-remove">Remove</a>
+								</div>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-sm btn-default" data-dismiss="modal">
+						<i class="fa fa-times"></i>
+						Cancel
+					</button>
+					<button type="button" class="btn btn-sm btn-primary" id="pictureupload-submit250648843" disabled onclick='if (window.pictureDropzone250648843) window.pictureDropzone250648843.processQueue();'>
+						<i class="fa fa-file"></i>
+						Add
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+			
+			
+			</div>
+			</div>
+<script>
+contentLoaded(false, function() {
+	
+		
+
+
+		$('#form250648843').submit(function(e) {
+			editor.ClearTimeout();
+			/*
+			if (postVar != null) {
+			postVar.abort();
+			}
+			*/
+			deleted = true;
+			if ($(this).hasClass('form-submitted')) {
+				e.preventDefault();
+				return;
+			}
+			$(this).addClass('form-submitted');
+		});
+
+		$('#window-250648843').on('show.bs.collapse', function(event) {
+			// on opening of reply window
+			
+	let darkmode = false;
+	
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			darkmode = true;
+		}
+	
+	editor.InitReplyDraft({id: 250648843,
+		bodytype: "html",
+		draftid: "0",
+		draftUpdated: "0",
+		groupurl: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG",
+		csrf: "3637796335680031353",
+		handleAttachments: 0,
+		noFontChanges: false,
+		isReply: false,
+		isWiki: false,
+		isPendingEdit: false,
+		isDarkMode: darkmode,
+		body: "",
+		sig: "",
+		usernameList: [],
+		onInitFunc: setFocus250648843});
+
+		})
+		if (document.documentElement.clientWidth > 767) {
+			$('#addAttachmentsButton250648843').tooltip()
+			$('#showHistory250648843').tooltip()
+		}
+		
+	
+	
+		displayLikes("/g/Trustworthy-Workload-Identity-SIG", 0, 250648843, false, "3637796335680031353")
+	
+	
+		displayLikeStats("/g/Trustworthy-Workload-Identity-SIG", 0, 250648843, false)
+	
+});
+		function replyToChange250648843(element) {
+			var value = element.value;
+			if (value == "1") {
+				subj = $('#subject250648843').val();
+				$('#subject250648843').val('Private: ' + subj);
+				$('#bccme250648843').show();
+			} else if (value == "2") {
+				subj = $('#subject250648843').val();
+				$('#subject250648843').val(subj.replace('Private: ', ''));
+				$('#bccme250648843').show();
+			} else {
+				subj = $('#subject250648843').val();
+				$('#subject250648843').val(subj.replace('Private: ', ''));
+				$('#bccme250648843').hide();
+			}
+			if (tinyMCE.get('editor250648843') != null) {
+				tinyMCE.get('editor250648843').focus();
+			}
+		}
+
+		function setFocus250648843() {
+			tinyMCE.activeEditor.focus();
+		}
+
+</script>
+		</td>
+	</tr>
+
+
+			
+		
+	</table>
+	
+	<!-- Video Modal -->
+	<div class="modal fade" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="videoModalLabel">
+		<div class="modal-dialog" role="document" style="width:80vw; height:80vh;margin-left:auto;margin-right:auto;">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				</div>
+				<div class="modal-body" id="videoModalBody">
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Image Lightbox Modal -->
+	<div class="modal fade" id="imageLightbox" tabindex="-1" role="dialog" aria-labelledby="imageLightboxLabel">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="imageLightboxLabel"></h4>
+				</div>
+				<div class="modal-body" style="text-align:center; position:relative;">
+					<img id="lightboxImage" src="" style="max-width:100%; max-height:70vh;" alt="">
+					<!-- Navigation buttons -->
+					<button type="button" id="lightboxPrev" class="btn btn-default lightbox-nav lightbox-nav-prev" style="display:none;">
+						<i class="fa fa-chevron-left"></i>
+					</button>
+					<button type="button" id="lightboxNext" class="btn btn-default lightbox-nav lightbox-nav-next" style="display:none;">
+						<i class="fa fa-chevron-right"></i>
+					</button>
+					<div id="lightboxTextContent" style="display:none; text-align:left; max-height:70vh; overflow:auto; white-space:pre-wrap; font-family:monospace; background:#f5f5f5; padding:15px;"></div>
+				</div>
+				<div class="modal-footer">
+					<span id="lightboxCounter" class="pull-left" style="line-height:34px;padding-right:20px;"></span>
+					<button type="button" id="lightboxDownload" class="btn btn-primary">
+						<i class="fa fa-download"></i> Download
+					</button>
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+
+videojs.registerPlugin('orientationHandler', function() {
+    this.on('loadedmetadata', function() {
+        const player = this;
+        const video = this.tech().el();
+        console.log("In loadedmetadata");
+
+        // Function to handle rotation
+        const rotateVideo = (degrees) => {
+            console.log(`Rotating video by ${degrees} degrees`);
+            
+            // Clear any existing transforms first
+            video.style.transform = '';
+            
+            if (degrees !== 0) {
+                video.style.transform = `rotate(${degrees}deg)`;
+                const posterEl = player.el().querySelector('.vjs-poster');
+                if (posterEl) {
+                    console.log("rotating poster");
+                    posterEl.style.transform = `rotate(${degrees}deg)`;
+                }
+            }
+        };
+
+        // Check video dimensions and any existing transform
+        const videoRatio = video.videoWidth / video.videoHeight;
+        const currentTransform = video.style.transform || '';
+        console.log("Video dimensions:", video.videoWidth, "x", video.videoHeight);
+        console.log("Video ratio:", videoRatio);
+        console.log("Current transform:", currentTransform);
+
+        // Try to detect rotation metadata from video element
+        let hasMetadataRotation = false;
+        try {
+            if (video.videoTracks && video.videoTracks[0]) {
+                hasMetadataRotation = !!video.videoTracks[0].rotation;
+                console.log("Has metadata rotation:", hasMetadataRotation);
+            }
+        } catch (e) {
+            console.log("Error checking video tracks:", e);
+        }
+
+        // Function to check if video needs rotation
+        const needsRotation = () => {
+            if (videoRatio < 1) {  // Portrait video
+                // If it has an existing rotation transform, it's probably HEVC
+                if (currentTransform.includes('rotate')) {
+                    console.log("Video has existing rotation transform");
+                    return false;
+                }
+                
+                // If it has rotation metadata, browser might handle it
+                if (hasMetadataRotation) {
+                    console.log("Video has rotation metadata");
+                    return false;
+                }
+
+                // Let's play a frame and check the actual rendered size
+                const videoEl = player.el().querySelector('video');
+                const renderedRatio = videoEl.offsetWidth / videoEl.offsetHeight;
+                console.log("Rendered ratio:", renderedRatio);
+
+                // If rendered ratio is significantly different from video ratio,
+                // browser might be handling rotation
+                if (Math.abs(renderedRatio - videoRatio) < 0.1) {
+                    console.log("Video needs rotation based on rendered dimensions");
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Check if rotation is needed
+        if (needsRotation()) {
+            console.log("Applying rotation");
+            rotateVideo(180);
+        } else {
+            console.log("No rotation needed");
+        }
+
+        // Add rotation toggle button for manual override
+        const Button = videojs.getComponent('Button');
+        
+        class RotateButton extends Button {
+            constructor(player, options) {
+                super(player, options);
+                this.el().innerHTML = '<span class="sr-only">Rotate</span><i class="fas fa-sync"></i>';
+                this.currentRotation = needsRotation() ? 180 : 0;
+            }
+            
+            handleClick() {
+                this.currentRotation = (this.currentRotation + 180) % 360;
+                rotateVideo(this.currentRotation);
+            }
+        }
+
+        // Register and add the rotate button
+        videojs.registerComponent('RotateButton', RotateButton);
+        player.getChild('controlBar').addChild('RotateButton', {}, player.controlBar.children().length - 1);
+    });
+});
+
+		contentLoaded(false, function() {
+			let player;
+			let videoLinks = document.getElementsByClassName('video-link');
+			for (var i = 0; i < videoLinks.length; i++) {
+				videoLinks[i].addEventListener('click', function(event) {
+					let videoSrc = event.currentTarget.getAttribute('data-video-src');
+					let videoName = event.currentTarget.getAttribute('data-video-name');
+					console.log("videoSrc: ", videoSrc);
+					// Create a new video tag
+					let videoTag = document.createElement('video');
+					videoTag.setAttribute('class', 'video-js vjs-fill center-block vjs-default-skin');
+					videoTag.setAttribute('controls', '');
+					videoTag.setAttribute('preload', 'auto');
+					videoTag.setAttribute('data-setup', '{}');
+
+					// Create a new source tag
+					let sourceTag = document.createElement('source');
+					sourceTag.setAttribute('src', videoSrc);
+					sourceTag.setAttribute('type', 'video/mp4');
+
+					// Append the source tag to the video tag
+					videoTag.appendChild(sourceTag);
+
+					// Get the modal body and clear its contents
+					let modalBody = document.getElementById('videoModalBody');
+					modalBody.setAttribute('style', 'height:80vh;width:80vw');
+					modalBody.innerHTML = '';
+
+					// Append the video tag to the modal body
+					modalBody.appendChild(videoTag);
+
+					// Initialize the video player
+					player = videojs(videoTag);
+					player.orientationHandler();
+
+					// Create a new button component
+					let Button = videojs.getComponent('Button');
+					class DownloadButton extends Button {
+						constructor(player, options) {
+							super(player, options);
+							this.el().innerHTML = '<span class="sr-only">Download</span><i class="fas fa-download"></i>';
+						}
+
+						handleClick() {
+
+							window.open(videoSrc, '_blank');
+
+						}
+					}
+
+					// Register the custom Button class
+					videojs.registerComponent('DownloadButton', DownloadButton);
+
+					// Add the custom button to the control bar
+					player.getChild('controlBar').addChild('DownloadButton', {});
+				});
+			}
+			$('#videoModal').on('hide.bs.modal', function (e) {
+				if (player) {
+					player.pause();
+				}
+			});
+			var checkboxes = document.querySelectorAll('.delete-checkbox');
+
+			// The forEach method will not execute if the NodeList is empty,
+			// so there's no need for an explicit check for the existence of checkboxes.
+			checkboxes.forEach(function(checkbox) {
+				checkbox.addEventListener('click', function(event) {
+					// Stop the event from bubbling up to the parent elements
+					event.stopPropagation();
+				});
+			});
+
+			// Image Lightbox Controller
+			var lightboxImages = [];
+			var currentImageIndex = 0;
+
+			function initializeLightbox() {
+				// Collect all lightbox images from inline images and attachments
+				lightboxImages = [];
+				var inlineImages = document.querySelectorAll('.lightbox-image');
+				var attachmentImages = document.querySelectorAll('.lightbox-attachment');
+
+				// Add inline images
+				inlineImages.forEach(function(img, index) {
+					lightboxImages.push({
+						src: img.getAttribute('data-lightbox-src') || img.src,
+						title: img.getAttribute('data-lightbox-title') || '',
+						type: 'image',
+						downloadUrl: img.getAttribute('data-lightbox-download') || img.getAttribute('data-lightbox-src') || img.src,
+						index: lightboxImages.length
+					});
+					img.setAttribute('data-lightbox-index', lightboxImages.length - 1);
+				});
+
+				// Add attachment images
+				attachmentImages.forEach(function(elem, index) {
+					var isText = elem.getAttribute('data-lightbox-type') === 'text';
+					lightboxImages.push({
+						src: elem.getAttribute('data-lightbox-src'),
+						title: elem.getAttribute('data-lightbox-title') || '',
+						type: isText ? 'text' : 'image',
+						downloadUrl: elem.getAttribute('data-lightbox-download') || elem.getAttribute('data-lightbox-src'),
+						index: lightboxImages.length
+					});
+					elem.setAttribute('data-lightbox-index', lightboxImages.length - 1);
+				});
+			}
+
+			function showLightboxImage(index) {
+				if (index < 0 || index >= lightboxImages.length) return;
+
+				currentImageIndex = index;
+				var item = lightboxImages[index];
+
+				$('#imageLightboxLabel').text(item.title);
+				$('#lightboxCounter').text((index + 1) + ' / ' + lightboxImages.length);
+
+				if (item.type === 'text') {
+					// Show text content
+					$('#lightboxImage').hide();
+					$('#lightboxTextContent').show();
+					fetch(item.src).then(r => r.text()).then(text => {
+						$('#lightboxTextContent').text(text);
+					});
+				} else {
+					// Show image
+					$('#lightboxTextContent').hide();
+					$('#lightboxImage').show();
+					$('#lightboxImage').attr('src', item.src).attr('alt', item.title);
+				}
+
+				// Show/hide navigation buttons
+				$('#lightboxPrev').toggle(lightboxImages.length > 1);
+				$('#lightboxNext').toggle(lightboxImages.length > 1);
+
+				// Update download button
+				$('#lightboxDownload').off('click').on('click', function() {
+
+					window.open(item.downloadUrl + '?download=1', '_blank');
+
+				});
+			}
+
+			// Initialize lightbox on page load
+			initializeLightbox();
+
+			// Handle clicks on lightbox images
+			$(document).on('click', '.lightbox-image, .lightbox-attachment', function(e) {
+				e.preventDefault();
+				var index = parseInt($(this).attr('data-lightbox-index'));
+				showLightboxImage(index);
+				$('#imageLightbox').modal('show');
+			});
+
+			// Navigation buttons
+			$('#lightboxPrev').on('click', function() {
+				var newIndex = (currentImageIndex - 1 + lightboxImages.length) % lightboxImages.length;
+				showLightboxImage(newIndex);
+			});
+
+			$('#lightboxNext').on('click', function() {
+				var newIndex = (currentImageIndex + 1) % lightboxImages.length;
+				showLightboxImage(newIndex);
+			});
+
+			// Keyboard navigation
+			$(document).on('keydown', function(e) {
+				if (!$('#imageLightbox').hasClass('in')) return;
+
+				if (e.keyCode === 37) { // Left arrow
+					$('#lightboxPrev').click();
+				} else if (e.keyCode === 39) { // Right arrow
+					$('#lightboxNext').click();
+				} else if (e.keyCode === 27) { // ESC
+					$('#imageLightbox').modal('hide');
+				}
+			});
+
+			// Re-initialize lightbox when modal is shown (in case images were loaded dynamically)
+			$('#imageLightbox').on('show.bs.modal', function() {
+				initializeLightbox();
+			});
+
+		}, "attachment.qtpl");
+	</script>
+
+
+	<form class="form" method="POST" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editmessage">
+		
+			<input type="hidden" name="csrf" value="3637796335680031353">
+		
+		<input type="hidden" name="mid" id="mid" value="0">
+		<input type="hidden" name="action_type" id="action_type" value="delete">
+		<!-- Verify Remove Modal -->
+		<div class="modal fade" id="deleteMessageModal" tabindex="-1" role="dialog" aria-labelledby="deleteMessageModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">
+								&times;
+							</span>
+							<span class="sr-only">
+								Close
+							</span>
+						</button>
+						<h4 class="modal-title" id="deleteMessageModalLabel">
+							Verify Delete
+						</h4>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to delete this message from the message archives of Trustworthy-Workload-Identity-SIG@lists.confidentialcomputing.io? <strong>This cannot be undone.</strong>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+						<button class="btn btn-danger btn-sm" name="delmessage" value="1">
+							<i class="fa fa-trash-alt"></i>
+							Yes
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<form class="form" method="POST" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/repostmessage">
+		
+			<input type="hidden" name="csrf" value="3637796335680031353">
+		
+		<input type="hidden" name="mid" id="repostmid" value="0">
+		<input type="hidden" name="r" value="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages">
+		<!-- Verify Repost Modal -->
+		<div class="modal fade" id="repostMessageModal" tabindex="-1" role="dialog" aria-labelledby="repostMessageModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">
+								&times;
+							</span>
+							<span class="sr-only">
+								Close
+							</span>
+						</button>
+						<h4 class="modal-title" id="repostMessageModalLabel">
+							Verify Repost
+						</h4>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to repost this message?
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+						<button class="btn btn-danger btn-sm" name="delmessage" value="1">
+							<i class="fa fa-retweet"></i>
+							Yes
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	
+	<form class="form" id="reportform" hx-boost="false">
+		
+			<input type="hidden" name="csrf" value="3637796335680031353">
+		
+		<input type="hidden" name="mid" id="reportmid" value="0">
+		<!-- Report Message Modal -->
+		<div class="modal fade" id="reportMessageModal" tabindex="-1" role="dialog" aria-labelledby="reportMessageModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">
+								&times;
+							</span>
+							<span class="sr-only">
+								Close
+							</span>
+						</button>
+						<h4 class="modal-title" id="reportMessageModalLabel">
+							Report Message
+						</h4>
+					</div>
+					<div class="modal-body">
+						<label for="reason">
+							Reason
+						</label>
+						<textarea id="reason" name="reason" class="form-control" rows="5"></textarea>
+						<div class="radio">
+							<label>
+								<input type="radio" name="reportto" value="mods" checked>
+								Report to Moderators
+							</label>
+							<span class="help-block">
+								I think this message isn&#39;t appropriate for our group. The Group moderators are responsible for maintaining their community and can address these issues.
+							</span>
+							<label>
+								<input type="radio" name="reportto" value="support">
+								Report to Confidential Computing Support
+							</label>
+							<span class="help-block">
+								I think this violates the Terms of Service. This includes: harm to minors, violence or threats, harassment or privacy invasion, impersonation or misrepresentation, fraud or phishing.
+							</span>
+						</div>
+						<p>
+							<center>
+								<strong>
+									Note:
+								</strong>
+								Your email address is included with the abuse report.
+							</center>
+						</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+						<button class="btn btn-danger btn-sm" name="report" value="1">
+							<i class="fa fa-flag"></i>
+							Report
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+<script>
+	contentLoaded(  false  , function() {
+		console.log("Setting up report message modal");
+		$('#reportMessageModal').on('show.bs.modal', function(e) {
+			var msgId = $(e.relatedTarget).data('message-id');
+			$('#reportmid').val(msgId);
+		});
+		$('#reportform').on('submit', function(event) {
+			event.preventDefault();
+			$('#reportMessageModal').modal('hide');
+			$.ajax({
+				url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/report",
+				type: "POST",
+				data: $(this).serialize(),
+				success: function(html) {
+					createAlert("Your report has been sent.", true);
+				}
+			});
+			return false;
+		});
+	});
+</script>
+
+	<form class="form" method="POST" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editmessage">
+		
+			<input type="hidden" name="csrf" value="3637796335680031353">
+		
+		<input type="hidden" name="mid" id="splitmid" value="0">
+		<input type="hidden" name="action_type" id="action_type" value="split">
+		<input type="hidden" name="r" value="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/112016931">
+		<!-- Verify Split Modal -->
+		<div class="modal fade" id="splitMessageModal" tabindex="-1" role="dialog" aria-labelledby="splitMessageModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">
+								&times;
+							</span>
+							<span class="sr-only">
+								Close
+							</span>
+						</button>
+						<h4 class="modal-title" id="splitMessageModalLabel">
+							Split Topic
+						</h4>
+					</div>
+					<div class="modal-body">
+						<p>
+							The new topic will begin with this message. Subject of the new topic:
+						</p>
+						<input name="subject" class="form-control" size=20 type="text" spellcheck="true">
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+						<button class="btn btn-danger btn-sm" name="delmessage" value="1">
+							<i class="fa fa-trash-alt"></i>
+							Split Topic
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<p></p>
+	<div class="row">
+		<div class="col-xs-12">
+	<div class="pull-right hidden-xs">
+		<form class="form-inline">
+			
+	
+		<div class="pull-right form-inline">
+			<span class="form-group">
+				1 - 1 of 1
+			</span>
+			&nbsp;
+			<ul class="pagination form-group" style="margin: 0px !important;vertical-align:middle;">
+				
+					<li class="disabled">
+						<a href="#">
+							<i class="fa fa-chevron-left">
+								<span class="sr-only">
+									previous page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+				
+					
+						<li class="hidden-xs disabled">
+							<a class="currentpage" href="#">
+								1
+							</a>
+						</li>
+					
+				
+				
+					<li class="disabled">
+						<a href="#">
+							<i class="fa fa-chevron-right">
+								<span class="sr-only">
+									next page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+			</ul>
+		</div>
+	
+
+		</form>
+	</div>
+	<div class="button-link-group form-group">
+		<a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/112008953" class="btn btn-default btn-sm">
+			<i class="fa fa-arrow-left"></i>
+			<span class="hidden-xs">
+				Previous Topic
+			</span>
+		</a>
+		<a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/112106199" class="btn btn-default btn-sm">
+			<span class="hidden-xs">
+				Next Topic
+			</span>
+			<i class="fa fa-arrow-right"></i>
+		</a>
+	</div>
+	</div>
+	</div>
+<script>
+var editor;
+contentLoaded(false, function() {
+	
+		
+
+
+	/**
+	 * Checks if value is empty. Deep-checks arrays and objects
+	 * Note: modIsEmpty([]) == true, modIsEmpty({}) == true, modIsEmpty([{0:false},"",0]) == true, modIsEmpty({0:1}) == false
+	 * @param value
+	 * @returns {boolean}
+	 */
+	function isEmpty(value) {
+		var isEmptyObject = function(a) {
+			if (typeof a.length === 'undefined') {
+				// it's an Object, not an Array
+				var hasNonempty = Object.keys(a).some(function nonEmpty(element) {
+					return !isEmpty(a[element]);
+				});
+				return hasNonempty ? false : isEmptyObject(Object.keys(a));
+			}
+
+			return !a.some(function nonEmpty(element) {
+				// check if array is really not empty as JS thinks
+				return !isEmpty(element); // at least one element should be non-empty
+			});
+		};
+		return (
+			value == false ||
+			typeof value === 'undefined' ||
+			value == null ||
+			(typeof value === 'object' && isEmptyObject(value))
+		);
+	}
+	editor = (function() {
+
+		// modDeletedDraft indicates the draft has been deleted, so we shouldn't try to save to it.
+		var modDeletedDraft = false;
+		var modDestroyedEditor = false;
+		var modUnloading = false;
+		// modDraftUpdated tracks the timestamp when the draft was loaded, for optimistic locking
+		var modDraftUpdated = "0";
+
+		// uploaderPrompt pops up either the appropriate web dialog, or the camera picker
+		function modUploaderPrompt(doctype, id, draftid, groupurl, csrf) {
+			console.log("UPLOADERPROMPT: V4");
+			console.log("in uploaderPrompt, draftid=", draftid);
+			if (typeof Capacitor !== 'undefined') {
+				if (doctype == "pictures") {
+					takePicture2(doctype, id, draftid, groupurl, csrf);
+					return;
+				} else if (doctype == "attachments") {
+					uploadAttachments(doctype, id, draftid, groupurl, csrf);
+					return
+				}
+				return;
+			}
+			if (doctype == "pictures") {
+				$('#addPicturesModal' + id).modal({});
+				return;
+			} else if (doctype == "attachments") {
+				$('#addAttachmentsModal' + id).modal({});
+				return
+			}
+		}
+
+
+		/**
+		 * Checks if value is empty. Deep-checks arrays and objects
+		 * Note: modIsEmpty([]) == true, modIsEmpty({}) == true, modIsEmpty([{0:false},"",0]) == true, modIsEmpty({0:1}) == false
+		 * @param value
+		 * @returns {boolean}
+		 */
+		function modIsEmpty(value) {
+			var isEmptyObject = function(a) {
+				if (typeof a.length === 'undefined') {
+					// it's an Object, not an Array
+					var hasNonempty = Object.keys(a).some(function nonEmpty(element) {
+						return !modIsEmpty(a[element]);
+					});
+					return hasNonempty ? false : isEmptyObject(Object.keys(a));
+				}
+
+				return !a.some(function nonEmpty(element) {
+					// check if array is really not empty as JS thinks
+					return !modIsEmpty(element); // at least one element should be non-empty
+				});
+			};
+			return (
+				value == false ||
+				typeof value === 'undefined' ||
+				value == null ||
+				(typeof value === 'object' && isEmptyObject(value))
+			);
+		}
+
+		function modDestroyAllEditors(id) {
+			return function(evt) {
+				console.log("In modDestroyAllEditors, id=" + id);
+				modDestroyedEditor = true;
+				clearTimeout(modTimeoutId);
+
+				while (tinymce.editors.length > 0) {
+					console.log("Removing");
+					tinymce.remove(tinymce.editors[0]);
+				}
+				if (retryTimer != null) {
+					console.log("clearing retryTimer");
+					clearInterval(retryTimer);
+				}
+				// Disable Dropzone instances
+				if (window['attachmentDropzone' + id]) {
+					window['attachmentDropzone' + id].disable();
+					delete window['attachmentDropzone' + id];
+				}
+				if (window['pictureDropzone' + id]) {
+					window['pictureDropzone' + id].disable();
+					delete window['pictureDropzone' + id];
+				}
+			};
+		}
+
+		function modUploadData(draftid, csrf, inline) {
+			let obj = {};
+			obj['csrf'] = csrf;
+			obj['draftid'] = draftid;
+			// Don't send ajaxupload=1 so we get the new format with dimensions
+			obj['upload'] = '1';
+			if (inline == true) {
+				obj['inline'] = '1';
+			}
+			return obj;
+		}
+
+		// attach the uploader to the correct buttons
+		function modInitDeviceUploader(id, draftid, csrf, groupurl) {}
+
+		// attach the uploader to the correct buttons
+		function modInitWebUploader(id, draftid, csrf, groupurl) {
+			// Initialize Dropzone for attachments
+			var attachmentForm = document.querySelector('#attachmentupload' + id);
+			if (attachmentForm && !attachmentForm.dropzone) {
+				var attachmentDropzone = new Dropzone(attachmentForm, {
+					url: groupurl + '/draftop',
+					autoProcessQueue: false,
+					uploadMultiple: true,
+					parallelUploads: 5,
+					maxFiles: 20,
+					maxFilesize: 1024, // 1GB in MB
+					paramName: "fileupload",
+					addRemoveLinks: false,
+					previewsContainer: attachmentForm.querySelector(".dz-preview"),
+					previewTemplate: attachmentForm.querySelector(".dz-preview") ? attachmentForm.querySelector(".dz-preview").innerHTML : null,
+					thumbnailWidth: null,
+					thumbnailHeight: null,
+					init: function() {
+						var myDropzone = this;
+						var submitButton = document.getElementById('attachmentupload-submit' + id);
+
+						// Update button state based on file count
+						function updateButtonState() {
+							if (submitButton) {
+								submitButton.disabled = myDropzone.files.length === 0;
+							}
+						}
+
+						// Enable/disable button when files are added or removed
+						this.on("addedfile", function(file) {
+							updateButtonState();
+						});
+
+						this.on("removedfile", function(file) {
+							updateButtonState();
+							// Hide and reset progress bar when files are removed
+							var progressBar = attachmentForm.querySelector('.progress');
+							if (progressBar) {
+								progressBar.style.display = 'none';
+								var bar = progressBar.querySelector('.progress-bar');
+								if (bar) {
+									bar.style.width = '0%';
+									bar.setAttribute('aria-valuenow', '0');
+									var srText = bar.querySelector('.sr-only');
+									if (srText) srText.textContent = '0% Complete';
+								}
+							}
+						});
+
+						// Add thumbnail handling
+						this.on("thumbnail", function(file, dataUrl) {
+							if (file.previewElement) {
+								let imageDiv = file.previewElement.querySelector(".dz-image");
+								let icon = imageDiv ? imageDiv.querySelector(".fa-file-image") : null;
+
+								if (imageDiv && icon) {
+									let img = document.createElement("img");
+									img.alt = file.name;
+									img.src = dataUrl;
+									img.width = 36;
+									img.height = 36;
+									imageDiv.replaceChild(img, icon);
+								}
+							}
+						});
+
+						// Handle form submission
+						this.on("sendingmultiple", function(files, xhr, formData) {
+							formData.append('csrf', csrf);
+							formData.append('draftid', draftid);
+							formData.append('upload', '1');
+						});
+
+						this.on("successmultiple", function(files, response) {
+							console.log('Attachment upload complete');
+							// Update optimistic lock timestamp from server response
+							if (files.length > 0 && files[0].xhr) {
+								var updatedTs = files[0].xhr.getResponseHeader('X-Draft-Updated');
+								if (updatedTs) {
+									modDraftUpdated = updatedTs;
+									console.log('Updated draftUpdated after attachment upload to:', modDraftUpdated);
+								}
+							}
+							myDropzone.removeAllFiles();
+							modUpdateAttachments(id, draftid, csrf, groupurl);
+							$('#addAttachmentsModal' + id).modal('hide');
+							var progressBar = attachmentForm.querySelector('.progress');
+							if (progressBar) progressBar.style.display = 'none';
+							updateButtonState();
+						});
+
+						this.on("errormultiple", function(files, response) {
+							console.error('Attachment upload failed:', response);
+							var progressBar = attachmentForm.querySelector('.progress');
+							if (progressBar) progressBar.style.display = 'none';
+						});
+
+						this.on("totaluploadprogress", function(progress) {
+							var progressBar = attachmentForm.querySelector('.progress');
+							if (progressBar) {
+								progressBar.style.display = 'block';
+								var bar = progressBar.querySelector('.progress-bar');
+								if (bar) {
+									var percent = Math.round(progress);
+									bar.style.width = percent + '%';
+									bar.setAttribute('aria-valuenow', percent);
+									var srText = bar.querySelector('.sr-only');
+									if (srText) srText.textContent = percent + '% Complete';
+								}
+							}
+						});
+					}
+				});
+
+				// Clear preview template
+				if (attachmentForm.querySelector(".dz-preview")) {
+					attachmentForm.querySelector(".dz-preview").innerHTML = '';
+				}
+
+				// Store dropzone instance
+				window['attachmentDropzone' + id] = attachmentDropzone;
+			}
+
+			// Initialize Dropzone for pictures
+			var pictureForm = document.querySelector('#pictureupload' + id);
+			if (pictureForm && !pictureForm.dropzone) {
+				var pictureDropzone = new Dropzone(pictureForm, {
+					url: groupurl + '/draftop',
+					autoProcessQueue: false,
+					uploadMultiple: true,
+					parallelUploads: 5,
+					maxFiles: 20,
+					maxFilesize: 1024, // 1GB in MB
+					paramName: "fileupload",
+					addRemoveLinks: false,
+					previewsContainer: pictureForm.querySelector(".dz-preview"),
+					previewTemplate: pictureForm.querySelector(".dz-preview") ? pictureForm.querySelector(".dz-preview").innerHTML : null,
+					thumbnailWidth: null,
+					thumbnailHeight: null,
+					init: function() {
+						var myDropzone = this;
+						var submitButton = document.getElementById('pictureupload-submit' + id);
+
+						// Update button state based on file count
+						function updateButtonState() {
+							if (submitButton) {
+								submitButton.disabled = myDropzone.files.length === 0;
+							}
+						}
+
+						// Enable/disable button when files are added or removed
+						this.on("addedfile", function(file) {
+							updateButtonState();
+						});
+
+						this.on("removedfile", function(file) {
+							updateButtonState();
+							// Hide and reset progress bar when files are removed
+							var progressBar = pictureForm.querySelector('.progress');
+							if (progressBar) {
+								progressBar.style.display = 'none';
+								var bar = progressBar.querySelector('.progress-bar');
+								if (bar) {
+									bar.style.width = '0%';
+									bar.setAttribute('aria-valuenow', '0');
+									var srText = bar.querySelector('.sr-only');
+									if (srText) srText.textContent = '0% Complete';
+								}
+							}
+						});
+
+						// Add thumbnail handling
+						this.on("thumbnail", function(file, dataUrl) {
+							if (file.previewElement) {
+								let imageDiv = file.previewElement.querySelector(".dz-image");
+								let icon = imageDiv ? imageDiv.querySelector(".fa-file-image") : null;
+
+								if (imageDiv && icon) {
+									let img = document.createElement("img");
+									img.alt = file.name;
+									img.src = dataUrl;
+									img.width = 36;
+									img.height = 36;
+									imageDiv.replaceChild(img, icon);
+								}
+							}
+						});
+
+						// Handle form submission
+						this.on("sendingmultiple", function(files, xhr, formData) {
+							formData.append('csrf', csrf);
+							formData.append('draftid', draftid);
+							formData.append('upload', '1');
+							formData.append('inline', '1');
+						});
+
+						this.on("successmultiple", function(files, response) {
+							console.log('Picture upload complete, response:', response);
+							// Update optimistic lock timestamp from server response
+							if (files.length > 0 && files[0].xhr) {
+								var updatedTs = files[0].xhr.getResponseHeader('X-Draft-Updated');
+								if (updatedTs) {
+									modDraftUpdated = updatedTs;
+									console.log('Updated draftUpdated after picture upload to:', modDraftUpdated);
+								}
+							}
+
+							// Insert images into TinyMCE
+							if (Array.isArray(response)) {
+								for (var i = response.length - 1; i >= 0; i--) {
+									var fileItem = response[i];
+									var fileurl, width, height;
+
+									// Handle both old format (string) and new format (object)
+									if (typeof fileItem === 'string') {
+										fileurl = fileItem;
+									} else if (fileItem && fileItem.url) {
+										fileurl = fileItem.url;
+										width = fileItem.width;
+										height = fileItem.height;
+									} else {
+										console.error('Invalid file response format:', fileItem);
+										continue;
+									}
+
+									console.log('Inserting image: ' + fileurl + ' with dimensions:', width, 'x', height);
+
+									// Build img tag with dimensions if available
+									var imghtml = '<img src="' + fileurl + '"';
+									if (width && height) {
+										imghtml += ' width="' + width + '" height="' + height + '"';
+									}
+									imghtml += '/>';
+
+									console.log('imghtml: ' + imghtml);
+									tinymce.activeEditor.insertContent(imghtml);
+								}
+							}
+
+							myDropzone.removeAllFiles();
+							$('#addPicturesModal' + id).modal('hide');
+							var progressBar = pictureForm.querySelector('.progress');
+							if (progressBar) progressBar.style.display = 'none';
+							updateButtonState();
+						});
+
+						this.on("errormultiple", function(files, response) {
+							console.error('Picture upload failed:', response);
+							var progressBar = pictureForm.querySelector('.progress');
+							if (progressBar) progressBar.style.display = 'none';
+						});
+
+						this.on("totaluploadprogress", function(progress) {
+							var progressBar = pictureForm.querySelector('.progress');
+							if (progressBar) {
+								progressBar.style.display = 'block';
+								var bar = progressBar.querySelector('.progress-bar');
+								if (bar) {
+									var percent = Math.round(progress);
+									bar.style.width = percent + '%';
+									bar.setAttribute('aria-valuenow', percent);
+									var srText = bar.querySelector('.sr-only');
+									if (srText) srText.textContent = percent + '% Complete';
+								}
+							}
+						});
+					}
+				});
+
+				// Clear preview template
+				if (pictureForm.querySelector(".dz-preview")) {
+					pictureForm.querySelector(".dz-preview").innerHTML = '';
+				}
+
+				// Store dropzone instance
+				window['pictureDropzone' + id] = pictureDropzone;
+			}
+		}
+
+		// modUploadPastedImage uploads a base64 image from paste/drop and returns the S3 URL
+		function modUploadPastedImage(base64Data, filename, id, draftid, csrf, groupurl, callback) {
+			// Extract the actual base64 data and mime type
+			var matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+			if (!matches || matches.length !== 3) {
+				console.error('Invalid base64 data:', base64Data.substring(0, 100));
+				callback(null, 'Invalid image data');
+				return;
+			}
+			
+			var mimeType = matches[1];
+			var base64 = matches[2];
+			
+			// Convert base64 to blob
+			var byteCharacters = atob(base64);
+			var byteNumbers = new Array(byteCharacters.length);
+			for (var i = 0; i < byteCharacters.length; i++) {
+				byteNumbers[i] = byteCharacters.charCodeAt(i);
+			}
+			var byteArray = new Uint8Array(byteNumbers);
+			var blob = new Blob([byteArray], {type: mimeType});
+			
+			// Show upload progress indicator
+			var progressId = 'upload-progress-' + Date.now();
+			var progressHtml = '<div id="' + progressId + '" class="alert alert-info" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; min-width: 300px;">' +
+				'<i class="fa fa-spinner fa-spin"></i> Uploading image: ' + filename + '...' +
+				'</div>';
+			$('body').append(progressHtml);
+			
+			// Create FormData for multipart upload
+			var formData = new FormData();
+			formData.append('draftid', draftid);
+			formData.append('csrf', csrf);
+			formData.append('upload', '1');
+			formData.append('inline', '1'); // Mark as inline attachment
+			// Don't include ajaxupload=1 so we get the new format with dimensions
+			formData.append('fileupload', blob, filename);
+			
+			// Upload the image
+			$.ajax({
+				url: groupurl + '/draftop',
+				method: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				xhrFields: {
+					withCredentials: true
+				},
+				dataType: 'json',
+				xhr: function() {
+					var xhr = new window.XMLHttpRequest();
+					// Upload progress
+					xhr.upload.addEventListener("progress", function(evt) {
+						if (evt.lengthComputable) {
+							var percentComplete = Math.round(evt.loaded / evt.total * 100);
+							$('#' + progressId).html('<i class="fa fa-spinner fa-spin"></i> Uploading image: ' + 
+								filename + ' (' + percentComplete + '%)...');
+						}
+					}, false);
+					return xhr;
+				},
+				success: function(response, textStatus, jqXHR) {
+					// Remove progress indicator
+					$('#' + progressId).fadeOut(300, function() { $(this).remove(); });
+
+					// Update optimistic lock timestamp from server response
+					var updatedTs = jqXHR.getResponseHeader('X-Draft-Updated');
+					if (updatedTs) {
+						modDraftUpdated = updatedTs;
+						console.log('Updated draftUpdated after pasted image upload to:', modDraftUpdated);
+					}
+
+					// Debug log the raw response
+					console.log('Raw upload response:', response);
+
+					// Handle both old array format and new object format
+					if (Array.isArray(response) && response.length > 0) {
+						if (typeof response[0] === 'string') {
+							// Old format - just URLs
+							console.log('Pasted image uploaded successfully (URL only):', response[0]);
+							callback({ url: response[0] }, null);
+						} else if (response[0].url) {
+							// New format - array of objects with url, width, height
+							console.log('Pasted image uploaded successfully with dimensions:', JSON.stringify(response[0]));
+							callback(response[0], null);
+						} else {
+							callback(null, 'Invalid response format');
+						}
+					} else {
+						callback(null, 'No URL returned');
+					}
+				},
+				error: function(xhr, status, error) {
+					// Change to error message and auto-remove after 3 seconds
+					$('#' + progressId).removeClass('alert-info').addClass('alert-danger')
+						.html('<i class="fa fa-exclamation-circle"></i> Failed to upload ' + filename);
+					setTimeout(function() {
+						$('#' + progressId).fadeOut(300, function() { $(this).remove(); });
+					}, 3000);
+					
+					console.error('Failed to upload pasted image:', error);
+					callback(null, error);
+				}
+			});
+		}
+
+		function modUpdateAttachments(id, draftid, csrf, groupurl) {
+			// call the real function after 3 seconds to allow S3 to do whatever it needs to do to update
+			// results
+			setTimeout(function() {
+				modDoUpdateAttachments(id, draftid, csrf, groupurl);
+			}, 3000);
+		}
+		// modDoUpdateAttachments fetches a list of attachments and displays them on the page.
+		function modDoUpdateAttachments(id, draftid, csrf, groupurl) {
+			console.log('in modUpdateAttachments');
+			if (draftid == 0) {
+				console.log("DraftID 0, not modDoUpdateAttachments");
+				return;
+			}
+
+			upload = {
+				draftid: draftid,
+				csrf: csrf,
+				list: '1'
+			};
+			$.ajax({
+				url: groupurl + '/draftop',
+				cache: false,
+				data: upload,
+				method: 'POST',
+				xhrFields: {
+					withCredentials: true
+				},
+				dataType: 'json',
+				error: function(xhr, ajaxOptions, thrownError) {
+					if (modDeletedDraft == false && modDestroyedEditor == false) {
+						createAlert("There was an error saving the draft. Please reload the page.", true, false)
+					}
+				}
+			}).done(function(response) {
+				// Do something with the request
+				console.log('update attachments');
+				// reload the page now
+				if (response == null) {
+					$('#attachments' + id).replaceWith(
+						"<div id='attachments" + id + "'></div>"
+					);
+				} else {
+					wrap = '<div id="attachments' + id + '">Attachments:<ul>';
+					count = 0;
+					for (i = 0; i < response.length; i++) {
+						if (response[i].Inline == false) {
+							wrap +=
+								'<li>' +
+								response[i].Name +
+								' (' +
+								response[i].HumanSize +
+								') <a href=\'javascript:deleteAttachment("' +
+								id +
+								'","' +
+								draftid +
+								'","' +
+								csrf +
+								'","' +
+								groupurl +
+								'","' +
+								response[i].Num +
+								"\")'><i class='fa fa-times'></i></a></li>";
+							count++;
+						}
+					}
+					wrap += '</ul><br /></div>';
+					if (count > 0) {
+						$('#attachments' + id).replaceWith(wrap);
+					} else {
+						$('#attachments' + id).replaceWith(
+							"<div id='attachments" + id + "'></div>"
+						);
+					}
+				}
+			});
+		}
+
+		var modTimeoutId;
+
+		function modOnFormChange(id, draftid, groupurl, csrf) {
+			clearTimeout(modTimeoutId);
+			if (modSaving == true) {
+				// If already saving, schedule a retry after current save completes
+				modTimeoutId = setTimeout(function() {
+					modOnFormChange(id, draftid, groupurl, csrf);
+				}, 500);  // Check again in 500ms
+				return;
+			}
+			modTimeoutId = setTimeout(function() {
+				// Runs 1 second (1000 ms) after the last change
+				if (modSaving == false) {  // Double-check before saving
+					modSaveDraft(id, draftid, groupurl, csrf, false);
+				} else {
+					// If save started between timeout set and execution, reschedule
+					modOnFormChange(id, draftid, groupurl, csrf);
+				}
+			}, 1000);
+		}
+
+		var modSaving = false;
+
+		// modSaveDraft saves the current form state in the draft.
+		function modSaveDraft(id, draftid, groupurl, csrf, onLeave) {
+			if (draftid == 0) {
+				console.log("DraftID 0, not modSaving");
+				return;
+			}
+			// Validate CSRF token
+			if (!csrf || csrf == "" || csrf == "0" || isNaN(parseInt(csrf))) {
+				console.error("Invalid CSRF token:", csrf);
+				modSaving = false;
+				return;
+			}
+			console.log("DELETEDDRAFT IS:", modDeletedDraft);
+			console.log("DESTROYEDEDITOR IS:", modDestroyedEditor);
+			if (modDeletedDraft == true) {
+				console.log('NOT SAVING BECAUSE OF DELETED');
+				return;
+			}
+			if (modDestroyedEditor == true) {
+				console.log('NOT SAVING BECAUSE OF DESTROYED');
+				return;
+			}
+			modSaving = true;
+			console.log('modSaving');
+			var fromval = $('#from' + id).val() || '';
+			var subject = $('#subject' + id).val() || '';
+			var body = $('#editor' + id).val() || '';
+			
+			// Strip out any base64 images that haven't been uploaded yet
+			// These should have been replaced with S3 URLs already, but just in case
+			if (body && body.includes('data:image')) {
+				var tempDiv = document.createElement('div');
+				tempDiv.innerHTML = body;
+				var base64Images = tempDiv.querySelectorAll('img[src^="data:image"]');
+				if (base64Images.length > 0) {
+					console.log('Warning: Found ' + base64Images.length + ' base64 images still in draft body, removing them');
+					base64Images.forEach(function(img) {
+						// Replace with a placeholder or remove entirely
+						var placeholder = document.createElement('span');
+						placeholder.textContent = '[Image uploading...]';
+						img.parentNode.replaceChild(placeholder, img);
+					});
+					body = tempDiv.innerHTML;
+				}
+			}
+			
+			var bodytype = $('#bodytype' + id).val() || 'plain';
+			var replyto = $('#replyto' + id).val() || '';
+			var special = '0';
+			if ($('#special').length && $('#special').prop('checked') == true) {
+				special = '1';
+			}
+			var bccme = '0';
+			if ($('#bccmecheck' + id).length && $('#bccmecheck' + id).prop('checked') == true) {
+				bccme = '1';
+			}
+			var bccall = '0';
+			if ($('#bccall' + id).length && $('#bccall' + id).prop('checked') == true) {
+				bccall = '1';
+			}
+			var saveval = '1';
+			if (onLeave == true) {
+				saveval = '2';
+			}
+			var hashtags = $('#hashtags').val() || [];
+			
+			// Build URL-encoded data for draft saving
+			// Now that images are uploaded separately, drafts should be lightweight
+			var upload = {
+				draftid: String(draftid),
+				csrf: String(csrf),
+				from: fromval || '',
+				subject: subject || '',
+				body: body || '',
+				bodytype: bodytype || 'plain',
+				special: special,
+				replyto: String(replyto || '0'),
+				bccme: bccme,
+				bccall: bccall,
+				hashtags: JSON.stringify(hashtags),
+				mid: String(id),
+				save: saveval,
+				loaded_at: modDraftUpdated
+			};
+			
+			// Log for debugging (but don't log huge bodies)
+			if (body && body.length > 1000) {
+				console.log('Saving draft with body length:', body.length);
+			} else {
+				console.log('Saving draft with body:', body);
+			}
+			
+			var opts = {
+				url: groupurl + '/draftop',
+				cache: false,
+				data: upload,
+				method: 'POST',
+				xhrFields: {
+					withCredentials: true
+				},
+				dataType: 'json',
+				beforeSend: function(xhr, settings) {
+					console.log('Sending draft save request to:', settings.url);
+				}
+			};
+			if (modUnloading == false) {
+				// if we are unloading we don't want to retry, because sometimes
+				// that can result in a spurious error, esp on Firefox
+				opts.retryCount = 5;
+				opts.retryVerify = modRetryVerify;
+			}
+			$.ajax(opts)
+				.done(function(response) {
+					// Do something with the request
+					console.log('saved');
+					modSaving = false;
+					// Update our local timestamp with the new value from the server
+					if (response && response.updated) {
+						modDraftUpdated = response.updated;
+						console.log('Updated draftUpdated to:', modDraftUpdated);
+					}
+				})
+				.fail(function(xhr, textStatus, errorThrown) {
+					console.log('Draft save failed:', textStatus, errorThrown);
+					modSaving = false;  // Reset flag on failure to allow retries
+					// Check for conflict error (draft was modified in another window)
+					if (xhr.status === 409) {
+						var response = xhr.responseJSON || {};
+						if (modDeletedDraft == false && modDestroyedEditor == false && onLeave == false) {
+							createAlert("This draft was modified in another window. Your changes were not saved to avoid overwriting newer content. Please copy your text, close this window, and reopen the draft.", true, false);
+						}
+						// Stop further save attempts from this window
+						modDeletedDraft = true;
+						return;
+					}
+					if (modDeletedDraft == false && modDestroyedEditor == false && onLeave == false) {
+						// Only show error if not leaving page and draft/editor still valid
+						createAlert("There was an error saving the draft. It will retry automatically.", false, true);
+					}
+				})
+				.always(function() {
+					// Ensure flag is always reset, even on unexpected errors
+					if (onLeave == true) {
+						modSaving = false;
+					}
+				});
+		}
+
+		// called to see if we need to continue retrying
+		function modRetryVerify() {
+			if (modDeletedDraft == true || modDestroyedEditor == true) {
+				return false;
+			}
+			return true;
+		}
+
+		// stop modSaving drafts when we do a submit
+		var postVar = null;
+
+		// Code to find and return a selected piece of HTML.
+		function modGetSelection(id) {
+			var flag = 0;
+			var sel = document.getSelection();
+			var selText = '';
+			id = 'msgbody' + id;
+			var forkfork = document.getElementById(id);
+			if (sel.rangeCount > 0) {
+				var range = sel.getRangeAt(0);
+				var test = range.cloneContents();
+				var clonedSelection = '';
+				if (typeof test.getElementByID != 'undefined') {
+					clonedSelection = range.cloneContents().getElementById(id);
+				}
+				if (clonedSelection) {
+					selText = clonedSelection.innerHTML;
+				} else {
+					clonedSelection = range.cloneContents();
+					var startNode = sel.getRangeAt(0).startContainer.parentNode;
+					//console.log(modIsChild(startNode, forkfork));
+					if (modIsChild(startNode, forkfork)) {
+						var div = document.createElement('div');
+						div.appendChild(clonedSelection);
+						selText = div.innerHTML;
+					}
+				}
+			}
+
+			return selText.toString();
+		}
+
+		function modIsChild(child, parent) {
+			if (child === parent) return true;
+			var current = child;
+			while (current) {
+				if (current === parent) return true;
+				current = current.parentNode;
+			}
+			return false;
+		}
+
+		function cleanLinks(id, groupurl) {
+			existingmsg = tinyMCE.get('editor'+id).getContent()
+			upload = { "text": existingmsg }
+			$.post(groupurl+'/fixlinks', upload, function(response) {
+				$('#editor'+id).val(response.text + existingmsg);
+				tinyMCE.get('editor'+id).setContent(response.text);
+				console.log("COUNT: " + response.count);
+				resp = "";
+				if (response.count == 0) {
+					resp = 'No links needed cleaning.';
+				} else if (response.count == 1) {
+					resp = 'One link has been cleaned.';
+				} else {
+					resp = response.count + ' links have been cleaned.';
+				}
+				resp += ' ';
+				if (response.tracking_links == 0) {
+					resp += 'No tracking links needed cleaning.';
+				} else if (response.tracking_links == 1) {
+					resp += 'One tracking link has been cleaned.';
+				} else {
+					resp += response.tracking_links + ' tracking links have been cleaned.';
+				}
+				$('#fixedlinksdisplay').text(resp);
+				$('#cleanedLinksModal').modal('show');
+			}, 'json');
+			$("#editor"+id).focus();
+		}
+
+
+		return {
+
+			InitEditor: function(settings) {
+				let id = settings.id || 0;
+				let bodytype = settings.bodytype || "";
+				let draftid = settings.draftid || "";
+				let groupurl = settings.groupurl || "";
+				let csrf = settings.csrf || "0";
+				let handleAttachments = settings.handleAttachments || 0;
+				let noFontChanges = settings.noFontChanges || false;
+				let isReply = settings.isReply || false;
+				let isWiki = settings.isWiki || false;
+				let isPendingEdit = settings.isPendingEdit || false;
+				let isDarkMode = settings.isDarkMode || false;
+				let body = settings.body || "";
+				let sig = settings.sig || "";
+				let usernameList = settings.usernameList || [];
+				let onInitFunc = settings.onInitFunc || null;
+				gioDestroy(modDestroyAllEditors(id));
+				modDeletedDraft = false;
+				modDestroyedEditor = false;
+				modUnloading = false;
+
+				$('#preview' + id).hide();
+				$('#addattachments' + id).hide();
+				$('#return' + id).hide();
+				$('#markdownlink' + id).hide();
+				if (bodytype == 'html') {
+					if (sig != '') {
+						$('#editor' + id).val(sig);
+						//tinyMCE.get('editor'+id).setContent(sig);
+					} else {
+						$('#editor' + id).val(body);
+					}
+					editor.initHTMLEditor(settings);
+				} else {
+					if (sig != '') {
+						$('#editor' + id).val(sig);
+					} else {
+						$('#editor' + id).val(body);
+					}
+					editor.initPlainEditor(settings);
+				}
+			},
+
+			initHTMLEditor: function(settings) {
+				let id = settings.id || 0;
+				let bodytype = settings.bodytype || "";
+				let draftid = settings.draftid || "";
+				let groupurl = settings.groupurl || "";
+				let csrf = settings.csrf || "0";
+				let handleAttachments = settings.handleAttachments || 0;
+				let noFontChanges = settings.noFontChanges || false;
+				let isReply = settings.isReply || false;
+				let isWiki = settings.isWiki || false;
+				let isPendingEdit = settings.isPendingEdit || false;
+				let isDarkMode = settings.isDarkMode || false;
+				let body = settings.body || "";
+				let sig = settings.sig || "";
+				let usernameList = settings.usernameList || [];
+				let onInitFunc = settings.onInitFunc || null;
+
+				let attachments = 'addLink';
+				if (handleAttachments == 0 || handleAttachments == 3) {
+					attachments = 'addPictures addLink addAttachments';
+				}
+				let fontChanges = 'fontselect fontsizeselect ';
+				let fontColors = 'forecolor backcolor ';
+				if (noFontChanges == true) {
+					fontChanges = '';
+					fontColors = '';
+				}
+				let forceRootBlock = "div";
+				if (isWiki == true) {
+					attachments += ' addWikiImage addWikiLink addWikiTOC';
+					forceRootBlock = "p";
+				}
+				let quoted = "quoteMessage ";
+				if (isReply == false) {
+					quoted = '';
+				}
+				let toolbarItems = 'more ' + quoted + 'bold italic underline alignments lists indents blockquote ' + attachments;
+				let formattingItems =  fontChanges + ' styleselect hr code strikethrough removeformat charmap ' + fontColors + " preview ltr rtl";
+
+				if (isPendingEdit == true) {
+					toolbarItems += " cleanLinks";
+				}
+
+				// On phone widths, use a compact one-row toolbar: the core
+				// formatting trio (bold/italic/underline) plus insert
+				// actions (image/link/attachments, quote for replies).
+				// toolbar_mode: 'floating' puts anything that doesn't fit
+				// behind a "..." overflow rather than wrapping.
+				let isMobile = window.innerWidth <= 767;
+				if (isMobile) {
+					toolbarItems = quoted + 'bold italic underline | ' + attachments;
+					if (isPendingEdit == true) {
+						toolbarItems += " cleanLinks";
+					}
+				}
+				let fontlist =
+					'Arial=arial,helvetica,sans-serif;' +
+					'Arial Black=arial black,avant garde;' +
+					'Comic Sans MS=comic sans ms;' +
+					'Courier New=courier new,courier;' +
+					'Helvetica Neue=helvetica neue;' +
+					'Helvetica=helvetica;' +
+					'Impact=impact,chicago;' +
+					'Lucida Grande=lucida grande;' +
+					'System-UI=System-UI,helvetica neue;' +
+					'Tahoma=tahoma,arial,helvetica,sans-serif;' +
+					'Times New Roman=times new roman,times;' +
+					'Verdana=verdana,geneva';
+
+				let plugins = "SplitBlockquote advlist autolink lists link image anchor code fullscreen nonbreaking table charmap imagetools hr paste autoresize preview directionality";
+				if (isMobile) {
+					plugins += " quickbars";
+				}
+				let fontsizes = '8px 10px 12px 14px 16px 18px 24px 36px';
+
+				// Make the iframe html/body fill the edit area so tapping
+				// anywhere inside an empty editor focuses the body. Without
+				// this the body's tap target is only the cursor line.
+				// !important because TinyMCE ships its own defaults that
+				// set min-height: auto and padding: 1px on the body.
+				// overflow-y: auto on html gives the iframe its own
+				// vertical scrollbar once autoresize hits max_height and
+				// content (e.g., a tall image) extends beyond the frame —
+				// otherwise the fixed 100% html height clips body content
+				// with no way to reach it.
+				let content_style = "html { height: 100% !important; overflow-y: auto !important; } body.mce-content-body { box-sizing: border-box !important; min-height: 100% !important; margin: 0 !important; padding: 10px !important; }";
+				let skin = 'oxide';
+				let content_css = "/css/application-24dcf155f8cf9ca30214ea64f62961b4.css"
+				/*
+				if (isDarkMode == true) {
+					skin = 'oxide-dark';
+					let content_style = ".mce-content-body { margin-left:10px; margin-top:10px; }";
+				}
+				*/
+				let codesample_languages = [{ text: 'C', value: 'c' },
+					{ text: 'C#', value: 'csharp' },
+					{ text: 'C++', value: 'cpp' },
+					{ text: 'CSS', value: 'css' },
+					{ text: 'Go', value: 'go' },
+					{ text: 'HTML/XML', value: 'markup' },
+					{ text: 'Java', value: 'java' },
+					{ text: 'JavaScript', value: 'javascript' },
+					{ text: 'PHP', value: 'php' },
+					{ text: 'Python', value: 'python' },
+					{ text: 'Ruby', value: 'ruby' }
+				];
+
+				let style_formats = [{ title: 'Paragraph', block: 'p' },
+					{ title: 'Header 1', block: 'h1' },
+					{ title: 'Header 2', block: 'h2' },
+					{ title: 'Header 3', block: 'h3' },
+					{ title: 'Header 4', block: 'h4' },
+					{ title: 'Header 5', block: 'h5' },
+					{ title: 'Header 6', block: 'h6' }
+				];
+
+				tinymce.init({
+					selector: '#editor' + id,
+					noneditable_noneditable_class: 'fa',
+					extended_valid_elements: 'span[*]',
+					branding: false,
+					link_context_toolbar: true,
+					default_link_target: '_blank',
+					link_assume_external_targets: true,
+					elementpath: false,
+					forced_root_block: forceRootBlock,
+					paste_data_images: true,
+					paste_enable_default_filters: false,
+					paste_filter_drop: false,
+					paste_merge_formats: false,
+					paste_convert_word_fake_lists: false,
+					paste_remove_styles_if_webkit: false,
+					paste_as_text: false, 
+					content_css: content_css,
+					content_style: content_style,
+					relative_urls: false,
+					remove_script_host: false,
+					menubar: false,
+					statusbar: true,
+					plugins: plugins,
+					height: 300,
+					autoresize_bottom_margin: 0,
+					max_height: 1200,
+					min_height: 400,
+					toolbar_mode: 'floating',
+					toolbar: toolbarItems,
+					// Sticky toolbar pins itself to the viewport top when
+					// the user scrolls (or iOS auto-scrolls on focus),
+					// offset by the fixed app navbar so it isn't obscured.
+					toolbar_sticky: isMobile,
+					toolbar_sticky_offset: isMobile ? 50 : 0,
+					quickbars_selection_toolbar: isMobile ? 'bold italic underline | bullist numlist | link' : false,
+					quickbars_insert_toolbar: false,
+					quickbars_image_toolbar: false,
+					font_formats: fontlist,
+					browser_spellcheck: true,
+					contextmenu: false,
+					resize: true,
+					fontsize_formats: fontsizes,
+					style_formats: style_formats,
+					skin: skin,
+					init_instance_callback: function (editor) {
+						// Fallback: tapping the wrapper (not the iframe body)
+						// focuses the editor. Helps on phones when the empty
+						// body is small and you miss it.
+						var container = editor.getContainer();
+						if (container) {
+							container.addEventListener('click', function(e) {
+								if (e.target.closest('.tox-toolbar, .tox-statusbar, iframe')) return;
+								editor.focus();
+							});
+						}
+						// Auto-fit inserted images to the editor width by
+						// rewriting the width/height attributes on the <img>
+						// itself (not via CSS) so the archive and outgoing
+						// email render at the same size the user sees here.
+						// Only runs when natural width exceeds the editor
+						// content box — smaller images pass through; user
+						// manual resizes via the corner handles are
+						// preserved because attribute mutations don't
+						// re-fire 'load'.
+						var body = editor.getBody();
+						function fitImage(img) {
+							if (!img || img.nodeName !== 'IMG') return;
+							var natW = img.naturalWidth;
+							var natH = img.naturalHeight;
+							if (!natW || !natH) return;
+							var style = editor.getWin().getComputedStyle(body);
+							var padL = parseFloat(style.paddingLeft) || 0;
+							var padR = parseFloat(style.paddingRight) || 0;
+							var maxW = body.clientWidth - padL - padR;
+							if (maxW <= 0) return;
+							// Use the current width attribute if set (user
+							// may have already sized it smaller). Fall back
+							// to naturalWidth for fresh inserts.
+							var curW = parseInt(img.getAttribute('width'), 10) || natW;
+							var curH = parseInt(img.getAttribute('height'), 10) || natH;
+							if (curW <= maxW) return;
+							var scale = maxW / curW;
+							img.setAttribute('width', Math.floor(curW * scale));
+							img.setAttribute('height', Math.floor(curH * scale));
+						}
+						function watchImg(img) {
+							if (img.complete && img.naturalWidth) {
+								fitImage(img);
+							} else {
+								img.addEventListener('load', function() {
+									fitImage(img);
+								}, { once: true });
+							}
+						}
+						// Fit anything already present (e.g., draft content).
+						body.querySelectorAll('img').forEach(watchImg);
+						// Fit anything inserted later (paste / drop / insert).
+						var obs = new MutationObserver(function(muts) {
+							muts.forEach(function(m) {
+								m.addedNodes.forEach(function(n) {
+									if (n.nodeType !== 1) return;
+									if (n.nodeName === 'IMG') {
+										watchImg(n);
+									} else if (n.querySelectorAll) {
+										n.querySelectorAll('img').forEach(watchImg);
+									}
+								});
+							});
+						});
+						obs.observe(body, { childList: true, subtree: true });
+						editor.on('remove', function() { obs.disconnect(); });
+						// On phone widths, when the editor gains focus iOS
+						// auto-scrolls the cursor into view but doesn't know
+						// about the fixed app navbar, so the toolbar ends up
+						// under it. Nudge the page so the toolbar sits just
+						// below the navbar. toolbar_sticky alone isn't
+						// enough because the iOS scroll happens at a moment
+						// when sticky hasn't re-positioned.
+						editor.on('focus', function() {
+							if (window.innerWidth > 767) return;
+							setTimeout(function() {
+								if (!container) return;
+								var rect = container.getBoundingClientRect();
+								var navbar = document.getElementById('headerbar');
+								var navHeight = navbar ? navbar.offsetHeight : 0;
+								if (rect.top < navHeight) {
+									window.scrollTo({
+										top: window.scrollY + rect.top - navHeight,
+										behavior: 'auto'
+									});
+								}
+							}, 100);
+						});
+					},
+					paste_preprocess: function(plugin, args) {
+						console.log('paste_preprocess called with content:', args.content.substring(0, 200));
+						// Handle pasted images - convert base64 to S3 URLs
+						// Note: blob URLs are handled by images_upload_handler instead
+						var tempDiv = document.createElement('div');
+						tempDiv.innerHTML = args.content;
+						// Only look for base64 images (blob images are handled by images_upload_handler)
+						var images = tempDiv.querySelectorAll('img[src^="data:"]');
+						console.log('Found', images.length, 'base64 images to process');
+
+						if (images.length > 0) {
+							// We have base64 images to upload
+							var uploadPromises = [];
+							var imageMap = new Map();
+							
+							images.forEach(function(img, index) {
+								var base64Data = img.src;
+								var filename = 'pasted-image-' + Date.now() + '-' + index + '.png';
+								
+								// Create a placeholder ID for this image
+								var placeholderId = 'uploading-image-' + Date.now() + '-' + index;
+								img.setAttribute('data-upload-id', placeholderId);
+								imageMap.set(placeholderId, img);
+								
+								// Create promise for this upload
+								var uploadPromise = new Promise(function(resolve) {
+									modUploadPastedImage(base64Data, filename, id, draftid, csrf, groupurl, function(result, error) {
+										if (result) {
+											resolve({ id: placeholderId, url: result.url, width: result.width, height: result.height });
+										} else {
+											console.error('Failed to upload image:', error);
+											resolve({ id: placeholderId, url: null });
+										}
+									});
+								});
+								
+								uploadPromises.push(uploadPromise);
+							});
+							
+							// Replace base64 with placeholder text initially
+							images.forEach(function(img) {
+								var placeholderId = img.getAttribute('data-upload-id');
+								img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHRleHQtYW5jaG9yPSJtaWRkbGUiIHg9IjEwMCIgeT0iNTAiIGZvbnQtc2l6ZT0iMTRweCIgZmlsbD0iIzk5OSI+VXBsb2FkaW5nLi4uPC90ZXh0Pjwvc3ZnPg==';
+								img.setAttribute('alt', 'Uploading image...');
+							});
+							
+							// Update the content with placeholder images
+							args.content = tempDiv.innerHTML;
+							
+							// After paste completes, start uploads and replace placeholders
+							setTimeout(function() {
+								console.log('Starting Promise.all with', uploadPromises.length, 'promises');
+								Promise.all(uploadPromises).then(function(results) {
+									console.log('Promise.all resolved with results:', results);
+									var failedUploads = 0;
+									results.forEach(function(result) {
+										console.log('Processing result:', result);
+										var editor = tinymce.get('editor' + id);
+										if (!editor) {
+											console.error('Could not get editor instance');
+											return;
+										}
+										var editorBody = editor.getBody();
+										var uploadedImg = editorBody.querySelector('img[data-upload-id="' + result.id + '"]');
+
+										if (result.url && uploadedImg) {
+											console.log('Found image to update, dimensions:', result.width, 'x', result.height);
+											// Success - replace with S3 URL
+											uploadedImg.src = result.url;
+											uploadedImg.removeAttribute('data-upload-id');
+											uploadedImg.removeAttribute('alt');
+											// Update dimensions if they were returned (image was resized)
+											if (result.width && result.height) {
+												console.log('Setting width=' + result.width + ' height=' + result.height);
+												uploadedImg.setAttribute('width', result.width);
+												uploadedImg.setAttribute('height', result.height);
+											} else {
+												console.log('No dimensions available');
+											}
+										} else if (uploadedImg) {
+											// Failed - show error placeholder
+											failedUploads++;
+											uploadedImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmY2NjYyIgc3Ryb2tlPSIjY2MwMDAwIi8+PHRleHQgdGV4dC1hbmNob3I9Im1pZGRsZSIgeD0iMTAwIiB5PSI1MCIgZm9udC1zaXplPSIxNHB4IiBmaWxsPSIjY2MwMDAwIj5VcGxvYWQgRmFpbGVkPC90ZXh0Pjwvc3ZnPg==';
+											uploadedImg.setAttribute('alt', 'Image upload failed');
+											uploadedImg.setAttribute('title', 'Image upload failed - please try again');
+											uploadedImg.removeAttribute('data-upload-id');
+										}
+									});
+									
+									// Show notification if there were failures
+									if (failedUploads > 0) {
+										var msg = failedUploads === 1 ? 
+											'1 image failed to upload. Please try again.' :
+											failedUploads + ' images failed to upload. Please try again.';
+										createAlert(msg, false, true);
+									}
+
+									// Trigger save after processing all images
+									var editor = tinymce.get('editor' + id);
+									if (editor) {
+										editor.fire('change');
+									}
+								}).catch(function(error) {
+									console.error('Promise.all error:', error);
+								});
+							}, 0);
+						}
+						
+						// Keep the oEmbed code commented out for now
+						/* 
+						// Example of URL detection; this will need to be customized
+						let urlRegex = /(https?:\/\/\S+)/;
+						let match = args.content.match(urlRegex);
+						if (match) {
+							let url = match[0];
+							// Prevent the default paste
+							args.content = ''; 
+
+							// Make an AJAX request to the /oembed endpoint
+							fetch(groupurl + `/oembed?url=${encodeURIComponent(url)}`)
+								.then(response => response.text())
+								.then(html => {
+									// Insert the HTML returned by the oEmbed endpoint
+									tinymce.activeEditor.insertContent(html);
+								})
+								.catch(error => {
+									console.error('Error fetching oEmbed content:', error);
+									// Optionally handle errors or insert fallback content
+									tinymce.activeEditor.insertContent(`<a href="${url}">${url}</a>`); // Inserting URL as a link as a fallback
+								}
+							);						
+						}
+						*/
+					},
+					paste_postprocess: function(plugin, args) {
+						return;
+						// Example: Remove inline styles from <ul> and <li> elements
+						args.node.querySelectorAll('ul, li').forEach(function(el) {
+							el.removeAttribute('style');
+						});
+					},
+					// Handle drag-and-drop images as well as automatic image uploads
+					images_upload_handler: function(blobInfo, success, failure) {
+						var blob = blobInfo.blob();
+						var filename = blobInfo.filename() || 'uploaded-image-' + Date.now() + '.png';
+
+						// Show upload progress indicator
+						var progressId = 'upload-progress-' + Date.now();
+						var progressHtml = '<div id="' + progressId + '" class="alert alert-info" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; min-width: 300px;">' +
+							'<i class="fa fa-spinner fa-spin"></i> Uploading image: ' + filename + '...' +
+							'</div>';
+						$('body').append(progressHtml);
+
+						// Create FormData for multipart upload
+						var formData = new FormData();
+						formData.append('draftid', draftid);
+						formData.append('csrf', csrf);
+						formData.append('upload', '1');
+						formData.append('inline', '1'); // Mark as inline attachment
+						formData.append('fileupload', blob, filename);
+
+						// Upload the image directly as blob
+						$.ajax({
+							url: groupurl + '/draftop',
+							method: 'POST',
+							data: formData,
+							processData: false,
+							contentType: false,
+							xhrFields: {
+								withCredentials: true
+							},
+							dataType: 'json',
+							success: function(response, textStatus, jqXHR) {
+								// Remove progress indicator
+								$('#' + progressId).fadeOut(300, function() { $(this).remove(); });
+
+								// Update optimistic lock timestamp from server response
+								var updatedTs = jqXHR.getResponseHeader('X-Draft-Updated');
+								if (updatedTs) {
+									modDraftUpdated = updatedTs;
+									console.log('Updated draftUpdated after inline image upload to:', modDraftUpdated);
+								}
+
+								// Handle the response
+								var result = null;
+								if (Array.isArray(response) && response.length > 0) {
+									if (typeof response[0] === 'string') {
+										// Old format - just URLs
+										result = { url: response[0] };
+									} else if (response[0].url) {
+										// New format - objects with url, width, height
+										result = response[0];
+									}
+								}
+
+								if (result && result.url) {
+									// TinyMCE expects just the URL string here
+									success(result.url);
+
+									// Set dimensions after the image is inserted
+									if (result.width && result.height) {
+										setTimeout(function() {
+											// Get the active editor instance
+											var editor = tinymce.get('editor' + id);
+											if (editor) {
+												// Find the image that was just inserted by its URL
+												var imgs = editor.getBody().querySelectorAll('img[src="' + result.url + '"]');
+												imgs.forEach(function(img) {
+													if (!img.hasAttribute('width') && !img.hasAttribute('height')) {
+														console.log('Setting dimensions on uploaded image:', result.width, 'x', result.height);
+														img.setAttribute('width', result.width);
+														img.setAttribute('height', result.height);
+													}
+												});
+											}
+										}, 100); // Small delay to ensure image is in DOM
+									}
+								} else {
+									failure('Failed to upload image: No URL returned');
+								}
+							},
+							error: function(xhr, status, error) {
+								// Remove progress indicator and show error
+								$('#' + progressId).removeClass('alert-info').addClass('alert-danger')
+									.html('<i class="fa fa-exclamation-circle"></i> Failed to upload ' + filename);
+								setTimeout(function() {
+									$('#' + progressId).fadeOut(300, function() { $(this).remove(); });
+								}, 3000);
+
+								console.error('Failed to upload image:', error);
+								failure('Failed to upload image: ' + (error || 'Unknown error'));
+							}
+						});
+					},
+					automatic_uploads: true,
+					setup: function(currentEditor) {
+						currentEditor.ui.registry.addMenuItem('alignleft', {
+							tooltip: 'Align Left',
+							icon: 'align-left',
+							onAction: function () {
+								currentEditor.execCommand('JustifyLeft');
+							}
+						});
+						currentEditor.ui.registry.addMenuItem('aligncenter', {
+							tooltip: 'Align Center',
+							icon: 'align-center',
+							onAction: function () {
+								currentEditor.execCommand('JustifyCenter');
+							}
+						});
+						currentEditor.ui.registry.addMenuItem('alignright', {
+							tooltip: 'Align Right',
+							icon: 'align-right',
+							onAction: function () {
+								currentEditor.execCommand('JustifyRight');
+							}
+						});
+						currentEditor.ui.registry.addMenuItem('alignjustify', {
+							tooltip: 'Justified Alignment',
+							icon: 'align-justify',
+							onAction: function () {
+								currentEditor.execCommand('JustifyFull');
+							}
+						});
+						// Create custom menu
+						currentEditor.ui.registry.addMenuButton('alignments', {
+							tooltip: 'Alignments',
+							icon: 'align-justify',
+							fetch: function (callback) {
+								var items = [
+									'alignleft',
+									'aligncenter',
+									'alignright',
+									'alignjustify'
+								];
+								callback(items);
+							}
+						});
+
+						currentEditor.ui.registry.addMenuItem('indentleft', {
+							tooltip: 'Indent Left',
+							icon: 'outdent',
+							onAction: function () {
+								currentEditor.execCommand('Outdent');
+							}
+						});
+						currentEditor.ui.registry.addMenuItem('indentright', {
+							tooltip: 'Indent Right',
+							icon: 'indent',
+							onAction: function () {
+								currentEditor.execCommand('Indent');
+							}
+						});
+						// Create custom menu
+						currentEditor.ui.registry.addMenuButton('indents', {
+							tooltip: 'Indents',
+							icon: 'indent',
+							fetch: function (callback) {
+								var items = [
+									'indentleft',
+									'indentright'
+								];
+								callback(items);
+							}
+						});
+
+						currentEditor.ui.registry.addMenuButton('lists', {
+							tooltip: 'Lists',
+							icon: 'ordered-list',
+							fetch: function (callback) {
+								var items = [
+									{
+										type: 'menuitem',
+										icon: 'unordered-list',
+										onAction: function () {
+											currentEditor.execCommand('InsertUnorderedList');
+										}
+									},
+									{
+										type: 'menuitem',
+										icon: 'ordered-list',
+										onAction: function () {
+											currentEditor.execCommand('InsertOrderedList');
+										}
+									}
+								];
+								callback(items);
+							}
+    					});
+
+						currentEditor.ui.registry.addGroupToolbarButton('more', {
+							icon: 'more-drawer',
+							tooltip: 'More options',
+							items: formattingItems
+						});
+
+						// Initialize the currentEditor with an empty set of context toolbars
+						if (isPendingEdit == false) {
+							currentEditor.ui.registry.addIcon('my-image', '<svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512"><path d="M448 80c8.8 0 16 7.2 16 16V415.8l-5-6.5-136-176c-4.5-5.9-11.6-9.3-19-9.3s-14.4 3.4-19 9.3L202 340.7l-30.5-42.7C167 291.7 159.8 288 152 288s-15 3.7-19.5 10.1l-80 112L48 416.3l0-.3V96c0-8.8 7.2-16 16-16H448zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm80 192a48 48 0 1 0 0-96 48 48 0 1 0 0 96z"/></svg>');
+							currentEditor.ui.registry.addButton('addPictures', {
+								tooltip: 'Add pictures',
+								icon: 'my-image',
+								onAction: function() {
+									modUploaderPrompt("pictures", id, draftid, groupurl, csrf);
+								}
+							});
+							currentEditor.ui.registry.addIcon('my-paperclip', '<svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 448 512"><path d="M375 73c-26-26-68.1-26-94.1 0L89 265C45.3 308.6 45.3 379.4 89 423s114.4 43.6 158.1 0L399 271c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9L281 457c-62.4 62.4-163.5 62.4-225.9 0S-7.4 293.4 55 231L247 39C291.7-5.7 364.2-5.7 409 39s44.7 117.2 0 161.9L225.2 384.7c-31.6 31.6-83.6 28.7-111.5-6.2c-23.8-29.8-21.5-72.8 5.5-99.8L271 127c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9L153.2 312.7c-9.7 9.7-10.6 25.1-2 35.8c10 12.5 28.7 13.6 40 2.2L375 167c26-26 26-68.1 0-94.1z"/></svg>');
+							currentEditor.ui.registry.addButton('addAttachments', {
+								tooltip: 'Add attachments',
+								icon: 'my-paperclip',
+								onAction: function() {
+									modUploaderPrompt("attachments", id, draftid, groupurl, csrf);
+								}
+							});
+							if (groupurl != '') {
+								currentEditor.ui.registry.addIcon('my-comment', '<svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 512 512"><path d="M123.6 391.3c12.9-9.4 29.6-11.8 44.6-6.4c26.5 9.6 56.2 15.1 87.8 15.1c124.7 0 208-80.5 208-160s-83.3-160-208-160S48 160.5 48 240c0 32 12.4 62.8 35.7 89.2c8.6 9.7 12.8 22.5 11.8 35.5c-1.4 18.1-5.7 34.7-11.3 49.4c17-7.9 31.1-16.7 39.4-22.7zM21.2 431.9c1.8-2.7 3.5-5.4 5.1-8.1c10-16.6 19.5-38.4 21.4-62.9C17.7 326.8 0 285.1 0 240C0 125.1 114.6 32 256 32s256 93.1 256 208s-114.6 208-256 208c-37.1 0-72.3-6.4-104.1-17.9c-11.9 8.7-31.3 20.6-54.3 30.6c-15.1 6.6-32.3 12.6-50.1 16.1c-.8 .2-1.6 .3-2.4 .5c-4.4 .8-8.7 1.5-13.2 1.9c-.2 0-.5 .1-.7 .1c-5.1 .5-10.2 .8-15.3 .8c-6.5 0-12.3-3.9-14.8-9.9c-2.5-6-1.1-12.8 3.4-17.4c4.1-4.2 7.8-8.7 11.3-13.5c1.7-2.3 3.3-4.6 4.8-6.9c.1-.2 .2-.3 .3-.5z"/></svg>');
+								currentEditor.ui.registry.addButton('quoteMessage', {
+									tooltip: 'Quote post',
+									icon: 'my-comment',
+									onAction: function() {
+										editor.ShowMessageHistory(id, groupurl, 'html', '', sig, false);
+									}
+								});
+							}
+						}
+						currentEditor.ui.registry.addIcon('my-link', '<svg xmlns="http://www.w3.org/2000/svg" height="1em" viewBox="0 0 576 512"><path d="M0 256C0 167.6 71.6 96 160 96h72c13.3 0 24 10.7 24 24s-10.7 24-24 24H160C98.1 144 48 194.1 48 256s50.1 112 112 112h72c13.3 0 24 10.7 24 24s-10.7 24-24 24H160C71.6 416 0 344.4 0 256zm576 0c0 88.4-71.6 160-160 160H344c-13.3 0-24-10.7-24-24s10.7-24 24-24h72c61.9 0 112-50.1 112-112s-50.1-112-112-112H344c-13.3 0-24-10.7-24-24s10.7-24 24-24h72c88.4 0 160 71.6 160 160zM184 232H392c13.3 0 24 10.7 24 24s-10.7 24-24 24H184c-13.3 0-24-10.7-24-24s10.7-24 24-24z"/></svg>');
+						currentEditor.ui.registry.addButton('addLink', {
+							tooltip: 'Insert/edit link',
+							icon: 'my-link',
+							onAction: function() {
+								currentEditor.execCommand('mceLink');
+							}
+						});
+						if (isWiki == true) {
+							// special wiki buttons
+							currentEditor.ui.registry.addButton('addWikiImage', {
+								tooltip: 'Insert image',
+								icon: 'my-image',
+								onAction: function() {
+									$('#ImageModal').modal({});
+								}
+							});
+							currentEditor.ui.registry.addButton('addWikiLink', {
+								tooltip: 'Insert link to wiki page',
+								icon: 'bookmark',
+								onAction: function() {
+									$('#LinkModal').modal({});
+								}
+							});
+							currentEditor.ui.registry.addButton('addWikiTOC', {
+								tooltip: 'Insert table of contents',
+								icon: 'toc',
+								onAction: function() {
+									$('#TOCModal').modal({});
+								}
+							});
+						}
+						if (isPendingEdit == true) {
+							currentEditor.ui.registry.addButton("cleanLinks", {
+								tooltip: "Clean Links",
+								icon: 'link',
+								onAction: function () {
+									cleanLinks(id, groupurl);
+								}
+							});
+						}
+						var onAction = function(autocompleteApi, rng, value) {
+							currentEditor.selection.setRng(rng);
+							currentEditor.insertContent(value);
+							autocompleteApi.hide();
+						};
+						var getMatchedChars = function(pattern) {
+							return usernameList.filter(function(char) {
+								return char.text.toUpperCase().indexOf(pattern.toUpperCase()) !== -1;
+							});
+						};
+						currentEditor.ui.registry.addAutocompleter('specialchars_cardmenuitems', {
+							ch: '@',
+							minChars: 1,
+							columns: 1,
+							highlightOn: ['char_name'],
+							onAction: onAction,
+							fetch: function(pattern) {
+								return new Promise(function(resolve) {
+									var results = getMatchedChars(pattern).map(function(char) {
+										return {
+											type: 'cardmenuitem',
+											value: char.value + " ",
+											label: char.text,
+											items: [{
+												type: 'cardcontainer',
+												direction: 'horizontal',
+												items: [{
+														type: 'cardtext',
+														text: char.text,
+														name: 'char_name'
+													}
+												]
+											}]
+										}
+									});
+									resolve(results);
+								});
+							}
+						});
+						currentEditor.on('NodeChange keyup', function () {
+							let markupStr = currentEditor.getContent();
+							$('#editor' + id).val(markupStr);
+							$('#editor' + id).trigger('input');
+						});
+
+						currentEditor.on('init', function(e) {
+							if (isDarkMode == true) {
+					            var container = currentEditor.getContainer();
+					            container.classList.add('transparent-editor');						
+							}
+							// see if any text is selected
+							toquote = modGetSelection(id);
+							if (toquote != '') {
+								console.log('id=' + id);
+								editor.ShowMessageHistory(id, groupurl, 'html', toquote, sig, true);
+							} else {
+								if (body != "") {
+									//console.log("body setContent:" + body);
+									currentEditor.setContent(body);
+								} else if (sig != "") {
+									console.log("sig setContent " + sig);
+									currentEditor.setContent(sig);
+								}
+							}
+							if (onInitFunc != null) {
+								onInitFunc(e);
+							}
+						});
+						// Remove the class when the editor is focused
+						if (isDarkMode == true) {
+							currentEditor.on('focus', function () {
+								var container = currentEditor.getContainer();
+								container.classList.remove('transparent-editor');
+							});
+							currentEditor.on('click', function () {
+								var container = currentEditor.getContainer();
+								container.classList.remove('transparent-editor');
+								currentEditor.focus();
+							});
+
+							// Re-apply the class when the editor loses focus
+							currentEditor.on('blur', function () {
+								var container = currentEditor.getContainer();
+								container.classList.add('transparent-editor');
+							});
+						}
+					},
+
+				});
+			},
+
+			initPlainEditor: function(settings) {
+				let id = settings.id || 0;
+				let bodytype = settings.bodytype || "";
+				let groupurl = settings.groupurl || "";
+				let handleAttachments = settings.handleAttachments || 0;
+				let isDarkMode = settings.isDarkMode || false;
+				let sig = settings.sig || "";
+
+				$('#addattachments').show();
+				if (bodytype == 'plain') {
+					$('#bodytype' + id).val('plain');
+					$('#preview' + id).hide();
+					$('#return' + id).hide();
+					$('#preview' + id).hide();
+					$('#markdownlink' + id).hide();
+				} else {
+					$('#bodytype' + id).val('markdown');
+					$('#markdownbuttons' + id).show();
+					$('#preview' + id).show();
+					$('#return' + id).hide();
+					$('#previewWindow' + id).hide();
+					$('#markdownlink' + id).show();
+				}
+				toquote = modGetSelection(id);
+				if (toquote != '') {
+					editor.ShowMessageHistory(id, groupurl, 'plain', toquote, sig, true);
+					//$('#editor' + id).val(toquote);
+				}
+			},
+
+			InitPostDraft: function(settings) {
+				let id = settings.id || 0;
+				let draftid = settings.draftid || "";
+				let csrf = settings.csrf || "0";
+				let groupurl = settings.groupurl || "";
+				modDraftUpdated = settings.draftUpdated || "0";
+				console.log("In InitPostDraft for id " + id + " and draftid " + draftid + " and draftUpdated " + modDraftUpdated);
+				// save the draft when leaving the page.
+				$(window).on('beforeunload', function() {
+					modUnloading = true;
+					modSaveDraft(id, draftid, groupurl, csrf, true);
+				});
+
+				// save the draft 1 second after a change
+				$('input, textarea').on('input', function() {
+					modOnFormChange(id, draftid, groupurl, csrf);
+				});
+				modUpdateAttachments(id, draftid, csrf, groupurl);
+
+				if (typeof Capacitor !== 'undefined') {
+					modInitDeviceUploader(id, draftid, csrf, groupurl);
+				} else {
+					modInitWebUploader(id, draftid, csrf, groupurl);
+				}
+			},
+
+			// InitReplyDraft creates a new draft, assumes a hidden form input called #draftidmid, and then calls initWindow().
+			InitReplyDraft: function(settings) {
+				let id = settings.id || 0;
+				let bodytype = settings.bodytype || "";
+				let draftid = settings.draftid || "";
+				let groupurl = settings.groupurl || "";
+				let csrf = settings.csrf || "0";
+				let handleAttachments = settings.handleAttachments || 0;
+				let noFontChanges = settings.noFontChanges || false;
+				let isReply = settings.isReply || false;
+				let isWiki = settings.isWiki || false;
+				let isPendingEdit = settings.isPendingEdit || false;
+				let isDarkMode = settings.isDarkMode || false;
+				let body = settings.body || "";
+				let sig = settings.sig || "";
+				let usernameList = settings.UsernameList || [];
+				let onInitFunc = settings.onInitFunc || null;
+
+				let draftUpdated = settings.draftUpdated || "0";
+				console.log('in InitReplyDraft draftid=' + draftid + ' draftUpdated=' + draftUpdated);
+				modDeletedDraft = false;
+				modDestroyedEditor = false;
+				modUnloading = false;
+
+				if (draftid == 0) {
+					// create a new draft
+					console.log('generating new draft' + groupurl);
+					console.log('id=' + id);
+					upload = {
+						mid: id,
+						csrf: csrf,
+						body: sig
+					};
+					$.ajax({
+						url: groupurl + '/reply',
+						cache: false,
+						method: 'POST',
+						data: upload,
+						xhrFields: {
+							withCredentials: true
+						},
+						dataType: 'json',
+						error: function(xhr, ajaxOptions, thrownError) {
+							if (modDeletedDraft == false && modDestroyedEditor == false) {
+								createAlert("There was an error saving the draft. Please reload the page.", true, false)
+							}
+						}
+					}).done(function(response) {
+						console.log('reply draft created');
+						console.log('draftid:' + response.DraftID);
+						draftid = response.DraftID;
+						let newDraftUpdated = response.DraftUpdated || "0";
+						$('#draftid' + id).val(response.DraftID);
+						editor.InitEditor({
+							id: id,
+							bodytype: bodytype,
+							draftid: draftid,
+							groupurl: groupurl,
+							csrf: csrf,
+							handleAttachments: handleAttachments,
+							noFontChanges: noFontChanges,
+							isReply: true,
+							isWiki: false,
+							isDarkMode: isDarkMode,
+							body: body,
+							sig: sig,
+							usernameList: usernameList,
+							onInitFunc: onInitFunc
+						});
+						editor.InitPostDraft({id: id, draftid: draftid, csrf: csrf, groupurl: groupurl, draftUpdated: newDraftUpdated});
+						console.log('id=' + id);
+						$('#bodytype' + id).val(bodytype);
+						$('#cancel-' + id).attr(
+							'onclick',
+							'editor.discardReplyDraft("' +
+							id +
+							'", "' +
+							draftid +
+							'","' +
+							bodytype +
+							'","' +
+							csrf +
+							'","' +
+							groupurl +
+							'");'
+						);
+						return;
+					});
+					return;
+				}
+				editor.InitEditor({
+					id: id,
+					bodytype: bodytype,
+					draftid: draftid,
+					groupurl: groupurl,
+					csrf: csrf,
+					handleAttachments: handleAttachments,
+					noFontChanges: noFontChanges,
+					isReply: true,
+					isWiki: false,
+					isDarkMode: isDarkMode,
+					body: body,
+					sig: sig,
+					usernameList: usernameList,
+					onInitFunc: onInitFunc
+				});
+				editor.InitPostDraft({id: id, draftid: draftid, csrf: csrf, groupurl: groupurl, draftUpdated: draftUpdated});
+				$('#bodytype' + id).val(bodytype);
+				$('#cancel-' + id).attr(
+					'onclick',
+					'editor.discardReplyDraft("' +
+					id +
+					'", "' +
+					draftid +
+					'","' +
+					bodytype +
+					'","' +
+					csrf +
+					'","' +
+					groupurl +
+					'");'
+				);
+				console.log('DONE');
+			},
+
+			// discardReplyDraft deletes the draft and any attachments and returns the user to the previous page.
+			discardReplyDraft: function(id, draftid, bodytype, csrf, groupurl) {
+				console.log('editor delete reply draft');
+				upload = {
+					draftid: draftid,
+					csrf: csrf,
+					jsondelete: '1'
+				};
+				$.ajax({
+					url: groupurl + '/draftop',
+					cache: false,
+					data: upload,
+					method: 'POST',
+					xhrFields: {
+						withCredentials: true
+					},
+					dataType: 'json'
+				}).done(function(response) {
+					// Do something with the request
+					console.log("success delete reply draft");
+					$('#draftid' + id).val('');
+					if (bodytype == 'html') {
+						tinymce.get('editor' + id).remove();
+					}
+					$('#subject' + id).val($('#origsubject' + id).val());
+					$('#editor' + id).val('');
+					modDeletedDraft = true;
+					modDestroyedEditor = true;
+				});
+			},
+
+			PreviewMarkdown: function(id, groupurl) {
+				let markdown = $('#editor' + id).val();
+				upload = {
+					md: markdown
+				};
+				$.ajax({
+					url: groupurl + '/previewmd',
+					cache: false,
+					data: upload,
+					method: 'POST',
+					xhrFields: {
+						withCredentials: true
+					},
+					dataType: 'json'
+				}).done(function(response) {
+					// Do something with the request
+					console.log(response.markdown);
+					wrap =
+						'<div id="previewWindow' +
+						id +
+						'"><div class="well well-sm">' +
+						response.markdown +
+						'</div></div>';
+					$('#editwindow' + id).hide();
+					$('#previewWindow' + id).replaceWith(wrap);
+					$('#previewWindow' + id).show();
+				});
+
+				$('#preview' + id).hide();
+				$('#return' + id).show();
+			},
+
+			ReturnMarkdown: function(id) {
+				$('#preview' + id).show();
+				$('#return' + id).hide();
+				$('#previewWindow' + id).hide();
+				$('#editwindow' + id).show();
+			},
+
+			ClearTimeout: function() {
+				clearTimeout(modTimeoutId);
+			},
+
+			// setDraftUpdated updates the optimistic lock timestamp from external callers
+			// (e.g. the global deleteAttachment function in editor.js)
+			setDraftUpdated: function(ts) {
+				if (ts) {
+					modDraftUpdated = ts;
+					console.log('setDraftUpdated to:', modDraftUpdated);
+				}
+			},
+
+			ShowMessageHistory: function(
+				id,
+				groupurl,
+				bodytype,
+				selectedText,
+				sig,
+				firstTime
+			) {
+				console.log('URL ' + groupurl);
+				console.log('ID ' + id);
+				if (bodytype == 'html' && firstTime == false) {
+					existingmsg = tinyMCE.get('editor' + id).getContent();
+				} else {
+					existingmsg = $('#editor' + id).val();
+				}
+				if (selectedText == '') {
+					upload = {
+						preview: bodytype,
+						id: id
+					};
+				} else {
+					upload = {
+						preview: bodytype,
+						id: id,
+						text: selectedText
+					};
+					if (firstTime == true) {
+						existingmsg = sig;
+					}
+				}
+				$.ajax({
+					url: groupurl + '/previewmd',
+					cache: false,
+					data: upload,
+					method: 'POST',
+					xhrFields: {
+						withCredentials: true
+					},
+					dataType: 'json'
+				}).done(function(response) {
+					$('#editor' + id).val(response.reply + existingmsg);
+					if (bodytype == 'html') {
+						console.log('SETTING ' + response.reply + existingmsg);
+						tinyMCE.get('editor' + id).setContent(response.reply + existingmsg);
+						tinyMCE.get('editor' + id).selection.select(tinyMCE.get('editor' + id).getBody(), true);
+						tinyMCE.get('editor' + id).selection.collapse(false);
+						console.log('DONE');
+					}
+				});
+				$('#editor' + id).focus();
+			}
+
+
+
+
+			/*
+			$('form').submit(function(e) {
+			  clearTimeout(modTimeoutId);
+			  if (postVar != null) {
+			    postVar.abort();
+			  }
+			  console.log("SETTING DELETED TO TRUE");
+			  console.log("EVENT:", e);
+			  modDeletedDraft = true;
+			  if ($(this).hasClass('form-submitted')) {
+			    e.preventDefault();
+			    return;
+			  }
+			  $(this).addClass('form-submitted');
+			});
+			*/
+		};
+	}());
+
+	async function uploadAttachments(doctype, id, draftid, groupurl, csrf) {
+		const result = await Capacitor.Plugins.FilePicker.pickFiles();
+		const file = result.files[0];
+		console.log("in uploadAttachments");
+		console.log("files:", result.files);
+		console.log("mimeType:", file.mimeType);
+		console.log("name:", file.name);
+		console.log("doctype:", doctype);
+		const b64toBlob = (base64, type = 'image/jpeg') =>
+			fetch(`data:${type};base64,${base64}`).then(res => res.blob());
+		const result2 = await Capacitor.Plugins.Filesystem.readFile({
+			path: file.path
+		})
+		console.log("result2: ", result2);
+		const blob = await b64toBlob(result2.data, file.mimeType);
+		console.log("in uploadAttachments 2, " + file.mimeType);
+		uploadImage(doctype, id, draftid, groupurl, csrf, blob, file.name);
+	}
+
+	async function takePicture2(doctype, id, draftid, groupurl, csrf) {
+		console.log("in takePicture2");
+		try {
+			const image = await Capacitor.Plugins.Camera.getPhoto({
+				quality: 90,
+				allowEditing: false,
+				resultType: "uri"
+			});
+			console.log("got image");
+			const b64toBlob = (base64, type = 'image/jpeg') =>
+				fetch(`data:${type};base64,${base64}`).then(res => res.blob());
+			const result = await Capacitor.Plugins.Filesystem.readFile({
+				path: image.path
+			})
+			const blob = await b64toBlob(result.data);
+			console.log("path: ", image.path);
+			uploadImage(doctype, id, draftid, groupurl, csrf, blob, image.path.split("/").pop());
+		} catch (err) {
+			console.log("catch err 1: ", err);
+		}
+	}
+
+	async function uploadImage(doctype, id, draftid, groupurl, csrf, raw, name) {
+		console.log("here0");
+		const controller = new AbortController();
+		const formData = new FormData();
+		console.log("here1");
+		formData.append("csrf", csrf);
+		formData.append("draftid", draftid);
+		formData.append("upload", "1");
+		if (doctype === "pictures") {
+			formData.append("inline", "1");
+		}
+		console.log("FORMDATA:", formData);
+		formData.append("fileupload", raw, name);
+
+		console.log("here3");
+		const myRequest = new Request(groupurl + '/draftop', {
+			method: 'POST',
+			credentials: 'include',
+			body: formData,
+			signal: controller.signal,
+			mode: 'cors'
+		});
+		console.log("uploading");
+		try {
+			const response = await fetch(myRequest);
+			// Update optimistic lock timestamp from server response
+			var updatedTs = response.headers.get('X-Draft-Updated');
+			if (updatedTs) {
+				modDraftUpdated = updatedTs;
+				console.log('Updated draftUpdated after device upload to:', modDraftUpdated);
+			}
+			const result = await response.json();
+			if (doctype === "pictures") {
+				console.log("picture processing");
+				for (let i = result.length - 1; i >= 0; i--) {
+					console.log("Processing: ", i);
+					let fileurl;
+					let imghtml;
+					// Check if new format with dimensions or old format
+					if (typeof result[i] === 'object' && result[i].url) {
+						fileurl = result[i].url;
+						console.log('FILE: ' + JSON.stringify(result[i]));
+						console.log('URL: ' + fileurl);
+						if (result[i].width && result[i].height) {
+							imghtml = '<img src="' + fileurl + '" width="' + result[i].width + '" height="' + result[i].height + '"/>';
+						} else {
+							imghtml = '<img src="' + fileurl + '"/>';
+						}
+					} else {
+						// Old format - just a string URL
+						fileurl = result[i];
+						console.log('FILE: ' + result[i]);
+						console.log('URL: ' + fileurl);
+						imghtml = '<img src="' + fileurl + '"/>';
+					}
+					console.log('imghtml: ' + imghtml);
+					tinymce.activeEditor.insertContent(imghtml);
+				}
+			} else {
+				console.log("attachment processing");
+				updateAttachments(id, draftid, csrf, groupurl);
+				console.log("attachment processing done");
+			}
+		} catch (error) {
+			console.error('Error:', error);
+		}
+	}
+
+
+	
+  $('#deleteMessageModal').on('show.bs.modal', function(e) {
+      var msgId = $(e.relatedTarget).data('message-id');
+      $('#mid').val(msgId);
+  });
+  $('#splitMessageModal').on('show.bs.modal', function(e) {
+      var msgId = $(e.relatedTarget).data('message-id');
+      $('#splitmid').val(msgId);
+  });
+  $('#repostMessageModal').on('show.bs.modal', function(e) {
+      var msgId = $(e.relatedTarget).data('message-id');
+      $('#repostmid').val(msgId);
+  });
+  $('[id^=cancel]').on('click', function() {
+      msg_num = $(this).attr('id').split("-")[1]
+      $("#window-"+msg_num).collapse('hide')
+  });
+
+  if (location.hash) {
+	console.log("Setting location.hash");
+    location.href = location.hash;
+  }
+
+  $(".modal").on('shown.bs.modal', function () {
+      $(this).find("input:visible:first").focus();
+  });
+	$("[data-toggle='tooltip']").tooltip();
+	setPullToRefresh();
+	UpdateSidebar("archives");
+	if (document.documentElement.clientWidth <= 992) {
+		ShowBackButton("[TWI] Agenda for April 1, 2025 (please read, no joke!)", "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics", "Trustworthy-Workload-Identity-SIG");
+		ShowHeaderAction("fa fa-search fa-lg", "#searchModal", "Search");
+	}
+	EnableTopbarAutoHide();
+});
+</script>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row hidden-print" id="mobileSidebar"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div id="mobileSidebarSub" class="col-xs-12 hidden-md hidden-lg">
+			<div class="navbar navbar-default navbar-fixed-bottom">
+				<div class="container" style="display: flex; justify-content: space-around;">
+					
+					
+	
+	
+		<a id="mobilesidebar-groups" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center; color: inherit; text-decoration: none;" href="https://lists.confidentialcomputing.io/groups">
+			<div style="display: inline-block; position: relative;">
+				<div style="position: relative;display: inline-block;">
+				<i class="fa-fw fa-light fa-users fa-2x"></i>
+				
+				</div><br>
+				<span style="font-size:12px;">Groups</span>
+			</div>
+		</a>
+	
+
+					
+						
+	
+		
+	
+	<div id="mobilesidebar-archives" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center;" hx-get="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?sidebar=true"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div style="display: inline-block; position: relative;">
+			<div style="position: relative;display: inline-block;">
+			<i class="fa-fw fa-solid fa-comments fa-2x"></i>
+			
+			</div><br>
+			<span style="font-size:12px;">Messages</span>
+		</div>
+	</div>
+
+	
+	
+		
+	
+	<div id="mobilesidebar-post" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center;" hx-get="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div style="display: inline-block; position: relative;">
+			<div style="position: relative;display: inline-block;">
+			<i class="fa-fw fa-light fa-edit fa-2x"></i>
+			
+			</div><br>
+			<span style="font-size:12px;">New Topic</span>
+		</div>
+	</div>
+
+	
+
+						
+	
+		
+			
+				
+	
+	<div id="mobilesidebar-chats" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center;" hx-get="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div style="display: inline-block; position: relative;">
+			<div style="position: relative;display: inline-block;">
+			<i class="fa-fw fa-light fa-message-dots fa-2x"></i>
+			
+			</div><br>
+			<span style="font-size:12px;">Chat</span>
+		</div>
+	</div>
+
+			
+		
+	
+
+					
+					<div style="flex: 1; text-align: center;margin-top:10px" data-drawer-trigger aria-controls="drawer-name" aria-expanded="false">
+						<i class="fa-fw fa-light fa-bars fa-2x"></i><br>
+						<span style="font-size:12px;">More</span>
+					</div>
+				</div>
+			</div>
+			<section class="drawer drawer-left" id="drawer-name" data-drawer-target>
+				<div class="drawer-overlay" data-drawer-close tabindex="-1"></div>
+				<div class="drawer-wrapper drawer-wrapper-top">
+					<div class="drawer-header">
+						<div class="drawer-title">
+							<i class="fa-fw fa-regular fa-bars fa-3x"></i>
+							<span class="sr-only">
+								More Options
+							</span>
+							More
+						</div>
+						<button class="drawer-close" data-drawer-close aria-label="Close Drawer"></button>
+					</div>
+					<div class="drawer-content">
+						<div class="list-group noborderlist">
+							
+
+
+	<a title="Group Home" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG" class="list-group-item sidebar-item">
+		<i class="fa-fw fa fa-home fa-lg"></i>
+		Home
+		
+			
+				
+				
+			
+		
+	</a>
+
+	
+		<a id="sidebar-subscription" href="#submenu1" class="noborderitem list-group-item sidebar-section navbar-vertical dropdown-indicator" data-toggle="collapse" data-parent="#accordion" aria-expanded="false" aria-controls="submenu1">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Subscription
+		</a>
+		<div class="collapse" id="submenu1">
+			
+
+	<a title="Edit Subscription Settings" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editsub" id="sidebar-editsub-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-editsub">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Settings
+			<span id="sidebar-editsub-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Group Profile" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG//profile/6115309" id="sidebar-profileview-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-profileview">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-user fa-lg"></i>
+			Group Profile
+			<span id="sidebar-profileview-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Delivery History" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subdeliveries" id="sidebar-subdeliveries-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-subdeliveries">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-envelope fa-lg"></i>
+			Delivery History
+			<span id="sidebar-subdeliveries-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Integrations" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subintegrations" id="sidebar-subintegrations-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-subintegrations">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-exchange-alt fa-lg"></i>
+			Integrations
+			<span id="sidebar-subintegrations-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+		</div>
+	
+
+	
+
+	
+		
+	
+		
+
+	<a title="Messages" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?sidebar=true" id="sidebar-archives-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-archives active"> 
+		<i class="fa-fw fa fa-comments fa-lg"></i>
+		Messages
+		<span id="sidebar-archives-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Topic" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post" id="sidebar-post-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-post"> 
+		<i class="fa-fw fa fa-edit fa-lg"></i>
+		New Topic
+		<span id="sidebar-post-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="Drafts" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/drafts" id="sidebar-drafts-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-drafts"> 
+		<i class="fa-fw fa fa-inbox fa-lg"></i>
+		Drafts
+		<span id="sidebar-drafts-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Poll" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/addpoll" id="sidebar-addpoll-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-addpoll"> 
+		<i class="fa-fw fa fa-chart-bar fa-lg"></i>
+		New Poll
+		<span id="sidebar-addpoll-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+	
+		
+
+	<a title="Hashtags" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/hashtags" id="sidebar-hashtags-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-hashtags"> 
+		<i class="fa-fw fa fa-hashtag fa-lg"></i>
+		Hashtags
+		<span id="sidebar-hashtags-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+		
+	
+		
+			
+
+	<a title="Chats" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats" id="sidebar-chats-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-chats"> 
+		<i class="fa-fw fa fa-message-dots fa-lg"></i>
+		Chats
+		<span id="sidebar-chats-mobile-badge" class="badge chatbadge"></span>
+	</a>
+
+		
+	
+
+	
+
+	
+
+	
+			
+
+	<a title="Subgroups" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subgroups" id="sidebar-subgroups-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-subgroups"> 
+		<i class="fa-fw fa fa-chart-pie fa-lg"></i>
+		Subgroups
+		<span id="sidebar-subgroups-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+	
+
+	
+		
+
+	<a title="Member Directory" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/directory" id="sidebar-directory-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-directory"> 
+		<i class="fa-fw fa fa-users fa-lg"></i>
+		Directory
+		<span id="sidebar-directory-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+	<a title="Calendar" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/calendar" id="sidebar-calendar-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-calendar"> 
+		<i class="fa-fw fa fa-calendar-alt fa-lg"></i>
+		Calendar
+		<span id="sidebar-calendar-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+			
+
+	<a title="Photos" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/photos" id="sidebar-photos-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-photos"> 
+		<i class="fa-fw fa fa-file-image fa-lg"></i>
+		Photos
+		<span id="sidebar-photos-mobile-badge" class="badge"></span>
+	</a>
+
+		
+		
+			
+
+	<a title="Files" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/files" id="sidebar-files-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-files"> 
+		<i class="fa-fw fa fa-copy fa-lg"></i>
+		Files
+		<span id="sidebar-files-mobile-badge" class="badge"></span>
+	</a>
+
+		
+
+		
+			
+
+	<a title="Databases" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/database" id="sidebar-database-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-database"> 
+		<i class="fa-fw fa fa-database fa-lg"></i>
+		Databases
+		<span id="sidebar-database-mobile-badge" class="badge"></span>
+	</a>
+
+		
+		
+	
+
+	
+		
+
+	<a title="Wiki" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/wiki" id="sidebar-wiki-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-wiki"> 
+		<i class="fa-fw fa fa-book fa-lg"></i>
+		Wiki
+		<span id="sidebar-wiki-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+			
+
+		
+
+	
+
+							
+								<a class="noborderitem list-group-item sidebar-item" href="https://groups.io/static/tos" target="_blank">
+									<i class="fa-fw fal fa-newspaper fa-lg"></i>
+									Terms
+								</a>
+								
+							
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+
+<!-- Modal Dialog for Autocomplete -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <input type="text" class="form-control" id="quickActionsInput" placeholder="Go to page..." style="margin-bottom:10px">
+        <div id="quickActionsContainer" class="autocompleteResults" style="max-height:250px; overflow-y: auto;"></div>
+		<div class="text-center" style="margin-top:10px; font-size:12px;"><i class="fa-sharp fa-arrow-up-arrow-down"></i> to navigate&nbsp;&nbsp;&nbsp;<i class="fa-sharp fa-arrow-turn-down-left"></i> to use&nbsp;&nbsp;&nbsp;<strong>esc</strong> to dismiss</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+	var quickActionsData = [
+		
+		
+			{name: "Subscription Settings", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editsub"},
+			{name: "Group Profile", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/profile/6115309"},
+			{name: "Delivery History", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subdeliveries"},
+			{name: "Member Integrations", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subintegrations"},
+		
+			{name: "Group Home", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG"},
+		
+
+		
+			{name: "Topics", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics"},
+			{name: "Messages", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages"},
+			{name: "Expanded Messages", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages?expanded=1"},
+		
+		
+		
+			{name: "Polls", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/polls"},
+		
+		
+			{name: "Hashtags", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/hashtags"},
+		
+		
+			{name: "New Topic", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post"},
+		
+		
+			{name: "New Poll", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/addpoll"},
+		
+		
+			{name: "Drafts", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/drafts"},
+		
+
+		
+			
+				{name: "Chats", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats"},
+			
+		
+
+		
+			{name: "Subgroups", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subgroups"},
+		
+		
+		
+			{name: "Member Directory", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/directory"},
+		
+
+		
+			{name: "Calendar", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/calendar"},
+		
+
+		
+			
+				{name: "Photos", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/photos"},
+			
+			
+				{name: "Files", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/files"},
+			
+
+			
+				{name: "Databases", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/database"},
+			
+			
+		
+		
+			{name: "Wiki", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/wiki"},
+		
+		
+		/* other pages */
+		{name: "Help", url: "/helpcenter"},
+		{name: "Feed", url: "/feed"},
+		{name: "Your Groups", url: "/groups"},
+		{name: "Your Calendar", url: "/calendar"},
+		{name: "Your Activity", url: "/activity"},
+		{name: "Your Pending Messages", url: "/pendingmsgs"},
+		{name: "Account Login", url: "/account"},
+		{name: "Account Preferences", url: "/account?page=prefs"},
+		{name: "Account Security", url: "/account?page=security"},
+		{name: "Account Identity", url: "/account?page=profile&member_info_id=0"},
+		{name: "Account Notifications", url: "/account?page=notifications"},
+		{name: "Account Other Services", url: "/account?page=oauth"},
+		{name: "Account Bounces", url: "/account?page=bounces"},
+		{name: "Account Billing", url: "/account?page=billing"},
+		{name: "Find a Group", url: "/search?p=SubsCount,,,20,2,0,0"},
+	];
+
+
+	InitAutocomplete("quickActions", quickActionsData);
+
+	document.addEventListener('keydown', function(event) {
+		var tagName = event.target.tagName.toLowerCase();
+		if (tagName === 'input' || tagName === 'textarea' || event.target.isContentEditable) {
+			return;
+		}
+		// check if the viewimages viewer is up
+		let element = document.getElementById('overlay');
+		if (element && element.classList.contains('visible')) {
+			return;
+		}
+		if (event.key.toLowerCase() === '/') {
+			if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+				// For Mac
+				// Check if Command (event.metaKey) is pressed, and either Option (event.altKey) is pressed or not
+				if (event.metaKey) {
+					event.preventDefault();
+					showAutocompleteModal("quickActions");
+					return;
+				}
+			} else {
+				// For Windows and Linux
+				if (event.ctrlKey) {
+					event.preventDefault();
+					showAutocompleteModal("quickActions");
+					return;
+				}
+			}
+		}
+	});
+	function UpdateSidebar(id) {
+		console.log(id + " was clicked");
+		if (typeof HideHeaderAction === 'function') {
+			HideHeaderAction();
+		}
+		// restore mobile bottom nav in case a previous page (e.g. /post) hid it
+		var mobSidebar = document.getElementById("mobileSidebar");
+		if (mobSidebar) mobSidebar.style.display = '';
+		var mainContent = document.getElementById("maincontent");
+		if (mainContent) mainContent.style.bottom = '';
+		var sidebarItems = document.querySelectorAll('.mobilesidebar-item');
+		sidebarItems.forEach(function(item) {
+			var iElement = item.getElementsByTagName('div')[0].getElementsByTagName('i')[0];
+			if (item.id == "mobilesidebar-" + id) {
+				console.log("making solid " + id)
+				iElement.classList.add('fa-solid');
+				iElement.classList.remove('fa-light');
+			} else {
+				iElement.classList.remove('fa-solid');
+				iElement.classList.add('fa-light');
+			}
+		});
+		var sidebarItems = document.querySelectorAll('.sidebar-item');
+		// remove 'active' class from all 'sidebar-item' elements
+		sidebarItems.forEach(function(item) {
+			if (item.id == "sidebar-" + id) {
+				console.log("making active " + id)
+				item.classList.add('active');
+			} else {
+				item.classList.remove('active');
+			}
+		});
+	}
+</script>
+
+
+			</div>
+			
+				<div id="scroll-top-outer">
+					<div id="scroll-top" class="scroll-top-wrapper hidden-xs">
+						<span class="scroll-top-inner">
+							<i class="fa fa-arrow-circle-up fa-fw fa-2x"></i>
+						</span>
+					</div>
+				</div>
+<script>
+	$(function() {
+		$(document).on('scroll', function() {
+			if ($(window).scrollTop() > 100) {
+				$('.scroll-top-wrapper').addClass('show');
+			} else {
+				$('.scroll-top-wrapper').removeClass('show');
+			}
+		});
+		$('.scroll-top-wrapper').on('click', scrollToTop);
+	});
+
+	function scrollToTop() {
+		verticalOffset = typeof(verticalOffset) != 'undefined' ? verticalOffset : 0;
+		element = $('body');
+		offset = element.offset();
+		offsetTop = offset.top;
+		$('html, body').animate({
+			scrollTop: offsetTop
+		}, 100, 'linear');
+	}
+
+	if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+		let elements = document.querySelectorAll('strong.ctrlmeta');
+		elements.forEach((element) => {
+			// Check if the innerText is "ctrl"
+			if (element.innerText === 'ctrl') {
+				// Create a new "i" element
+				let newElement = document.createElement('i');
+				newElement.classList.add('fa-solid', 'fa-command');
+				
+				// Replace the old "strong" element with the new "i" element
+				element.parentNode.replaceChild(newElement, element);
+			}
+		});
+	}
+</script>
+			
+			
+
+
+		</body>
+	</html>
+

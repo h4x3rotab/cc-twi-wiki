@@ -1,0 +1,4456 @@
+
+	
+	<!DOCTYPE html>
+	<html lang="en-US">
+		<head>
+			<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+			<meta http-equiv="X-UA-Compatible" content="IE=edge">
+			
+				<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+			
+			<meta name="theme-color" content="#2f6fa7">
+			<meta name="pinterest" content="nopin" />
+			<meta name="pinterest" content="nohover" />
+			
+			<meta name="3778517eb4810dfb5d143ed8f1b359b3b5a82923" content="0f56257c3db4a222e91b11bc6871c4df2e263b28" />
+			<link rel="apple-touch-icon" sizes="57x57" href="/orgimg/org.82/favicons/apple-icon-57x57.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="60x60" href="/orgimg/org.82/favicons/apple-icon-60x60.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="72x72" href="/orgimg/org.82/favicons/apple-icon-72x72.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="76x76" href="/orgimg/org.82/favicons/apple-icon-76x76.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="114x114" href="/orgimg/org.82/favicons/apple-icon-114x114.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="120x120" href="/orgimg/org.82/favicons/apple-icon-120x120.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="144x144" href="/orgimg/org.82/favicons/apple-icon-144x144.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="152x152" href="/orgimg/org.82/favicons/apple-icon-152x152.png?v=1680450446973255792">
+			<link rel="apple-touch-icon" sizes="180x180" href="/orgimg/org.82/favicons/apple-icon-180x180.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="192x192"  href="/orgimg/org.82/favicons/android-icon-192x192.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="32x32" href="/orgimg/org.82/favicons/favicon-32x32.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="96x96" href="/orgimg/org.82/favicons/favicon-96x96.png?v=1680450446973255792">
+			<link rel="icon" type="image/png" sizes="16x16" href="/orgimg/org.82/favicons/favicon-16x16.png?v=1680450446973255792">
+			<link rel="manifest" href="/orgimg/org.82/favicons/manifest.json?v=1680450446973255792">
+			<meta name="msapplication-TileColor" content="#ffffff">
+			<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+			
+			
+			
+
+<script>
+/* stubs */
+	const hapticsImpactHeavy = async () => {
+	};
+	const hapticsImpactMedium = async () => {
+	};
+	const hapticsImpactLight = async () => {
+	};
+	const hapticsVibrate = async () => {
+	};
+	const hapticsSelectionStart = async () => {
+	};
+	const hapticsSelectionChanged = async () => {
+	};
+	const hapticsSelectionEnd = async () => {
+	};
+</script>
+
+			
+<script>
+	
+		function setPullToRefresh() {}
+	
+	function gotoURL(inurl) {
+		window.location.href = inurl;
+		return;
+	}
+	function contentLoaded(isHTMX, f, caller = "") {
+		console.log("contentLoaded: " + isHTMX + " " + caller);
+		if (isHTMX == true) {
+			document.body.addEventListener('htmx:afterSettle', f, {once: true});
+		} else {
+			if (document.readyState !== 'loading') {
+				console.log('document is already ready, just execute code here');
+				f();
+			} else {
+				console.log('document was not ready, place code here');
+				document.addEventListener('DOMContentLoaded', f, {once: true});
+			}
+		}
+	}
+
+	function HideAppSidebarOnKeyboard() {
+		console.log("In HideAppSidebarOnKeyboard");
+		
+	}
+	// stub
+	function logError(data, url, linenumber) {
+		console.log(data)
+		return;
+	}
+	var pushSubToken;
+	var ignoreErrors = false;
+	var lastError = "";
+
+	// Auto-hide the fixed app top navbar on reading-heavy pages. The
+	// navbar tracks scroll delta 1:1 in both directions: scrolling down
+	// slides it off at the same pixel rate as the page; scrolling up —
+	// even one pixel — starts bringing it back at the same rate. When
+	// the user is at the very top, it's always fully visible. Opt-in
+	// per page; xs only. Bottom tab bar is untouched.
+	function EnableTopbarAutoHide() {
+		if (document.documentElement.clientWidth > 767) return;
+		var body = document.body;
+		body.classList.add('auto-hide-topbar');
+		// Measure the actual headerbar height so notched devices (iOS)
+		// hide the full bar including the safe-area-inset-top padding,
+		// not just the 50px content row. Fall back to 50 if the
+		// element isn't found for any reason.
+		var headerEl = document.getElementById('headerbar');
+		var navHeight = headerEl ? headerEl.offsetHeight : 50;
+		var offset = 0;
+		var lastY = window.scrollY;
+		function onScroll() {
+			var y = window.scrollY;
+			var dy = y - lastY;
+			lastY = y;
+			if (y <= 0) {
+				offset = 0;
+			} else {
+				offset -= dy;
+				if (offset > 0) offset = 0;
+				if (offset < -navHeight) offset = -navHeight;
+			}
+			body.style.setProperty('--topbar-offset', offset + 'px');
+		}
+		window.addEventListener('scroll', onScroll, { passive: true });
+		gioDestroy(function() {
+			window.removeEventListener('scroll', onScroll);
+			body.classList.remove('auto-hide-topbar');
+			body.style.removeProperty('--topbar-offset');
+		});
+	}
+	
+		window.onerror = function(errorMessage, errorUrl, errorLine, errorColumn, errorObj) {
+			let column;
+			let stack;
+			if (console && console.log) {
+				console.log("msg:", errorMessage);
+				console.log("url:", errorUrl);
+				console.log("line:", errorLine);
+				if (errorColumn !== undefined && errorObj != null) {
+					console.log("column:", errorColumn);
+					column = errorColumn;
+				}
+				if (errorObj !== undefined && errorObj != null) {
+					console.log("stack:", errorObj.stack);
+					stack = errorObj.stack;
+				}
+				console.log("client_id:", "web.app02-g2.1894532.1777503607241833413");
+				console.log("last_error:", lastError);
+				console.log("stack:", stack);
+			}
+			if (errorUrl == "" || errorUrl === null) {
+				errorUrl = window.location.href;
+			}
+			if (errorMessage.includes("SecurityError:") == true) {
+				ignoreErrors = true;
+			}
+			if (ignoreErrors == true) {
+				console.log("cookies, disabled, ignoring");
+				lastError = errorMessage;
+				return;
+			}
+			var ignoreMessages = ["ResizeObserver loop limit exceeded",
+				"TypeError: can't redefine non-configurable property \"userAgent\"",
+				"TypeError: can't redefine non-configurable property \"getChannelData\"",
+				"ReferenceError: tinymce is not defined",
+				"Uncaught ReferenceError: timeoutId is not defined",
+				"ReferenceError: Can't find variable: tinymce"];
+			for (var i = 0; i < ignoreMessages.length; i++) {
+				if (errorMessage === ignoreMessages[i]) {
+					lastError = errorMessage;
+					return;
+				}
+			}
+			if (errorUrl.indexOf("safari-extension:") === 0 || errorUrl.indexOf("moz-extension:") === 0 || errorUrl.indexOf("chrome-extension:") === 0) {
+				lastError = errorMessage;
+				return;
+			}
+			if (errorUrl.indexOf("googletagmanager.com") !== -1 || errorUrl.indexOf("socialsearch.com") !== -1) {
+				lastError = errorMessage;
+				return;
+			}
+			if (errorLine === 0 || errorLine === 1) {
+				lastError = errorMessage;
+				return;
+			}
+			jQuery.ajax({
+				type: 'POST',
+				url: '/jsclienterror',
+				data: {
+					msg: errorMessage,
+					url: errorUrl,
+					line: errorLine,
+					column: column,
+					stack: stack,
+					last_error: lastError,
+					client_id: "web.app02-g2.1894532.1777503607241833413"
+				},
+				success: function() {
+					if (console && console.log) {
+						console.log('JS error report successful.');
+					}
+					lastError = errorMessage;
+				},
+				error: function() {
+					if (console && console.error) {
+						console.error('JS error report submission failed!');
+					}
+					lastError = errorMessage;
+				}
+			});
+			return true;
+		}
+	
+</script>
+			
+			
+			<script src="/tinymce-5.10.9/tinymce.min.js"></script>
+			<script src="/js/browser-image-compression-2.0.2.min.js"></script>
+			<link href="/css/application-24dcf155f8cf9ca30214ea64f62961b4.css" rel="stylesheet" id="groupsio-css">
+			<script src="/js/application-7800e976860b357df405a3ea22aa72b1.js" id="groupsio-js"></script>
+			<script src="/js/run_prettify.js"></script>
+			<title>Trustworthy-Workload-Identity-SIG@lists.confidentialcomputing.io | Topics</title>
+			
+
+			
+				
+			
+			
+<link rel="canonical" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=3&after=1764241212357426240">
+<meta property="og:title" content="Topics" />
+<meta property="og:description" content="" />
+<meta property="og:image" content="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/coverphoto" />
+
+<script>
+	htmx.config.scrollBehavior = "instant";
+	htmx.config.historyCacheSize = 0;
+	htmx.config.defaultSettleDelay = 0;
+	console.log("FULL PAGE LOAD");
+
+	// Short fade-in on #maincontent-refresh after every HTMX swap — adds zero latency
+	// because it runs AFTER the new content has arrived. We listen to afterRequest
+	// (fires once per HTMX request) rather than afterSwap (fires once per swapped
+	// element, including every hx-swap-oob badge — which would cancel the animation).
+	// Listen on document because this script runs in <head> before <body> exists.
+	document.addEventListener('htmx:afterRequest', function(evt) {
+		if (!evt.detail || !evt.detail.successful) return;
+		var refresh = document.getElementById('maincontent-refresh');
+		if (!refresh) return;
+		refresh.classList.remove('gio-fade-in');
+		// force reflow so removing then adding re-starts the animation each time
+		void refresh.offsetWidth;
+		refresh.classList.add('gio-fade-in');
+	});
+
+	// Top-of-viewport progress bar shown while an HTMX request is in flight.
+	// Provides immediate visual feedback for taps even before content arrives.
+	document.addEventListener('htmx:beforeRequest', function() {
+		var bar = document.getElementById('gio-progress-bar');
+		if (bar) bar.classList.add('active');
+	});
+	document.addEventListener('htmx:afterRequest', function() {
+		var bar = document.getElementById('gio-progress-bar');
+		if (bar) bar.classList.remove('active');
+	});
+
+	// Haptic feedback on mobile-native chrome taps: bottom-nav tabs, back
+	// chevron, and the navbar overflow action slot. Uses the shared helpers
+	// from qtutils/appfunctions.qtpl — they no-op on non-Capacitor runtimes,
+	// so this is safe on the plain web too.
+	document.addEventListener('click', function(ev) {
+		if (typeof hapticsSelectionChanged !== 'function') return;
+		var target = ev.target;
+		if (!target || !target.closest) return;
+		if (target.closest('.mobilesidebar-item') ||
+			target.closest('#logo a') ||
+			target.closest('#header-action-slot a')) {
+			hapticsSelectionChanged();
+		}
+	}, true);
+</script>
+		</head>
+		<body id="body" class="" hx-headers='{"Accept-Version": "b858fa59387f4a686a81ca384b5fc7b0792d9864"}' hx-ext="preload" hx-boost="false">
+			<div id="gio-progress-bar" aria-hidden="true"></div>
+			
+				<script>
+					if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+						document.body.classList.add('dark-mode');
+					}
+				</script>
+			
+
+			
+				<div class="navbar navbar-head navbar-fixed-top" role="navigation" id="headerbar" style="border:0">
+					<div class="container-fluid" style="padding-left:0px;">
+						<span id="logo">
+							
+								<a href="https://lists.confidentialcomputing.io" class="navbar-left">
+									<img src="https://lists.confidentialcomputing.io/orgimg/org.82/mainlogo.png?v=1680450446973255792" height="50" alt="Groups.io">
+								</a>
+							
+						</span>
+						<ul class="nav navbar-nav hidden-xs">
+							<li class="dropdown">
+								<a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="your-groups-dropdown">
+									Your Groups
+									<span id="your-groups-badge" class="badge"></span>
+									<b class="caret"></b>
+								</a>
+								<ul id="your-groups-list" class="dropdown-menu scrollable-groups-menu">
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/main/topics"id="your-group-confidentialcomputing">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;CCC main group
+												</a>
+											</li>
+										
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/general-members/topics"id="your-group-confidentialcomputing--general-members">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;General Members
+												</a>
+											</li>
+										
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/tac/topics"id="your-group-confidentialcomputing--tac">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;tac
+												</a>
+											</li>
+										
+									
+										
+											<li>
+												<a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics"id="your-group-confidentialcomputing--trustworthy-workload-identity-sig">
+													<i class="fa-fw fa fa-users"></i>
+													&nbsp;Trustworthy-Workload-Identity-SIG
+												</a>
+											</li>
+										
+									
+									<li role="separator" class="divider"></li>
+									<li>
+										<a href="https://lists.confidentialcomputing.io/groups">
+											<i class="fa-fw fa fa-users"></i>
+											Manage My Subscriptions
+										</a>
+									</li>
+								</ul>
+							</li>
+							
+							
+						</ul>
+						<ul class="nav navbar-nav pull-right visible-xs navbar-actions-xs">
+							<li id="header-action-slot" style="display:none;float:left;"></li>
+							<li style="float:left;">
+								<a href="#" data-toggle="modal" data-target="#mobileAccount" class="navbar-action-xs">
+									
+										<i class="fa-fw fa fa-lg fa-user"></i>
+									
+								</a>
+							</li>
+						</ul>
+						<ul class="nav navbar-nav navbar-right hidden-xs">
+							<li>
+								<a class="hidden-xs hidden-sm" href="https://lists.confidentialcomputing.io/helpcenter" target="_blank">
+									Help
+								</a>
+							</li>
+							<li class="dropdown">
+								<a id="user-dropdown" href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									
+										<span title="hangyin@phala.network">
+											Hang Yin
+										</span>
+									
+									<b class="caret"></b>
+								</a>
+								<ul class="dropdown-menu">
+									<li class="dropdown-header">
+										
+											<span style="display: flex;align-items: center; margin-bottom:10px;">
+												<i class="fa fa-user" style="font-size:40px; padding-right:2px; padding-left:2px;margin-right:10px;"></i>
+												<div>
+													
+														<strong>
+															Hang Yin
+														</strong>
+														
+													
+												</div>
+											</span>
+											hangyin@phala.network
+										
+									</li>
+									<li role="separator" class="divider"></li>
+									
+									<li>
+										<a id="user-settings" href="https://lists.confidentialcomputing.io/settings">
+											<i class="pull-right fa-fw fa fa-user"></i>
+											Settings
+										</a>
+									</li>
+									<li>
+										<a href="https://lists.confidentialcomputing.io/logout">
+											<i class="pull-right fa-fw fa fa-power-off"></i>
+											Log Out
+										</a>
+									</li>
+									
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="modal fade" id="mobileAccount" role="dialog">
+					<div class="modal-dialog" style="margin-top:50px;">
+						<div class="modal-content">
+							<div class="modal-body">
+
+									<ul class="list-group noborderlist">
+										<li class="dropdown-header">
+											
+												<span style="display: flex;align-items: center; margin-bottom:10px;">
+													<i class="fa fa-user" style="font-size:40px; padding-right:2px; padding-left:2px;margin-right:10px;"></i>
+													<div>
+														
+															<strong>
+																Hang Yin
+															</strong>
+															
+														
+													</div>
+												</span>
+												hangyin@phala.network
+											
+										</li>
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/groups">
+												<i class="pull-right fa-fw fa fa-users"></i>
+												Manage My Subscriptions
+											</a>
+										</li>
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/helpcenter" target="_blank">
+												<i class="pull-right fa-fw fa fa-question-circle"></i>
+												Help
+											</a>
+										</li>
+										
+										
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/settings">
+												<i class="pull-right fa-fw fa fa-user"></i>
+												Settings
+											</a>
+										</li>
+										<li class="noborderitem list-group-item">
+											<a href="https://lists.confidentialcomputing.io/logout">
+												<i class="pull-right fa-fw fa fa-power-off"></i>
+												Log Out
+											</a>
+										</li>
+										
+									</ul>
+							</div>
+						</div>
+					</div>
+				</div>
+
+
+			
+<script>
+var groupnavigatorData = [
+
+	
+	{
+		name: "CCC main group",
+		url: "https://lists.confidentialcomputing.io/g/main/topics"
+	},
+	
+
+	
+	{
+		name: "General Members",
+		url: "https://lists.confidentialcomputing.io/g/general-members/topics"
+	},
+	
+
+	
+	{
+		name: "tac",
+		url: "https://lists.confidentialcomputing.io/g/tac/topics"
+	},
+	
+
+	
+	{
+		name: "Trustworthy-Workload-Identity-SIG",
+		url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics"
+	},
+	
+
+];
+</script>
+
+
+<!-- Modal Dialog for Autocomplete -->
+<div class="modal fade" id="groupnavigatorModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <input type="text" class="form-control" id="groupnavigatorInput" placeholder="Go to group..." style="margin-bottom:10px">
+        <div id="groupnavigatorContainer" class="autocompleteResults" style="max-height:250px; overflow-y: auto;"></div>
+		<div class="text-center" style="margin-top:10px; font-size:12px;"><i class="fa-sharp fa-arrow-up-arrow-down"></i> to navigate&nbsp;&nbsp;&nbsp;<i class="fa-sharp fa-arrow-turn-down-left"></i> to use&nbsp;&nbsp;&nbsp;<strong>esc</strong> to dismiss</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// Keep track of the currently selected index
+var selectedIndex = -1;
+
+// Function to highlight the matched substring
+function highlightSubstring(str, substring) {
+  var index = str.toLowerCase().indexOf(substring.toLowerCase());
+  if (index !== -1) {
+    var before = str.substring(0, index);
+    var middle = str.substring(index, index + substring.length);
+    var after = str.substring(index + substring.length);
+    return before + '<span class="autocomplete-highlight">' + middle + '</span>' + after;
+  }
+  return str;
+}
+
+// Function to highlight the selected item and ensure it is visible in the scrollable list
+function highlightSelectedItem(modalName) {
+  var listContainer = document.getElementById(modalName + 'Container');
+  var items = document.getElementsByClassName(modalName + '-list-item');
+  Array.from(items).forEach(function(item, idx) {
+    item.className = idx === selectedIndex ? modalName + '-list-item autocomplete-list-item btn-primary no-hover' : modalName + '-list-item autocomplete-list-item no-hover'; // Apply btn-primary class to the selected item
+  });
+  if (items.length > 0 && selectedIndex >= 0) {
+    var selectedItem = items[selectedIndex];
+    var containerTop = listContainer.scrollTop;
+    var containerBottom = containerTop + listContainer.clientHeight;
+    var itemTop = selectedItem.offsetTop;
+    var itemBottom = itemTop + selectedItem.offsetHeight;
+	const fudge = 59;
+    if (selectedIndex > 0 && itemTop > containerBottom) {
+      // If there are items below the selected item and the selected item is not fully visible, scroll down
+      listContainer.scrollTop = itemTop - listContainer.clientHeight + items[selectedIndex - 1].offsetHeight;
+    } else if (selectedIndex < items.length - 1 && (itemTop - fudge) < containerTop) {
+      // If there are items above the selected item and the selected item is not fully visible, scroll up
+      listContainer.scrollTop = itemTop - fudge - items[selectedIndex + 1].offsetHeight;
+    }
+  }
+}
+
+// function to populate the list based on the input
+function populateList(modalName, data) {
+  var input = document.getElementById(modalName+'Input').value;
+  var listContainer = document.getElementById(modalName+'Container');
+  listContainer.innerHTML = '';
+  data.forEach(function(item) {
+    if (item.name.toLowerCase().includes(input.toLowerCase())) {
+      var div = document.createElement('div');
+      div.innerHTML = highlightSubstring(item.name, input);
+      div.className = modalName+'-list-item autocomplete-list-item no-hover'; // Apply no-hover class
+      div.addEventListener('click', function() {
+        // Navigate to the specified URL when a list item is clicked
+        window.location.href = item.url;
+      });
+      div.addEventListener('mousemove', function() {
+        // Remove no-hover class from all items when the mouse is moved over any item
+		console.log("mouse move");
+        var items = document.getElementsByClassName(modalName+'-list-item');
+        Array.from(items).forEach(function(item) {
+          item.classList.remove('no-hover');
+        });
+      });
+      listContainer.appendChild(div);
+    }
+  });
+  highlightSelectedItem(modalName);
+}
+
+function InitAutocomplete(modalName, data) {
+	// Focus the input field when the modal is shown and populate the list
+	$('#' + modalName + 'Modal').on('shown.bs.modal', function () {
+		$('#' + modalName + 'Input').focus().val('');
+		populateList(modalName, data);
+		selectedIndex = 0;
+		highlightSelectedItem(modalName);
+	});
+
+	// Event listener for input field typing
+	document.getElementById(modalName + 'Input').addEventListener('input', function() {
+		populateList(modalName, data);
+		selectedIndex = 0;
+	});
+
+	// Event listener for arrow keys and enter key
+	document.getElementById(modalName + 'Input').addEventListener('keydown', function(event) {
+		var items = document.getElementsByClassName(modalName + '-list-item');
+		if (event.key === 'ArrowDown') {
+			event.preventDefault();
+			if (selectedIndex < items.length - 1) selectedIndex++;
+			highlightSelectedItem(modalName);
+		} else if (event.key === 'ArrowUp') {
+			event.preventDefault();
+			if (selectedIndex > 0) selectedIndex--;
+			highlightSelectedItem(modalName);
+		} else if (event.key === 'Enter' && selectedIndex >= 0 && selectedIndex < items.length) {
+			event.preventDefault();
+			items[selectedIndex].click();
+		}
+	});
+}
+
+function showAutocompleteModal(modalName) {
+	$('#' + modalName + 'Modal').modal('show');
+	selectedIndex = -1;
+}
+</script>
+
+			<div id="content" class="container-fluid">
+<script>
+	InitAutocomplete("groupnavigator", groupnavigatorData);
+
+	document.body.addEventListener("showReloadPageDialog", function(evt) {
+		console.log("Forced reload");
+		location.reload();
+	});
+
+	function ShowBackButton(label, url, subtitle) {
+		var logoElement = document.getElementById("logo");
+		if (!logoElement) {
+			return;
+		}
+		logoElement.innerHTML = '';
+
+		var span = document.createElement('span');
+		span.style.cssText = "color:#fff;margin-top:14px;margin-left:12px;float:left !important;height:36px;";
+		var a = document.createElement('a');
+		a.style.color = '#fff';
+		if (url) {
+			a.href = url;
+			// HTMX-boost only when the target is still inside the same group — then the
+			// bottom nav (which sits outside #maincontent-refresh) is the same layout and
+			// can stay put. Cross-context targets (e.g. /groups) need a full page load so
+			// the bottom nav actually switches.
+			if (/\/g\//.test(url)) {
+				a.setAttribute('hx-boost', 'true');
+				a.setAttribute('hx-target', '#maincontent-refresh');
+				a.setAttribute('hx-push-url', 'true');
+				a.setAttribute('hx-history', 'false');
+				// Reset window scroll to the top after the swap, otherwise the
+				// user lands on the previous page at whatever Y they were at on
+				// the current one — typically mid-page, behind the fixed
+				// navbar/notch in the iOS app.
+				a.setAttribute('hx-on::after-request', 'window.scrollTo({top:0, behavior:"instant"})');
+				if (window.htmx) {
+					htmx.process(a);
+				}
+			}
+		} else {
+			a.onclick = goBack;
+			a.style.cursor = 'pointer';
+		}
+		var icon = document.createElement('i');
+		icon.className = 'fa-fw fa-solid fa-chevron-left fa-lg';
+		a.appendChild(icon);
+		span.appendChild(a);
+		logoElement.appendChild(span);
+
+		if (label) {
+			var titleDiv = document.createElement('div');
+			// The navbar in the iOS app gets padding-top equal to the safe-area
+			// inset, so the outer box can be taller than the visible content
+			// strip. Centering at 50% of the outer box lands the title inside
+			// the notch — offset the center down by half the inset so the
+			// title sits in the visible strip. On non-app contexts
+			// env(safe-area-inset-top) is 0 and this is a no-op.
+			titleDiv.style.cssText = "position:absolute;left:50%;top:calc(50% + env(safe-area-inset-top) / 2);transform:translate(-50%,-50%);text-align:center;color:#ecf0f1;max-width:60%;overflow:hidden;";
+			var h4 = document.createElement('h4');
+			h4.style.cssText = "margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;";
+			h4.textContent = label;
+			titleDiv.appendChild(h4);
+			if (subtitle) {
+				var sub = document.createElement('div');
+				sub.style.cssText = "font-size:11px;line-height:1.2;margin-top:1px;opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+				sub.textContent = subtitle;
+				titleDiv.appendChild(sub);
+			}
+			logoElement.appendChild(titleDiv);
+		}
+	}
+
+	// ShowNavbarTitle sets a centered title (and optional subtitle) in the
+	// mobile navbar without any back arrow — used on top-level tab pages
+	// (/feed, /groups) where there's nowhere to go back to.
+	function ShowNavbarTitle(label, subtitle) {
+		var logoElement = document.getElementById("logo");
+		if (!logoElement) {
+			return;
+		}
+		logoElement.innerHTML = '';
+		if (label) {
+			var titleDiv = document.createElement('div');
+			titleDiv.style.cssText = "position:absolute;left:50%;top:calc(50% + env(safe-area-inset-top) / 2);transform:translate(-50%,-50%);text-align:center;color:#ecf0f1;max-width:70%;overflow:hidden;";
+			var h4 = document.createElement('h4');
+			h4.style.cssText = "margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;";
+			h4.textContent = label;
+			titleDiv.appendChild(h4);
+			if (subtitle) {
+				var sub = document.createElement('div');
+				sub.style.cssText = "font-size:11px;line-height:1.2;margin-top:1px;opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+				sub.textContent = subtitle;
+				titleDiv.appendChild(sub);
+			}
+			logoElement.appendChild(titleDiv);
+		}
+	}
+
+	// ShowHeaderAction adds an icon button (e.g. settings cog) to the mobile navbar,
+	// to the left of the profile icon. modalTarget is optional — if given, clicking
+	// opens that Bootstrap modal. ariaLabel is for accessibility.
+	function ShowHeaderAction(iconClass, modalTarget, ariaLabel) {
+		var slot = document.getElementById("header-action-slot");
+		if (!slot) {
+			return;
+		}
+		slot.innerHTML = '';
+		var a = document.createElement('a');
+		a.href = '#';
+		a.className = 'navbar-action-xs';
+		if (ariaLabel) {
+			a.setAttribute('aria-label', ariaLabel);
+		}
+		if (modalTarget) {
+			a.setAttribute('data-toggle', 'modal');
+			a.setAttribute('data-target', modalTarget);
+		}
+		var icon = document.createElement('i');
+		icon.className = iconClass;
+		a.appendChild(icon);
+		slot.appendChild(a);
+		slot.style.display = '';
+	}
+
+	function HideHeaderAction() {
+		var slot = document.getElementById("header-action-slot");
+		if (slot) {
+			slot.innerHTML = '';
+			slot.style.display = 'none';
+			slot.style.float = 'left';
+		}
+	}
+
+	function HideBackButton() {
+		var logoElement = document.getElementById("logo");
+		if (logoElement) {
+			logoElement.innerHTML = `
+				<a href="https://lists.confidentialcomputing.io" class="navbar-left">
+					<img src="https://lists.confidentialcomputing.io/orgimg/org.82/mainlogo.png?v=1680450446973255792" height="50" alt="Groups.io">
+				</a>`;
+		}
+	}
+
+	function goBack() {
+		history.back();
+	}
+
+	// --- Native date/time picker helpers -----------------------------------
+	// On touch devices we swap flatpickr-wrapped <input type="text"> fields
+	// for native <input type="date"> / type="time" so iOS / Android bring up
+	// their OS pickers (wheel, spinner, Material dialog). On pointer
+	// devices we leave the flatpickr popover in place, since Chrome's
+	// default date popover looks out of place. Both helpers are global so
+	// every page with a date/time input can call them the same way.
+	window.__isTouchPicker = function() {
+		return window.matchMedia && window.matchMedia('(any-pointer: coarse)').matches;
+	};
+	// Fallback formats if data.User is nil on this page (logged out, etc).
+	window.__userDateFmt = "MM/DD/YYYY";
+	window.__userTimeFmt = "h:mma";
+	// Hybrid native picker: the field is shown to the user as a plain
+	// type=text input holding the date/time formatted per the user's
+	// Groups.io preference (e.g., "19/04/2026" for an International
+	// user). When the user taps the field, we briefly swap the input's
+	// type to 'date' or 'time' so the OS brings up its native picker
+	// (iOS wheel, Android calendar/spinner). When the user finishes
+	// picking and blurs the field, we swap back to text and reformat
+	// the value in the user's chosen format. The server sees the
+	// user-format value on submit, same as with flatpickr.
+	//
+	// `kind` is 'date' or 'time'. `onHumanChange(humanStr, momentObj)`
+	// fires whenever the user picks a new value, with the value already
+	// in the user's format.
+	window.useNativePicker = function(id, kind, onHumanChange) {
+		var input = document.getElementById(id);
+		if (!input) return null;
+		var userFmt = kind === 'time' ? window.__userTimeFmt : window.__userDateFmt;
+		var isoFmt = kind === 'time' ? 'HH:mm' : 'YYYY-MM-DD';
+		// Page loads with input type=text holding a user-format value —
+		// leave it as is until the user actually taps.
+		function toPicker() {
+			if (input.type !== kind) {
+				var m = moment(input.value, userFmt);
+				input.type = kind;
+				input.value = m.isValid() ? m.format(isoFmt) : '';
+			}
+		}
+		function toDisplay() {
+			if (input.type === kind) {
+				var m = moment(input.value, isoFmt);
+				input.type = 'text';
+				input.value = m.isValid() ? m.format(userFmt) : '';
+			}
+		}
+		// pointerdown fires before focus/click so we can swap the type
+		// in time for the browser's default tap-handling to open the
+		// correct native picker. Fall back to 'focus' for keyboard users.
+		input.addEventListener('pointerdown', toPicker);
+		input.addEventListener('focus', toPicker);
+		input.addEventListener('change', function() {
+			if (input.type === kind) {
+				var m = moment(input.value, isoFmt);
+				if (m.isValid() && onHumanChange) {
+					onHumanChange(m.format(userFmt), m);
+				}
+			}
+		});
+		input.addEventListener('blur', toDisplay);
+		// Make sure the server always sees the user-format value.
+		var form = input.closest('form');
+		if (form) form.addEventListener('submit', toDisplay);
+		return input;
+	};
+	// Set a field's value as a user-format string, whether the field is a
+	// flatpickr-wrapped text input (desktop) or a native type=date/time
+	// input (touch). Used by onChange handlers that update sibling fields.
+	window.setFieldHuman = function(id, humanStr, kind) {
+		var input = document.getElementById(id);
+		if (!input) return;
+		if (input._flatpickr) {
+			input._flatpickr.setDate(humanStr);
+		} else if (input.type === 'date' || input.type === 'time') {
+			var userFmt = kind === 'time' ? window.__userTimeFmt : window.__userDateFmt;
+			var isoFmt = kind === 'time' ? 'HH:mm' : 'YYYY-MM-DD';
+			var m = moment(humanStr, userFmt);
+			if (m.isValid()) input.value = m.format(isoFmt);
+		} else {
+			input.value = humanStr;
+		}
+	};
+
+	// submitEvent acts like .submit(), except it is compatible with the app, by using events instead.
+	function submitEvent(ele) {
+		console.log("in submitEvent");
+		if (ele.startsWith('#')) {
+    		ele = ele.slice(1);
+		}
+		document.getElementById(ele).submit();
+		return;
+		/*
+		const theEvent = new CustomEvent('submit', {
+			bubbles: true,
+			cancelable: true
+		});
+		if (typeof ele === 'string' || ele instanceof String) {
+			if (ele.startsWith("#") == true) {
+				ele = ele.slice(1);
+			}
+			if (document.getElementById(ele).dispatchEvent(theEvent) == true) {
+				// if not cancelled, do normal submit
+				console.log("calling submit");
+				document.getElementById(ele).submit();
+			}
+			return;
+		}
+		// assume ele is the element
+		if (ele.dispatchEvent(theEvent) == true) {
+			// if not cancelled, do normal submit
+			console.log("calling submit");
+			ele.submit();
+		}
+		*/
+	}
+
+	// gioDestroy is a convenience function for destroy callbacks
+	function gioDestroy(eventCB) {
+		let internalGioDestroy = function(evt) {
+			// do not activate on infinite scroll events
+			if (evt.detail.target !== undefined && evt.detail.target.id != "maincontent-refresh") {
+				console.log("Ignoring infinite scroll event");
+				return;
+			}
+			console.log("Calling destroy callback");
+			eventCB(evt);
+		}
+		document.body.addEventListener("htmx:beforeSwap", internalGioDestroy, {once: true});
+		document.body.addEventListener("htmx:historyCacheMiss", internalGioDestroy, {once: true});
+	}
+			
+	var drawerCloseFunc = function(evt) {
+		console.log("in drawerCloseFunc");
+		// Find all elements with the class 'drawer'
+		var drawers = document.querySelectorAll('.drawer');
+
+		// Iterate over each element and call closeDrawer() on each
+		drawers.forEach(function(obj) {
+			drawerObj.closeDrawer(obj);
+		});
+		$('.modal').modal('hide');
+	}
+	document.body.addEventListener('htmx:beforeSwap', drawerCloseFunc);
+	document.body.addEventListener('htmx:historyCacheMiss', drawerCloseFunc);
+
+	var keydownFunc = function(event) {
+		var tagName = event.target.tagName.toLowerCase();
+		if (tagName === 'input' || tagName === 'textarea' || event.target.isContentEditable) {
+			if (event.key === 'Escape') {
+				event.target.blur();
+			}
+			return;
+		}
+		// check if the viewimages viewer is up
+		let element = document.getElementById('overlay');
+		if (element && element.classList.contains('visible')) {
+			return;
+		}
+		console.log("HERE: " + event.key + " " + event.ctrlKey + " " + event.shiftKey + " " + event.metaKey);
+		if (event.ctrlKey && event.shiftKey && (event.key === '?' || event.key === '/')) {
+			event.preventDefault(); // Prevent the default action
+			// Show the modal dialog for keyboard shortcuts
+			$('#shortcutModal').modal('show');
+			return;
+		}
+		$('#shortcutModal').modal('hide');
+
+		if (event.key.toLowerCase() === 'g') {
+			// For Windows and Linux
+			if (event.ctrlKey) {
+				event.preventDefault();
+				showAutocompleteModal("groupnavigator");
+				return;
+			}
+		}
+
+		// Check if the pressed key is '/'
+		if ((event.key === 'f' || event.key === 'F') && event.shiftKey) {
+			if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+				if (event.metaKey) {
+					event.preventDefault(); // Prevent the default action
+					// Focus on the search box
+					let box = document.getElementById('searchbox')
+					if (box != null) {
+						document.getElementById('searchbox').focus();
+					}
+				}
+			} else {
+				// For Windows and Linux
+				if (event.ctrlKey) {
+					event.preventDefault(); // Prevent the default action
+					// Focus on the search box
+					let box = document.getElementById('searchbox')
+					if (box != null) {
+						document.getElementById('searchbox').focus();
+					}
+				}
+			}
+		}
+	}
+	document.addEventListener('keydown', keydownFunc);
+	var removeDrawerCloseFunc = function(evt) {
+		document.body.removeEventListener('htmx:beforeSwap', drawerCloseFunc);
+		document.body.removeEventListener('htmx:historyCacheMiss', drawerCloseFunc);
+		document.removeEventListener('keydown', keydownFunc);
+	}
+	document.body.addEventListener("htmx:historyCacheMiss", removeDrawerCloseFunc, {once: true});
+
+	// Check for passkey enrollment prompt after cross-device authentication
+	$(function() {
+		if (sessionStorage.getItem('passkeyPromptAfterCDA') === 'true') {
+			console.log('Passkey CDA flag detected, showing enrollment modal');
+
+			// Show the modal
+			$('#passkeyEnrollmentModal').modal('show');
+
+			// Clear the flag when modal is dismissed
+			$('#passkeyEnrollmentModal').on('hidden.bs.modal', function() {
+				console.log('Modal dismissed, clearing flag');
+				sessionStorage.removeItem('passkeyPromptAfterCDA');
+			});
+
+			// Set up enrollment button handler
+			var enrollBtn = document.getElementById('enrollLocalPasskeyBtn');
+			if (enrollBtn) {
+				enrollBtn.addEventListener('click', function() {
+					console.log('Enrollment button clicked');
+					// Redirect to settings page where they can add a passkey
+					sessionStorage.removeItem('passkeyPromptAfterCDA');
+					window.location.href = 'https://lists.confidentialcomputing.io/settings/security';
+				});
+			}
+		}
+	});
+</script>
+<!-- Passkey Enrollment Modal -->
+<div class="modal fade webauthn-only" id="passkeyEnrollmentModal" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<i class="fa fa-fingerprint"></i>
+					Add a Passkey to This Device
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					You logged in using a passkey from another device. For faster access next time, add a passkey to this device.
+				</p>
+				<p>
+					<strong>Benefits:</strong>
+				</p>
+				<ul>
+					<li>Faster login with just your fingerprint or face</li>
+					<li>No need to use your phone each time</li>
+					<li>Works even when offline</li>
+				</ul>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					Maybe Later
+				</button>
+				<button type="button" class="btn btn-primary" id="enrollLocalPasskeyBtn">
+					<i class="fa fa-plus"></i>
+					Add Passkey Now
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- Modal Dialog for Keyboard Shortcuts -->
+<div class="modal fade" id="shortcutModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="myModalLabel">Keyboard Shortcuts</h4>
+      </div>
+      <div class="modal-body">
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong>ctrl</strong> + <strong>shift</strong> + <strong>?</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Show all keyboard shortcuts</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong>ctrl</strong> + <strong>g</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Navigate to a group</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong class="ctrlmeta">ctrl</strong> + <strong>shift</strong> + <strong>f</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Find</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-3 text-right"><strong class="ctrlmeta">ctrl</strong> + <strong>/</strong>&nbsp;&nbsp;:</div>
+			<div class="col-xs-9" style="margin-left: -23px;">Quick actions</div>
+		</div>
+		</div>
+		<div class="text-center" style="margin-top:10px; margin-bottom:10px; font-size:12px;"><strong>esc</strong> to dismiss</div>
+    </div>
+  </div>
+</div>
+				
+	
+	<div id="mainrow" class="row"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div id="groupsidebar" class="scrollbar hidden-print">
+			<div class="scrollbar-content">
+				<div id="accordion" role="tablist" aria-multiselectable="true" style="margin-bottom:20px;">
+					<div class="list-group noborderlist" style="border:0;margin-bottom:0px">
+						
+
+
+	<a title="Group Home" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG" class="list-group-item sidebar-item">
+		<i class="fa-fw fa fa-home fa-lg"></i>
+		Home
+		
+			
+				
+				
+			
+		
+	</a>
+
+	
+		<a id="sidebar-subscription" href="#submenu0" class="noborderitem list-group-item sidebar-section navbar-vertical dropdown-indicator" data-toggle="collapse" data-parent="#accordion" aria-expanded="false" aria-controls="submenu0">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Subscription
+		</a>
+		<div class="collapse" id="submenu0">
+			
+
+	<a title="Edit Subscription Settings" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editsub" id="sidebar-editsub" class="noborderitem list-group-item sidebar-item sidebar-item-editsub">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Settings
+			<span id="sidebar-editsub-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Group Profile" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG//profile/6115309" id="sidebar-profileview" class="noborderitem list-group-item sidebar-item sidebar-item-profileview">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-user fa-lg"></i>
+			Group Profile
+			<span id="sidebar-profileview-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Delivery History" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subdeliveries" id="sidebar-subdeliveries" class="noborderitem list-group-item sidebar-item sidebar-item-subdeliveries">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-envelope fa-lg"></i>
+			Delivery History
+			<span id="sidebar-subdeliveries-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Integrations" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subintegrations" id="sidebar-subintegrations" class="noborderitem list-group-item sidebar-item sidebar-item-subintegrations">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-exchange-alt fa-lg"></i>
+			Integrations
+			<span id="sidebar-subintegrations-badge" class="badge"></span>
+		</span>
+	</a>
+
+		</div>
+	
+
+	
+
+	
+		
+	
+		
+
+	<a title="Messages" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?sidebar=true" id="sidebar-archives" class="noborderitem list-group-item sidebar-item sidebar-item-archives active"> 
+		<i class="fa-fw fa fa-comments fa-lg"></i>
+		Messages
+		<span id="sidebar-archives-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Topic" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post" id="sidebar-post" class="noborderitem list-group-item sidebar-item sidebar-item-post"> 
+		<i class="fa-fw fa fa-edit fa-lg"></i>
+		New Topic
+		<span id="sidebar-post-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="Drafts" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/drafts" id="sidebar-drafts" class="noborderitem list-group-item sidebar-item sidebar-item-drafts"> 
+		<i class="fa-fw fa fa-inbox fa-lg"></i>
+		Drafts
+		<span id="sidebar-drafts-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Poll" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/addpoll" id="sidebar-addpoll" class="noborderitem list-group-item sidebar-item sidebar-item-addpoll"> 
+		<i class="fa-fw fa fa-chart-bar fa-lg"></i>
+		New Poll
+		<span id="sidebar-addpoll-badge" class="badge"></span>
+	</a>
+
+	
+	
+	
+		
+
+	<a title="Hashtags" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/hashtags" id="sidebar-hashtags" class="noborderitem list-group-item sidebar-item sidebar-item-hashtags"> 
+		<i class="fa-fw fa fa-hashtag fa-lg"></i>
+		Hashtags
+		<span id="sidebar-hashtags-badge" class="badge"></span>
+	</a>
+
+	
+
+		
+	
+		
+			
+
+	<a title="Chats" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats" id="sidebar-chats" class="noborderitem list-group-item sidebar-item sidebar-item-chats"> 
+		<i class="fa-fw fa fa-message-dots fa-lg"></i>
+		Chats
+		<span id="sidebar-chats-badge" class="badge chatbadge"></span>
+	</a>
+
+		
+	
+
+	
+
+	
+
+	
+			
+
+	<a title="Subgroups" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subgroups" id="sidebar-subgroups" class="noborderitem list-group-item sidebar-item sidebar-item-subgroups"> 
+		<i class="fa-fw fa fa-chart-pie fa-lg"></i>
+		Subgroups
+		<span id="sidebar-subgroups-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+	
+
+	
+		
+
+	<a title="Member Directory" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/directory" id="sidebar-directory" class="noborderitem list-group-item sidebar-item sidebar-item-directory"> 
+		<i class="fa-fw fa fa-users fa-lg"></i>
+		Directory
+		<span id="sidebar-directory-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+	<a title="Calendar" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/calendar" id="sidebar-calendar" class="noborderitem list-group-item sidebar-item sidebar-item-calendar"> 
+		<i class="fa-fw fa fa-calendar-alt fa-lg"></i>
+		Calendar
+		<span id="sidebar-calendar-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+			
+
+	<a title="Photos" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/photos" id="sidebar-photos" class="noborderitem list-group-item sidebar-item sidebar-item-photos"> 
+		<i class="fa-fw fa fa-file-image fa-lg"></i>
+		Photos
+		<span id="sidebar-photos-badge" class="badge"></span>
+	</a>
+
+		
+		
+			
+
+	<a title="Files" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/files" id="sidebar-files" class="noborderitem list-group-item sidebar-item sidebar-item-files"> 
+		<i class="fa-fw fa fa-copy fa-lg"></i>
+		Files
+		<span id="sidebar-files-badge" class="badge"></span>
+	</a>
+
+		
+
+		
+			
+
+	<a title="Databases" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/database" id="sidebar-database" class="noborderitem list-group-item sidebar-item sidebar-item-database"> 
+		<i class="fa-fw fa fa-database fa-lg"></i>
+		Databases
+		<span id="sidebar-database-badge" class="badge"></span>
+	</a>
+
+		
+		
+	
+
+	
+		
+
+	<a title="Wiki" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/wiki" id="sidebar-wiki" class="noborderitem list-group-item sidebar-item sidebar-item-wiki"> 
+		<i class="fa-fw fa fa-book fa-lg"></i>
+		Wiki
+		<span id="sidebar-wiki-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+			
+
+		
+
+	
+
+					</div>
+				</div>
+				
+	<div class="text-center" style="font-size:13px;margin-bottom:30px">
+		<div style="padding-bottom:10px;">
+			<strong>ctrl</strong> + <strong>shift</strong> + <strong>?</strong> for shortcuts
+		</div>
+		<div style="padding-bottom:5px;">
+			<a href="https://groups.io/static/about">
+				About
+			</a> &middot;
+			<a href="https://groups.io/static/features">
+				Features
+			</a> &middot;
+			<a href="https://groups.io/static/pricing">
+				Pricing
+			</a>
+		</div>
+		<div style="padding-bottom:5px;">
+			<a href="https://groups.io/home">
+				Home
+			</a> &middot;
+			<a rel="nofollow" href="https://groups.io/changelog">
+				Changelog
+			</a> &middot;
+			<a href="https://groups.io/static/tos">
+				Terms
+			</a>
+		</div>
+		<div style="padding-bottom:5px;">
+			<a href="https://groups.io/helpcenter" target="_blank">
+				Help
+			</a>
+		</div>
+		<div style="padding-bottom:5px;">
+			&copy; 2026 Groups.io
+		</div>
+	</div>
+
+			</div>
+		</div>
+		<div id="maincontent" class="groupmaincontent">
+			<div id="maincontent-refresh">
+				<div id="maincontent-column" class="col-xs-12 maincontent-column">
+					
+	
+	
+	
+
+	
+		
+		
+	
+
+	
+	<div id="alertdiv"></div>
+	<div class="noticetemplate template">
+		<div class="alert alert-success alert-dismissible" role="alert">
+			<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				<span aria-hidden="true">
+					&times;
+				</span>
+			</button>
+			<span class="flashmsg"></span>
+		</div>
+	</div>
+	<div class="alerttemplate template">
+		<div class="alert alert-danger alert-dismissible" role="alert">
+			<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+				<span aria-hidden="true">
+					&times;
+				</span>
+			</button>
+			<span class="flashmsg"></span>
+		</div>
+	</div>
+	<div class="alertnoclosetemplate template">
+		<div class="alert alert-danger" role="alert">
+			<span class="flashmsg"></span>
+		</div>
+	</div>
+
+
+
+ 
+<script>
+function dismiss() {
+    console.log("dismiss");
+    $.get( "/dismissalert");
+}
+
+var $alerttemplate = $(".alerttemplate");
+var $alertnoclosetemplate = $(".alertnoclosetemplate");
+var $noticetemplate = $(".noticetemplate");
+function createAlert(msg, isError, autoClose, noClose) {
+	if (isError == false) {
+		$newPanel = $noticetemplate.clone();
+	} else {
+        if (noClose) {
+		  $newPanel = $alertnoclosetemplate.clone();
+        } else {
+		  $newPanel = $alerttemplate.clone();
+        }
+	}
+	$newPanel.find(".flashmsg").html(msg);
+	if (autoClose == true) {
+		$("#alertdiv").append($newPanel.fadeTo(2000, 500).slideUp(500, function(){
+		    $newPanel.slideUp(500);
+		    $newPanel.remove();
+		}));  	
+	} else {
+		$("#alertdiv").append($newPanel.fadeIn());
+	}
+    return $newPanel;
+}
+
+
+
+
+</script>
+
+
+
+	
+
+	<div class="row breadcrumb-row hidden-xs" style="margin-bottom: 10px">
+		<div class="col-xs-12 col-sm-9">
+			<span class="hidden-sm hidden-md hidden-lg pull-right" style="padding:8px 15px;"><a data-toggle="modal" data-target="#searchModal"><i class="fa fa-search"></i></a></span>
+			<div class="breadcrumb-container hidden-xs">
+				
+					<ol class="breadcrumb scroll-breadcrumb">
+						<li><a href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG"><i class="fa fa-home"></i> Trustworthy-Workload-Identity-SIG</a></li>
+						
+						<li class="active"><i class="fa fa-inbox"></i> Topics</li>
+					</ol>
+				
+			</div>
+		</div>
+		<div class="col-sm-3 hidden-xs" style="padding-right:0px">
+			<form class="form-inline pull-right" method="get" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/search">
+				<input type="hidden" name="p" value="recentpostdate/sticky,,,20,2,40,0">
+				
+				<div class="input-group">
+					<input id="searchbox" type="text" class="form-control" placeholder="Search" title="Search" name="q" size="20" value="" style="height:37px">
+					<div class="input-group-btn">
+						<button class="btn btn-primary" type="submit" style="height:37px;" aria-label="Search">
+							<span class="fa fa-search"></span>
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+
+
+	<div class="modal fade" id="searchModal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">
+						<span aria-hidden="true">
+							&times;
+						</span>
+						<span class="sr-only">
+							Close
+						</span>
+					</button>
+					<h4 class="modal-title" id="searchModalLabel">
+						Search
+					</h4>
+				</div>
+				<form class="form-horizontal" method="get" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/search">
+					
+					<div class="modal-body">
+						<div class="form-group">
+							<div class="col-sm-12">
+								<input type="text" class="form-control" placeholder="Search" title="Search" name="q" value="">
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-primary btn-sm" aria-label="Search">
+							<i class="fa fa-search"></i>
+							Search
+						</button>
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+
+	
+	<div class="row">
+		<div class="col-xs-9 col-sm-6 col-md-6 narrow-padding" style="padding-top:5px;padding-bottom:10px;">
+			<form class="form-inline" id="searchForm" method="get" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/search">
+				<div class="form-group button-link-group">
+					
+					
+	
+		<div class="btn-group" style="display:inline-block">
+	
+			
+				<button id="wide-messages" type="button" class="dropdown-wide btn btn-sm btn-default  dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					
+						<i class="fa fa-inbox"></i>
+					
+					Topics
+					
+						<span class="caret"></span>
+					
+				</button>
+			
+			<ul class="dropdown-menu" role="menu">
+				
+					
+						<li>
+							<a title="Messages" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages">
+								
+									<i class="fa fa-comments"></i>
+								Messages
+							</a>
+						</li>
+					
+				
+					
+						<li>
+							<a title="Expanded" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages?expanded=1">
+								
+									<i class="fa fa-comments"></i>
+								Expanded
+							</a>
+						</li>
+					
+				
+					
+						<li>
+							<a title="Polls" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/polls">
+								
+									<i class="fa fa-chart-bar"></i>
+								Polls
+							</a>
+						</li>
+					
+				
+			</ul>
+	</div>
+	<div class="btn-group">
+		
+			<a id="narrow-messages" href="javascript:void(0)" class="dropdown-narrow btn btn-sm btn-default " style="margin-left:-4px;" data-drawer-trigger aria-controls="messages-drawer" aria-expanded="false">
+				
+					<i class="fa fa-inbox"></i>
+				
+				Topics
+				
+					<span class="caret"></span>
+				
+			</a>
+		
+	</div>
+	<section class="drawer drawer-bottom" id="messages-drawer" data-drawer-target>
+		<div class="drawer-overlay" data-drawer-close tabindex="-1"></div>
+		<div class="drawer-wrapper">
+			<div class="drawer-content">
+				<div class="list-group">
+					
+						<a href="#" class="list-group-item disabled" title="Topics">
+							
+								<i class="fa fa-inbox"></i>
+							Topics
+						</a>
+					
+					
+						
+						
+							<a class="list-group-item" title="Messages" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages">
+								
+									<i class="fa fa-comments"></i>
+								Messages
+							</a>
+						
+					
+						
+						
+							<a class="list-group-item" title="Expanded" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages?expanded=1">
+								
+									<i class="fa fa-comments"></i>
+								Expanded
+							</a>
+						
+					
+						
+						
+							<a class="list-group-item" title="Polls" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/polls">
+								
+									<i class="fa fa-chart-bar"></i>
+								Polls
+							</a>
+						
+					
+				</div>
+			</div>
+		</div>
+	</section>
+<script>
+function modalmessages(target) {
+	drawer = document.getElementById('messages-drawer');
+	if (drawer != null) {
+		drawerObj.closeDrawer(drawer);
+	}
+	//$(target).modal('show');
+}
+</script>
+
+					
+					
+	<input type="hidden" name="d" id="dates" value="">
+	<input type="hidden" name="ct" id="ct" value="1">
+	<input type="hidden" name="ev" value="">
+	<div class="btn-group">
+		<button class="btn btn-sm btn-info" type="button" data-toggle="collapse" data-target="#advancedSearch" aria-expanded="false" aria-controls="advancedSearch">
+			Filter
+			<i class="fa fa-filter"></i>
+		</button>
+	</div>
+	<div class="collapse" id="advancedSearch" style="margin-top:10px;">
+
+		
+
+		<div class="btn-group">
+			<button type="button" class="btn btn-info btn-sm dropdown-toggle bottom10" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				Any Time
+				<span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu">
+				<li>
+					<a href="javascript:void(0)" onclick="$('#dates').val('0'); submitEvent('#searchForm');">
+						Any Time
+					</a>
+				</li>
+				<li>
+					<a href="javascript:void(0)" onclick="$('#dates').val('1'); submitEvent('#searchForm');">
+						Past Hour
+					</a>
+				</li>
+				<li>
+					<a href="javascript:void(0)" onclick="$('#dates').val('2'); submitEvent('#searchForm');">
+						Past 24 Hours
+					</a>
+				</li>
+				<li>
+					<a href="javascript:void(0)" onclick="$('#dates').val('3'); submitEvent('#searchForm');">
+						Past Week
+					</a>
+				</li>
+				<li>
+					<a href="javascript:void(0)" onclick="$('#dates').val('4'); submitEvent('#searchForm');">
+						Past Month
+					</a>
+				</li>
+				<li>
+					<a href="javascript:void(0)" onclick="$('#dates').val('5'); submitEvent('#searchForm');">
+						Past Year
+					</a>
+				</li>
+				<li role="separator" class="divider"></li>
+				<li>
+					<a href="javascript:void(0)" data-toggle="modal" data-target="#customRangeModal">
+						Custom range...
+					</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+	<!-- Custom Range Modal -->
+	<div class="modal fade" id="customRangeModal" tabindex="-1" role="dialog" aria-labelledby="customRangeModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">
+						<span aria-hidden="true">
+							&times;
+						</span>
+						<span class="sr-only">
+							Close
+						</span>
+					</button>
+					<h4 class="modal-title" id="customRangeModalLabel">
+						Custom Range
+					</h4>
+				</div>
+				<div class="modal-body">
+					Between
+					<input name="startdate" id="startdate" class="form-control" type="text" size="10" placeholder="Start" />
+					and
+					<input name="enddate" id="enddate" class="form-control" type="text" size="10" placeholder="End" />
+				</div>
+				<div class="modal-footer">
+					<a class="btn btn-primary btn-sm" href="javascript:void(0);" onclick="$('#dates').val('6'); $('#searchForm').submit()">
+						<i class="fa fa-check"></i>
+						Go
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+<script>
+	if (window.__isTouchPicker && window.__isTouchPicker()) {
+		useNativePicker('startdate', 'date', function() {
+			const startdate = moment($('#startdate').val(), window.__userDateFmt);
+			const enddate = moment($('#enddate').val(), window.__userDateFmt);
+			if (enddate.isBefore(startdate) || $('#enddate').val() == "") {
+				const u = moment(startdate).add(1, 'days');
+				setFieldHuman('enddate', u.format(window.__userDateFmt), 'date');
+			}
+		});
+		useNativePicker('enddate', 'date', function() {
+			const startdate = moment($('#startdate').val(), window.__userDateFmt);
+			const enddate = moment($('#enddate').val(), window.__userDateFmt);
+			if (enddate.isBefore(startdate) || $('#startdate').val() == "") {
+				const u = moment(enddate).add(-1, 'days');
+				setFieldHuman('startdate', u.format(window.__userDateFmt), 'date');
+			}
+		});
+	} else {
+		flatpickr("#startdate", {
+			
+				dateFormat: "m/d/Y",
+			
+		   onChange: function(selectedDates, dateStr, instance) {
+				const enddateFp = document.querySelector("#enddate")._flatpickr;
+				const startdate = moment($('#startdate').val(), 'MM/DD/YYYY h:mma');
+				const enddate = moment($('#enddate').val(), 'MM/DD/YYYY h:mma');
+				if (enddate.isBefore(startdate) || $('#enddate').val() == "") {
+					u = moment(startdate).add(1, 'days');
+					var newenddate = u.format("MM/DD/YYYY");
+					enddateFp.setDate(newenddate);
+				}
+			},
+			static: true
+		});
+		flatpickr("#enddate", {
+			
+				dateFormat: "m/d/Y",
+			
+		   onChange: function(selectedDates, dateStr, instance) {
+				const startdateFp = document.querySelector("#startdate")._flatpickr;
+				const startdate = moment($('#startdate').val(), 'MM/DD/YYYY h:mma');
+				const enddate = moment($('#enddate').val(), 'MM/DD/YYYY h:mma');
+				if (enddate.isBefore(startdate) || $('#startdate').val() == "") {
+					u = moment(enddate).add(-1, 'days');
+					var newstartdate = u.format("MM/DD/YYYY");
+					startdateFp.setDate(newstartdate);
+				}
+			},
+			static: true
+		});
+	}
+</script>
+
+				</div>
+			</form>
+		</div>
+		<div class="col-xs-3 col-sm-6 col-md-6 narrow-padding" style="padding-top:5px;padding-bottom:10px;">
+			<form class="form-inline" method="get" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics">
+				<div class="pull-right" style="margin-bottom:10px">
+					
+						<a rel="nofollow" class="button-link" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?dir=asc">
+							Date
+							<i class="fa fa-xs fa-sort-down"></i>
+						</a>
+					
+					&nbsp;&nbsp;
+					
+	
+		<span class="hidden-xs">
+			<span class="form-group">
+			41 - 60 of 119
+			</span>
+			&nbsp;
+			<ul class="pagination form-group" style="margin: 0px !important;">
+				
+					<li>
+						<a rel="prev" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=2&before=1764027629209077520">
+							<i class="fa fa-chevron-left">
+								<span class="sr-only">
+									previous page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+				
+					<li>
+						<a rel="next" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=4&after=1758985986384058979">
+							<i class="fa fa-chevron-right">
+								<span class="sr-only">
+									next page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+			</ul>
+		</span>
+	
+
+				</div>
+			</form>
+		</div>
+	</div>
+	<table id="records" class="table table-condensed table-fixed" hx-disinherit="*">
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_25/116461363">Agenda for Tuesday 25 November 2025</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Good day! Tomorrow we&#39;ll finish the entity-relationship diagram, look into Claims Mapper and its &quot;organizational relationship&quot; to entities that manage hardware vs. software, and, time permitting, will continue the discussion of Provenance.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic116461363">
+	$('#timedisptopic116461363').replaceWith(DisplayShortTime(1764027629209077520, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic116461363">
+	$('#timedisptopic116461363').replaceWith(DisplayShortTime(1764027629209077520, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_18/116342797">Agenda for Tuesday 18 November 2025</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Hello again! Tomorrow we&#39;ll go over the feedback from IETF 124, continue talking about our reference architecture (and its relationship to other reference architectures), and the entity-relationship diagram for our various concepts.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic116342797">
+	$('#timedisptopic116342797').replaceWith(DisplayShortTime(1763402590432201015, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic116342797">
+	$('#timedisptopic116342797').replaceWith(DisplayShortTime(1763402590432201015, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/fosdem_26_confidential/116242682">FOSDEM &#39;26 Confidential Computing Devroom CfP</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">This is physical only in Brussels, meaning those of us in Europe might want to submit and present. Attestation is not the focus this year, if you read the description closely, but TWI might very well be. From: tac@... &lt;tac@...&gt; On Behalf Of Ilaria Battiston via lists.confidentialcomputing.io Sent: Thursday, November 06, 2025 7:34 AM To: tac@...; attestation@... Subject: [EXTERNAL][CCC][tac] FOSDEM &#39;26 Confidential Computing Devroom CfP Hi all, I wanted to inform you that, once again, we were assigned a devroom at FOSDEM 2026 in Brussels! We invite speakers to submit their proposal by December 1st, 2025. Any additional help sharing and promoting our devroom would be greatly appreciated. The devroom will be on Sunday, Feburary 1, 2026. The full CfP can be found here: https://falder.org/fosdem26-cfp Hope to see you in Brussels! Ilaria This message is confidential and subject to terms at: https://www.jpmorgan.com/emaildisclaimer including on confidential, privileged or legal entity information, malicious content and monitoring of electronic messages. If you are not the intended recipient, please delete this message and notify the sender immediately. Any unauthorized use is strictly prohibited.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic116242682">
+	$('#timedisptopic116242682').replaceWith(DisplayShortTime(1762884067235455057, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic116242682">
+	$('#timedisptopic116242682').replaceWith(DisplayShortTime(1762884067235455057, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/veterans_day_no_meeting/116224101">Veterans Day - no meeting tomorrow</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">We are going to reconvene on Nov 18. Topics for discussion: feedback from IETF 124, provenance, Entity-Relationship Diagram for our various concepts, next steps.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic116224101">
+	$('#timedisptopic116224101').replaceWith(DisplayShortTime(1762797733962810038, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic116224101">
+	$('#timedisptopic116224101').replaceWith(DisplayShortTime(1762797733962810038, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/mail_regarding/116109344">Mail regarding draft-mihalcea-seat-use-cases: one key &quot;integration property&quot; missing</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Reviewing the SEAT use cases draft, I&#39;m noticing that it says nothing about manageability of deployments. I believe that ease of operation is a key integration property. My talk on Friday about integration of trustworthy workload identity (TWI) with RATS emphasizes precisely that: stability of credentials. As software and hardware is patched (including periodic reversal of faulty patches), there is a policy invariant in place: what constitutes an acceptable set of properties for a counter-party. Stability is usually achieved by reasoning about a set of business-centric claims (&quot;latest version of payroll application&quot;, &quot;running on approved hardware&quot;). There is, at the very least, ample room for collaboration between SEAT and TWI. Let&#39;s discuss.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic116109344">
+	$('#timedisptopic116109344').replaceWith(DisplayShortTime(1762215654969868518, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic116109344">
+	$('#timedisptopic116109344').replaceWith(DisplayShortTime(1762215654969868518, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/ietf_124_presentation_final/116048814">IETF 124 Presentation - final draft</a>
+								
+								
+									<i class="fa fa-paperclip"></i>
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Attached are the PPTX and PDF versions of the presentations I&#39;m about to give in the RATS meeting next week. All comments welcome. Also, how do I submit this so it becomes part of conference proceedings that people can download? One final TODO: include the link to the draft URL, which needs to be renamed to show up under RATS. How do we rename the draft?</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic116048814">
+	$('#timedisptopic116048814').replaceWith(DisplayShortTime(1761920766347081286, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic116048814">
+	$('#timedisptopic116048814').replaceWith(DisplayShortTime(1761920766347081286, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/please_read_no_meeting_next/115994725">Please read - no meeting next Tuesday</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Due to IETF 124 taking place next week, we&#39;re not going to meet next Tuesday, Nov 4. However, please monitor both this mailing list and the RATS mailing list at the IETF. There will be email exchanges concerning out Informational Draft. I will post the deck I will be presenting before my Friday Nov 7 presentation, your feedback is very welcome See you in two weeks!</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115994725">
+	$('#timedisptopic115994725').replaceWith(DisplayShortTime(1761662534413778718, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115994725">
+	$('#timedisptopic115994725').replaceWith(DisplayShortTime(1761662534413778718, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_oct_28/115975547">Agenda for Tuesday Oct 28, 2025</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Many improvements made to the Reference Architecture document in recent days. Updated interaction diagrams with sequence numbers Corrected terminology (&quot;claims&quot; used throughout) Introduced a new architectural building block, the Claims Mapper, and illustrated where it is invoked in each interaction diagram Changed credential acquisition mechanism identifiers to be more in line with interaction diagrams rather than alphabetic identifiers Tomorrow we should clearly write down main scenario definitions (there are four so far) and have a more detailed discussion on Provenance As usual, bring your own topics. See you soon!</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115975547">
+	$('#timedisptopic115975547').replaceWith(DisplayShortTime(1761576039038886485, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115975547">
+	$('#timedisptopic115975547').replaceWith(DisplayShortTime(1761576039038886485, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/fyi_workload_identity_for_ai/115889621">FYI: Workload Identity for AI Agents</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Hi All, Just FYI: A new IETF draft has been submitted which talks about Workload Identity for AI Agents. https://datatracker.ietf.org/doc/draft-ni-wimse-ai-agent-identity/ Regards, Yogesh IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium. Thank you.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Yogesh Deshpande (Arm)
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115889621">
+	$('#timedisptopic115889621').replaceWith(DisplayShortTime(1761126646627300802, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115889621">
+	$('#timedisptopic115889621').replaceWith(DisplayShortTime(1761126646627300802, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_oct_21/115857195">Agenda for Tuesday Oct 21, 2025</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">The I-D for IETF 124 has been submitted. Thank you Yogesh!! Moving on now… Here are some topics we can discuss in tomorrow’s meeting. Respond with your own ideas and we’ll tackle them in some order of priority. Security considerations for the I-D we just submitted (replay/relay attacks, nonce issues, anything else we should document?) We should probably start refocusing back on provenance and look into how provenance relates to the Credential Issuance Mechanisms in the I-D What should be prototyped to inform our future direction? Socializing the I-D with the Attestation SIG and with the CSPs (Microsoft, Google, maybe even Amazon?) See you soon! Get Outlook for iOS</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115857195">
+	$('#timedisptopic115857195').replaceWith(DisplayShortTime(1760977170999475547, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115857195">
+	$('#timedisptopic115857195').replaceWith(DisplayShortTime(1760977170999475547, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/putting_finishing_touches_on/115809076">Putting finishing touches on our IETF submission</a>
+								
+									<span class="hashtag-position label label-primary" style="font-size:11.25px;">3</span>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">I cleaned up all sequence diagrams and ensured consistency. Thanks Yogesh for creating them in the first place! I can work on this on the weekend, but I will be traveling all day on Monday and at the mercy of airline internet. If the draft is not submitted on Sunday, I will need someone to commit to submitting it as that&#39;s the deadline. There are a few actions left with only a couple of days left to finish them. Likely incomplete list below: Get rid of placeholders You will see entries like the ones below: venue:# group: WG# type: Working Group# mail: WG@...# arch: https://example.com/WG Ensure that the resulting complied text has no obvious issues How do I do see the generated text that&#39;s submission ready? What is the process for submission? Review the sequence diagrams and look for obvious errors, inconsistencies, omissions, areas for improvement Currently diagrams use &quot;Credential Attributes&quot; and the draft text refers to &quot;Claims&quot;. We should probably choose and use one term throughout. Probably not a blocker though as we can always fix that in v2. Check for security issues; don&#39;t necessarily have to resolve them, but should at least note them. I can think of one already: in the flow where Workload requests Credential directly from Credential Authority, and Credential Authority invokes Verifier to obtain Claims about the Workload, how do we handle freshness (nonce)? Fix TODOs The Variant 1 / Variant 2 has not yet been converted to ASCII.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115809076">
+	$('#timedisptopic115809076').replaceWith(DisplayShortTime(1760714403280138353, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+									&middot;
+									Most recent
+									@
+									
+<script id="timedisptopic-recent115809076">
+	$('#timedisptopic-recent115809076').replaceWith(DisplayShortTime(1760734807172578001, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic-recent115809076">
+	$('#timedisptopic-recent115809076').replaceWith(DisplayShortTime(1760734807172578001, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_october/115698369">Agenda for Tuesday October 14, 2025</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">I usually send the agenda the night before, but this time around it&#39;s pretty clear: we&#39;re going to be working to get this Informational Draft over the finish line. In the weeks that follow, we&#39;ll take the contents of the I-D and then the feedback from IETF and incorporate them into our reference architecture. From: Mark Novak &lt;Mark.Novak@...&gt; Sent: Friday, October 10, 2025 7:35 AM To: trustworthy-workload-identity-sig@... &lt;trustworthy-workload-identity-sig@...&gt; Subject: First draft of TWI eXchange draft ready for review Please take a look at https://github.com/confidential-computing/twi-rats/blob/main/draft-novak-twi-attestation.md Note that it references several sequence diagrams which have been placed in separate .sd files (CAM_A.sd, etc.). You can render those in Mermaid (mermaidchart.com) and we need someone to volunteer to automate converting these to ASCII art for the final version of the draft. The content does not yet compile, and, again, we need a volunteer to fix that. Please do your best to review and comment before next Tuesday as time is very tight. Manu, a couple of your comments went into the draft, but the rest are still in Google Docs. See how much you want to include, perhaps by proposing PRs. Thank you!</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115698369">
+	$('#timedisptopic115698369').replaceWith(DisplayShortTime(1760138514625066120, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115698369">
+	$('#timedisptopic115698369').replaceWith(DisplayShortTime(1760138514625066120, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/first_draft_of_twi_exchange/115689796">First draft of TWI eXchange draft ready for review</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Please take a look at https://github.com/confidential-computing/twi-rats/blob/main/draft-novak-twi-attestation.md Note that it references several sequence diagrams which have been placed in separate .sd files (CAM_A.sd, etc.). You can render those in Mermaid (mermaidchart.com) and we need someone to volunteer to automate converting these to ASCII art for the final version of the draft. The content does not yet compile, and, again, we need a volunteer to fix that. Please do your best to review and comment before next Tuesday as time is very tight. Manu, a couple of your comments went into the draft, but the rest are still in Google Docs. See how much you want to include, perhaps by proposing PRs. Thank you!</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115689796">
+	$('#timedisptopic115689796').replaceWith(DisplayShortTime(1760106933318971760, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115689796">
+	$('#timedisptopic115689796').replaceWith(DisplayShortTime(1760106933318971760, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_october_7/115626754">Agenda for Tuesday October 7, 2025</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Tomorrow we&#39;ll continue work on our Informational Draft for IETF 124, now called TWIX. I have added a lot of content to the draft, please review before the meeting if possible. Here&#39;s the link: https://docs.google.com/document/d/1O29GZyRTHaMss6x23eBGnkUMhTEg72JvV0oCf8Ug7wQ/edit?tab=t.0#heading=h.7hnowgobwq7z Things to pay attention to in particular when reviewing: There is an extensive motivation section. May be a bit too long for an I-D, but it explains why it is we need this, and I have found from talking to multiple people that this is not intuitive to them, although of course it is to us, being immersed in it. I have outlined five different options for a Workload to obtain its Identity Credentials. Not all of these are currently reflected in the Reference Architecture, but eventually there should be parity between the two documents. Also the I-D currently does not yet contain the swimlanes — after we agree on the options, I&#39;ll add them. Again, I aim for parity between the two documents so there will not be any duplication of work.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115626754">
+	$('#timedisptopic115626754').replaceWith(DisplayShortTime(1759789583125898660, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115626754">
+	$('#timedisptopic115626754').replaceWith(DisplayShortTime(1759789583125898660, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/twi_presentation_this_morning/115554186">TWI presentation this morning</a>
+								
+								
+									<i class="fa fa-paperclip"></i>
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Hello all, I presented the attached deck to the Confidential Containers folks led by Sam Ortiz.</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115554186">
+	$('#timedisptopic115554186').replaceWith(DisplayShortTime(1759417700013154108, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115554186">
+	$('#timedisptopic115554186').replaceWith(DisplayShortTime(1759417700013154108, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/help_needed_editing_the_twix/115537750">Help needed editing the TWIX draft</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">I put a bunch of content into the TWIX draft, and could use some help further filling outs its technical bits — i.e. explanation of how x.509 certificate and bound JWT issuance could be combined with the attestation process. https://docs.google.com/document/d/1O29GZyRTHaMss6x23eBGnkUMhTEg72JvV0oCf8Ug7wQ/edit?tab=t.0</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115537750">
+	$('#timedisptopic115537750').replaceWith(DisplayShortTime(1759338959826297494, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115537750">
+	$('#timedisptopic115537750').replaceWith(DisplayShortTime(1759338959826297494, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/agenda_for_tuesday_september/115506924">Agenda for Tuesday September 30, 2025</a>
+								
+								
+									<i class="fa fa-paperclip"></i>
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Last week the meeting did not take place because nobody showed up. Let&#39;s try again tomorrow. The agenda remains unchanged from last week (see attached). Additionally, a new I-D has been introduced to RATS: https://datatracker.ietf.org/doc/draft-ritz-eca/. It talks about an area of interest to TWI — ephemeral workload instances — so we should probably take a look and see if we have any thoughts worth sharing. Note that this protocol appears to require two roundtrips to the Verifier (section 4). Ephemeral Compute Attestation (ECA) Protocol draft-ritz-eca-00 This document specifies the Ephemeral Compute Attestation (ECA) protocol, which enables ephemeral compute instances to prove their identity without pre-shared operational credentials. ECA uses a three-phase ceremony that cryptographically combines a public Boot Factor (a high-entropy provisioning value), a secret Instance Factor, and a dynamically released Validator Factor to establish ... datatracker.ietf.org</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115506924">
+	$('#timedisptopic115506924').replaceWith(DisplayShortTime(1759194379518736386, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115506924">
+	$('#timedisptopic115506924').replaceWith(DisplayShortTime(1759194379518736386, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/back/115479640">back</a>
+								
+								
+									<i class="fa fa-paperclip"></i>
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">back</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    jibl3azzmenusa@...
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115479640">
+	$('#timedisptopic115479640').replaceWith(DisplayShortTime(1759070218943624500, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115479640">
+	$('#timedisptopic115479640').replaceWith(DisplayShortTime(1759070218943624500, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/hey/115479615">hey</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">hey</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    jibl3azzmenusa@...
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115479615">
+	$('#timedisptopic115479615').replaceWith(DisplayShortTime(1759070062387930368, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115479615">
+	$('#timedisptopic115479615').replaceWith(DisplayShortTime(1759070062387930368, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+			
+	<tr >
+		<td  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})"  >
+			<div style="margin-top:3px;margin-bottom:3px;">
+				<div class="row">
+					<div class="col-xs-12">
+						
+						
+						
+						
+						
+						
+							<span class="subject">
+								<a class="showvisited subject" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topic/another_interesting_idea/115466033">Another interesting idea: transaction tokens</a>
+								
+								
+							</span>
+						
+								
+
+						
+							
+								<div class="truncate-one-line">
+									<div  tabindex="0">Been looking into this the last couple of days. As usual, I want to understand whether this is compatible with Confidential Computing and how this fits inside the TWI Reference Architecture. We can discuss in one of our meetings. https://tokenetes.io/docs/</div>
+								</div>
+							
+						
+
+
+						<span class="thread-attribution">
+							<span class="hidden-xs">Started by</span>
+							<span class="visible-xs-inline">By</span>
+							
+								
+									
+  
+	
+    Mark Novak
+	
+
+								
+							
+							<span class="hidden-xs">
+								@
+								
+<script id="timedisptopic115466033">
+	$('#timedisptopic115466033').replaceWith(DisplayShortTime(1758985986384058979, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							<span class="visible-xs-inline">
+								&middot;
+								
+									
+<script id="timedisptopic115466033">
+	$('#timedisptopic115466033').replaceWith(DisplayShortTime(1758985986384058979, false
+		,"Asia/Shanghai","MM/DD/YY","h:mma"));
+</script>
+
+								
+							</span>
+							
+						</span>
+						
+					</div>
+					</div>
+					</div>
+				</td>
+			</tr>
+
+		
+	</table>
+	<form class="form" method="POST" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/domerge">
+		
+			<input type="hidden" name="csrf" value="3637796335680031353">
+		
+		<input type="hidden" name="threadid" id="threadid" value="0">
+		<!-- Verify Merge Modal -->
+		<div class="modal fade" id="mergeThreadModal" tabindex="-1" role="dialog" aria-labelledby="mergeThreadModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">
+								&times;
+							</span>
+							<span class="sr-only">
+								Close
+							</span>
+						</button>
+						<h4 class="modal-title" id="mergeThreadModalLabel">
+							Verify Merge
+						</h4>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to merge the topic '' into the topic '<span id="subject">Action</span>'?
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+						<button class="btn btn-primary btn-sm" name="merge" value="1">
+							<i class="fa fa-compress"></i>
+							Yes
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<div class="row" style="margin-bottom:20px;">
+		<div class="col-xs-12">
+			
+	
+		<div class="pull-right form-inline">
+			<span class="form-group">
+				41 - 60 of 119
+			</span>
+			&nbsp;
+			<ul class="pagination form-group" style="margin: 0px !important;vertical-align:middle;">
+				
+					<li>
+						<a rel="prev" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=2&before=1764027629209077520">
+							<i class="fa fa-chevron-left">
+								<span class="sr-only">
+									previous page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+				
+					
+						<li class="hidden-xs">
+							<a rel="nofollow" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics">
+								1
+							</a>
+						</li>
+					
+				
+					
+						<li class="hidden-xs">
+							<a rel="nofollow" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=2">
+								2
+							</a>
+						</li>
+					
+				
+					
+						<li class="hidden-xs disabled">
+							<a class="currentpage" href="#">
+								3
+							</a>
+						</li>
+					
+				
+					
+						<li class="hidden-xs">
+							<a rel="nofollow" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=4">
+								4
+							</a>
+						</li>
+					
+				
+					
+						<li class="hidden-xs">
+							<a rel="nofollow" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=5">
+								5
+							</a>
+						</li>
+					
+				
+				
+					<li>
+						<a rel="next" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?page=4&after=1758985986384058979">
+							<i class="fa fa-chevron-right">
+								<span class="sr-only">
+									next page
+								</span>
+							</i>
+						</a>
+					</li>
+				
+			</ul>
+		</div>
+	
+
+		</div>
+	</div>
+	<!-- Verify Remove Modal -->
+	<form class="form-horizontal" id="delModalForm" method="POST" action="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/edittopic">
+		<input type="hidden" name="tid" id="delthreadid" value="">
+		
+			<input type="hidden" name="csrf" value="3637796335680031353">
+		
+		<div class="modal fade" id="deleteThreadModal" tabindex="-1" role="dialog" aria-labelledby="deleteThreadModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">
+								&times;
+							</span>
+							<span class="sr-only">
+								Close
+							</span>
+						</button>
+						<h4 class="modal-title" id="deleteThreadModalLabel">
+							Verify Delete
+						</h4>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to delete this topic? This cannot be undone.
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default btn-sm" data-dismiss="modal">
+							<i class="fa fa-times"></i>
+							Cancel
+						</button>
+						<button class="btn btn-danger btn-sm" name="delthread" value="1">
+							<i class="fa fa-trash-alt"></i>
+							Yes
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+
+	<!-- View Image Modal -->
+	
+    <div class="viewer-overlay" id="overlay">
+        <div class="viewer-overlay-controls">
+            <i class="fa-regular fa-2x fa-arrow-down-to-line" id="downloadImage" style="margin-left: 20px;color: #FFF;cursor: pointer;"></i>
+            <i class="fa-regular fa-2x fa-times" id="closeOverlay" style="margin-left: 20px;color: #FFF;cursor: pointer;"></i>
+        </div>
+        <div class="viewer-image-container">
+            <i class="fa-regular fa-2x fa-chevron-left viewer-arrow" id="prevImage" style="left:-35px;color: #FFF;cursor: pointer;"></i>
+            <img id="currentImage" src="" alt="Current Image">
+            <i class="fa-regular fa-2x fa-chevron-right viewer-arrow" id="nextImage" style="right:-35px;color: #FFF;cursor: pointer;"></i>
+        </div>
+        <div class="viewer-image-info">
+            <b>Image Name</b><br>
+            Sat 8:39am
+        </div>
+		<div class="viewer-thumbnail-outer-container" id="thumbnailOuterContainer">
+			<div class="viewer-thumbnail-container" id="thumbnailContainer"></div>
+		</div>
+    </div>
+
+
+<script>
+contentLoaded(false, function() {
+	UpdateSidebar("archives");
+	// Remember the user's current list view so /message/N's back button
+	// returns to /topics rather than always defaulting to /topics for
+	// users in /messages mode. See groupmessages.qtpl for the writer
+	// side and groupmessage.qtpl for the reader side.
+	try {
+		sessionStorage.setItem('lastListView_137037', location.pathname + location.search);
+	} catch (e) {}
+	if (document.documentElement.clientWidth <= 992) {
+		ShowBackButton("Topics", "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG", "Trustworthy-Workload-Identity-SIG");
+		ShowHeaderAction("fa fa-search fa-lg", "#searchModal", "Search");
+	}
+	EnableTopbarAutoHide();
+
+	
+
+const ViewImages = (function() {
+  // Private variables
+  let imageURLs = [];
+  let currentImageIndex = 0;
+
+  // Private functions
+  function updateImage() {
+      const currentImage = imageURLs[currentImageIndex];
+      document.getElementById('currentImage').src = currentImage.url;
+	  const imageInfo = document.querySelector('.viewer-image-info');
+      imageInfo.innerHTML = `<b>${currentImage.name}</b><br>${currentImage.date}`;
+      document.querySelectorAll('.viewer-thumbnail').forEach(function(thumb, index) {
+        thumb.classList.remove('selected');
+        if (index === currentImageIndex) {
+          thumb.classList.add('selected');
+        }
+      });
+      scrollThumbnailsToCenter();
+  }
+
+  function scrollThumbnailsToCenter() {
+      const outerContainer = document.getElementById('thumbnailOuterContainer');
+      const container = document.getElementById('thumbnailContainer');
+      const selectedThumb = document.querySelector('.viewer-thumbnail.selected');
+
+      const scrollLeft = -1*(selectedThumb.offsetLeft - outerContainer.offsetWidth / 2 + selectedThumb.offsetWidth / 2);
+      console.log("offset: " + selectedThumb.offsetLeft);
+	  console.log("outerContainer width: " + outerContainer.offsetWidth);
+	  console.log("container width: " + container.offsetWidth);
+	  console.log("image width: " + selectedThumb.offsetWidth);
+	  scroll = scrollLeft + "px"
+	  console.log("scrollLeft: " + scroll);
+      $('#thumbnailContainer').css({left:scroll}).animate({'left': scroll}, 500);
+  }
+
+	// Swipe state — we decide direction after a few pixels of movement so
+	// vertical pan (e.g., user pulling down to dismiss idea) doesn't trigger
+	// an image switch, and we translate the current <img> during drag so the
+	// gesture has live visual feedback.
+	let viewerTouchStartX = 0;
+	let viewerTouchStartY = 0;
+	let viewerTouchDx = 0;
+	let viewerSwiping = false;
+	let viewerSwipeDecided = false;
+	const VIEWER_SWIPE_TRIGGER_PX = 50;
+	const VIEWER_SWIPE_MAX_DRAG_RATIO = 0.45; // cap translation at 45% of container width
+
+  function viewerHandleTouchStart(event) {
+		if (!event.touches || event.touches.length !== 1) return;
+		const t = event.touches[0];
+		viewerTouchStartX = t.clientX;
+		viewerTouchStartY = t.clientY;
+		viewerTouchDx = 0;
+		viewerSwiping = false;
+		viewerSwipeDecided = false;
+		const img = document.getElementById('currentImage');
+		if (img) img.style.transition = '';
+  }
+
+  function viewerHandleTouchMove(event) {
+		if (!event.touches || event.touches.length !== 1) return;
+		const t = event.touches[0];
+		const dx = t.clientX - viewerTouchStartX;
+		const dy = t.clientY - viewerTouchStartY;
+		if (!viewerSwipeDecided) {
+			// Wait for ~8px of movement before committing to a direction.
+			if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+			viewerSwipeDecided = true;
+			if (Math.abs(dy) > Math.abs(dx)) {
+				// Vertical — let the gesture be (future dismiss-on-drag could use this).
+				viewerSwiping = false;
+				return;
+			}
+			viewerSwiping = true;
+		}
+		if (!viewerSwiping) return;
+		viewerTouchDx = dx;
+		// Add resistance at the ends: if we're at the first image and the user
+		// swipes right (dx > 0), translate at 1/3 the distance; same for last
+		// image + left swipe. Gives the native "rubber-band" feel.
+		let translate = dx;
+		const atStart = currentImageIndex === 0;
+		const atEnd = currentImageIndex === imageURLs.length - 1;
+		if ((atStart && dx > 0) || (atEnd && dx < 0)) {
+			translate = dx / 3;
+		}
+		const container = document.querySelector('.viewer-image-container');
+		if (container) {
+			const cap = container.offsetWidth * VIEWER_SWIPE_MAX_DRAG_RATIO;
+			if (translate > cap) translate = cap;
+			if (translate < -cap) translate = -cap;
+		}
+		const img = document.getElementById('currentImage');
+		if (img) img.style.transform = 'translateX(' + translate + 'px)';
+		if (event.cancelable) event.preventDefault();
+  }
+
+  function viewerHandleTouchEnd() {
+		const img = document.getElementById('currentImage');
+		if (!viewerSwiping) {
+			if (img) img.style.transform = '';
+			viewerSwipeDecided = false;
+			return;
+		}
+		const dx = viewerTouchDx;
+		const atStart = currentImageIndex === 0;
+		const atEnd = currentImageIndex === imageURLs.length - 1;
+		const triggered = Math.abs(dx) >= VIEWER_SWIPE_TRIGGER_PX
+			&& !(atStart && dx > 0)
+			&& !(atEnd && dx < 0);
+		if (triggered) {
+			if (typeof hapticsImpactLight === 'function') hapticsImpactLight();
+			currentImageIndex = dx < 0 ? currentImageIndex + 1 : currentImageIndex - 1;
+			updateImage();
+		}
+		// Snap back to center with a short transition. updateImage() above
+		// already swapped the src; resetting the transform here animates the
+		// new image from its swiped-off position back in.
+		if (img) {
+			img.style.transition = 'transform 180ms ease';
+			img.style.transform = '';
+			setTimeout(function() { if (img) img.style.transition = ''; }, 200);
+		}
+		viewerSwiping = false;
+		viewerSwipeDecided = false;
+		viewerTouchDx = 0;
+  }
+
+  // Public functions
+  function View(dataId, index) {
+		event.preventDefault();  // Stop the default action
+
+		// Find the parent msgpayload element using the data-id
+		let msgPayloadElement = document.getElementById(`msgpayload-${dataId}`);
+
+		// Find all image elements within the msgpayload element
+
+		imageURLs = [];
+		currentImageIndex = index;
+		// Loop through each image element and push its src attribute to the imageURLs array
+		let imageElements = msgPayloadElement.querySelectorAll('[data-image-url]');
+		imageElements.forEach(function(img) {
+			let imgObj = new Object;
+			imgObj.url = img.getAttribute('data-image-url');
+			imgObj.name = img.getAttribute('data-image-name');
+			imgObj.date = img.getAttribute('data-image-date');
+			imageURLs.push(imgObj);
+		});
+
+		const thumbnailContainer = document.getElementById('thumbnailContainer');
+		thumbnailContainer.innerHTML = '';
+		imageURLs.forEach((image, i) => {
+			const thumbnail = document.createElement('img');
+			thumbnail.className = 'viewer-thumbnail thumbnail';
+			thumbnail.src = image.url;
+			thumbnail.style.display = "inline-table";
+			thumbnail.addEventListener('click', function() {
+				currentImageIndex = i;
+				updateImage();
+			});
+			thumbnailContainer.appendChild(thumbnail);
+		});
+		if (imageURLs.length == 1) {
+			// hide arrows
+			document.getElementById('prevImage').style.display = 'none';
+			document.getElementById('nextImage').style.display = 'none';
+		}
+		document.getElementById('overlay').classList.add('visible');
+		updateImage();
+		// Now you have an array of image URLs
+		console.log(imageURLs);
+  }
+
+  function Destroy() {
+    // Cleanup code, remove event listeners, etc.
+	console.log("ViewImages destroy");
+    let ele = document.getElementById('downloadImage')
+	if (ele == null) {
+		return;
+	}
+    ele.removeEventListener('click', downloadImageClickHandler);
+    document.getElementById('closeOverlay').removeEventListener('click', closeOverlayClickHandler);
+    document.getElementById('nextImage').removeEventListener('click', nextImageClickHandler);
+    document.getElementById('prevImage').removeEventListener('click', prevImageClickHandler);
+    const swipeTarget = document.querySelector('.viewer-image-container');
+    if (swipeTarget) {
+        swipeTarget.removeEventListener('touchstart', viewerHandleTouchStart);
+        swipeTarget.removeEventListener('touchmove', viewerHandleTouchMove);
+        swipeTarget.removeEventListener('touchend', viewerHandleTouchEnd);
+        swipeTarget.removeEventListener('touchcancel', viewerHandleTouchEnd);
+    }
+    document.removeEventListener('keyup', keyupHandler);
+	document.getElementById('prevImage').style.display = 'block';
+	document.getElementById('nextImage').style.display = 'block';
+  }
+
+  // Initialize event listeners
+  document.getElementById('downloadImage').addEventListener('click', downloadImageClickHandler);
+
+
+	function downloadImageClickHandler() {
+	    saveImage();
+	}
+
+   async function saveImage() {
+      // Get the image element
+      const imageElement = document.getElementById('myImage');
+
+      // Fetch the image
+      const response = await fetch(imageURLs[currentImageIndex].url);
+      const blob = await response.blob();
+
+      // Create an anchor element
+      const a = document.createElement('a');
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(blob);
+
+      // Set the href attribute to the blob URL
+      a.href = url;
+
+      // Set the download attribute to specify the file name
+      a.download = imageURLs[currentImageIndex].name;
+
+      // Append the anchor to the DOM (this part is necessary for Firefox)
+      document.body.appendChild(a);
+
+      // Trigger the download
+      a.click();
+
+      // Release the blob URL
+      URL.revokeObjectURL(url);
+
+      // Remove the anchor from the DOM
+      document.body.removeChild(a);
+	}
+
+  document.getElementById('closeOverlay').addEventListener('click', closeOverlayClickHandler);
+
+  function closeOverlayClickHandler() {
+    document.getElementById('overlay').classList.remove('visible');
+  }
+
+  document.getElementById('nextImage').addEventListener('click', nextImageClickHandler);
+
+  function nextImageClickHandler() {
+    currentImageIndex = (currentImageIndex + 1) % imageURLs.length;
+    updateImage();
+  }
+
+  document.getElementById('prevImage').addEventListener('click', prevImageClickHandler);
+
+  function prevImageClickHandler() {
+    currentImageIndex = (currentImageIndex - 1 + imageURLs.length) % imageURLs.length;
+    updateImage();
+  }
+
+  document.addEventListener('keyup', keyupHandler);
+  function keyupHandler(e) {
+    if (e.key === 'Escape') {
+	  let ele = document.getElementById('overlay');
+	  if (ele != null) {
+	      ele.classList.remove('visible');
+	  }
+    }
+  }
+
+  // Attach swipe handlers to the full image container so the gesture works
+  // even if the finger starts on letterbox background or briefly leaves the
+  // <img>. touchmove is passive:false so we can preventDefault on horizontal
+  // drags (otherwise the page attempts to scroll instead).
+  const swipeTarget = document.querySelector('.viewer-image-container');
+  if (swipeTarget) {
+      swipeTarget.addEventListener('touchstart', viewerHandleTouchStart, {passive: true});
+      swipeTarget.addEventListener('touchmove', viewerHandleTouchMove, {passive: false});
+      swipeTarget.addEventListener('touchend', viewerHandleTouchEnd);
+      swipeTarget.addEventListener('touchcancel', viewerHandleTouchEnd);
+  }
+
+  return {
+    View,
+    Destroy
+  };
+})();
+
+
+	window.ViewImages = ViewImages.View;
+
+	gioDestroy(function(evt) {
+		window.ViewImages = null;
+		ViewImages.Destroy();
+	});
+
+  $('.hashtagcheckbox').change(function() {
+      let el = $(this);
+      switch(el.data('checked')) {
+        // checked, going indeterminate
+        case 0:
+        console.log("case 0");
+            el.data('checked',1);
+            el.prop('indeterminate',true);
+            break;
+
+        // indeterminate, going unchecked
+        case 1:
+        console.log("case 1");
+            el.data('checked',2);
+            el.prop('indeterminate',false);
+            el.prop('checked',false);
+            break;
+
+        // checked, going unchecked
+        default:
+        console.log("case default");
+            el.data('checked',0);
+            el.prop('indeterminate',false);
+            el.prop('checked',true);
+      }
+  });
+  // prevent dropdown closure on clicking checkbox labels
+	$('#hashtagFilterMenu').on('click', function (e) {
+		e.stopPropagation();
+	});
+	$('#filterdropdown').on('hide.bs.dropdown', function (e) {
+		console.log("HIDE DROPDOWN!");
+		
+	});
+
+	$(".modal").on('shown.bs.modal', function () {
+		$(this).find("input:visible:first").focus();
+	});
+
+
+
+	$("[data-toggle='tooltip']").tooltip();
+	setPullToRefresh();
+
+})
+
+function searchHashtags() {
+	var cbs = document.getElementsByTagName('input');
+	for(var i=0; i < cbs.length; i++) {
+		if(cbs[i].indeterminate == true) {
+		$('<input>').attr({
+			type: 'hidden',
+			name: 'exclude',
+			value: cbs[i].value,
+		}).appendTo('#searchForm');
+		}
+	}
+	submitEvent('#searchForm');
+}
+function setupInto(threadid, subject) {
+  $("#subject").replaceWith("<span id=\"subject\">" + subject + "</span>");
+  $('#threadid').val(threadid);
+}
+$('#mergeThreadModal').on('show.bs.modal', function(event) {
+	var button = $(event.relatedTarget) // Button that triggered the modal
+	var subject = button.data('subject') // Extract info from data-* attributes
+	var threadid = button.data('threadid') // Extract info from data-* attributes
+	$("#subject").replaceWith("<span id=\"subject\">" + subject + "</span>");
+	$('#threadid').val(threadid);
+})
+$('#deleteThreadModal').on('show.bs.modal', function(event) {
+	var button = $(event.relatedTarget) // Button that triggered the modal
+	var threadid = button.data('threadid') // Extract info from data-* attributes
+	$('#delthreadid').val(threadid);
+})
+
+function setupDeleteModal(threadid) {
+  console.log("in setupDeleteModal")
+}
+
+function showElement(isTruncated) {
+	this.style.display = 'block';
+}
+
+</script>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row hidden-print" id="mobileSidebar"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div id="mobileSidebarSub" class="col-xs-12 hidden-md hidden-lg">
+			<div class="navbar navbar-default navbar-fixed-bottom">
+				<div class="container" style="display: flex; justify-content: space-around;">
+					
+					
+	
+	
+		<a id="mobilesidebar-groups" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center; color: inherit; text-decoration: none;" href="https://lists.confidentialcomputing.io/groups">
+			<div style="display: inline-block; position: relative;">
+				<div style="position: relative;display: inline-block;">
+				<i class="fa-fw fa-light fa-users fa-2x"></i>
+				
+				</div><br>
+				<span style="font-size:12px;">Groups</span>
+			</div>
+		</a>
+	
+
+					
+						
+	
+		
+	
+	<div id="mobilesidebar-archives" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center;" hx-get="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?sidebar=true"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div style="display: inline-block; position: relative;">
+			<div style="position: relative;display: inline-block;">
+			<i class="fa-fw fa-solid fa-comments fa-2x"></i>
+			
+			</div><br>
+			<span style="font-size:12px;">Messages</span>
+		</div>
+	</div>
+
+	
+	
+		
+	
+	<div id="mobilesidebar-post" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center;" hx-get="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div style="display: inline-block; position: relative;">
+			<div style="position: relative;display: inline-block;">
+			<i class="fa-fw fa-light fa-edit fa-2x"></i>
+			
+			</div><br>
+			<span style="font-size:12px;">New Topic</span>
+		</div>
+	</div>
+
+	
+
+						
+	
+		
+			
+				
+	
+	<div id="mobilesidebar-chats" class="mobilesidebar-item" style="margin-top:10px; padding-bottom:20px; flex: 1; text-align: center;" hx-get="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats"  hx-boost="true" hx-target="#maincontent-refresh" hx-push-url="true" hx-history="false" hx-on::after-request="document.getElementById('maincontent').scrollTo({top: 0, behavior: 'instant'})" >
+		<div style="display: inline-block; position: relative;">
+			<div style="position: relative;display: inline-block;">
+			<i class="fa-fw fa-light fa-message-dots fa-2x"></i>
+			
+			</div><br>
+			<span style="font-size:12px;">Chat</span>
+		</div>
+	</div>
+
+			
+		
+	
+
+					
+					<div style="flex: 1; text-align: center;margin-top:10px" data-drawer-trigger aria-controls="drawer-name" aria-expanded="false">
+						<i class="fa-fw fa-light fa-bars fa-2x"></i><br>
+						<span style="font-size:12px;">More</span>
+					</div>
+				</div>
+			</div>
+			<section class="drawer drawer-left" id="drawer-name" data-drawer-target>
+				<div class="drawer-overlay" data-drawer-close tabindex="-1"></div>
+				<div class="drawer-wrapper drawer-wrapper-top">
+					<div class="drawer-header">
+						<div class="drawer-title">
+							<i class="fa-fw fa-regular fa-bars fa-3x"></i>
+							<span class="sr-only">
+								More Options
+							</span>
+							More
+						</div>
+						<button class="drawer-close" data-drawer-close aria-label="Close Drawer"></button>
+					</div>
+					<div class="drawer-content">
+						<div class="list-group noborderlist">
+							
+
+
+	<a title="Group Home" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG" class="list-group-item sidebar-item">
+		<i class="fa-fw fa fa-home fa-lg"></i>
+		Home
+		
+			
+				
+				
+			
+		
+	</a>
+
+	
+		<a id="sidebar-subscription" href="#submenu1" class="noborderitem list-group-item sidebar-section navbar-vertical dropdown-indicator" data-toggle="collapse" data-parent="#accordion" aria-expanded="false" aria-controls="submenu1">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Subscription
+		</a>
+		<div class="collapse" id="submenu1">
+			
+
+	<a title="Edit Subscription Settings" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editsub" id="sidebar-editsub-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-editsub">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-pencil-alt fa-lg"></i>
+			Settings
+			<span id="sidebar-editsub-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Group Profile" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG//profile/6115309" id="sidebar-profileview-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-profileview">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-user fa-lg"></i>
+			Group Profile
+			<span id="sidebar-profileview-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Delivery History" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subdeliveries" id="sidebar-subdeliveries-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-subdeliveries">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-envelope fa-lg"></i>
+			Delivery History
+			<span id="sidebar-subdeliveries-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+			
+
+	<a title="Integrations" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subintegrations" id="sidebar-subintegrations-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-subintegrations">
+		<span class="list-group-submenu">
+			<i class="fa-fw fa fa-exchange-alt fa-lg"></i>
+			Integrations
+			<span id="sidebar-subintegrations-mobile-badge" class="badge"></span>
+		</span>
+	</a>
+
+		</div>
+	
+
+	
+
+	
+		
+	
+		
+
+	<a title="Messages" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics?sidebar=true" id="sidebar-archives-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-archives active"> 
+		<i class="fa-fw fa fa-comments fa-lg"></i>
+		Messages
+		<span id="sidebar-archives-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Topic" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post" id="sidebar-post-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-post"> 
+		<i class="fa-fw fa fa-edit fa-lg"></i>
+		New Topic
+		<span id="sidebar-post-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="Drafts" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/drafts" id="sidebar-drafts-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-drafts"> 
+		<i class="fa-fw fa fa-inbox fa-lg"></i>
+		Drafts
+		<span id="sidebar-drafts-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+		
+
+	<a title="New Poll" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/addpoll" id="sidebar-addpoll-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-addpoll"> 
+		<i class="fa-fw fa fa-chart-bar fa-lg"></i>
+		New Poll
+		<span id="sidebar-addpoll-mobile-badge" class="badge"></span>
+	</a>
+
+	
+	
+	
+		
+
+	<a title="Hashtags" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/hashtags" id="sidebar-hashtags-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-hashtags"> 
+		<i class="fa-fw fa fa-hashtag fa-lg"></i>
+		Hashtags
+		<span id="sidebar-hashtags-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+		
+	
+		
+			
+
+	<a title="Chats" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats" id="sidebar-chats-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-chats"> 
+		<i class="fa-fw fa fa-message-dots fa-lg"></i>
+		Chats
+		<span id="sidebar-chats-mobile-badge" class="badge chatbadge"></span>
+	</a>
+
+		
+	
+
+	
+
+	
+
+	
+			
+
+	<a title="Subgroups" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subgroups" id="sidebar-subgroups-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-subgroups"> 
+		<i class="fa-fw fa fa-chart-pie fa-lg"></i>
+		Subgroups
+		<span id="sidebar-subgroups-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+	
+
+	
+		
+
+	<a title="Member Directory" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/directory" id="sidebar-directory-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-directory"> 
+		<i class="fa-fw fa fa-users fa-lg"></i>
+		Directory
+		<span id="sidebar-directory-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+	<a title="Calendar" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/calendar" id="sidebar-calendar-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-calendar"> 
+		<i class="fa-fw fa fa-calendar-alt fa-lg"></i>
+		Calendar
+		<span id="sidebar-calendar-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+			
+
+	<a title="Photos" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/photos" id="sidebar-photos-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-photos"> 
+		<i class="fa-fw fa fa-file-image fa-lg"></i>
+		Photos
+		<span id="sidebar-photos-mobile-badge" class="badge"></span>
+	</a>
+
+		
+		
+			
+
+	<a title="Files" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/files" id="sidebar-files-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-files"> 
+		<i class="fa-fw fa fa-copy fa-lg"></i>
+		Files
+		<span id="sidebar-files-mobile-badge" class="badge"></span>
+	</a>
+
+		
+
+		
+			
+
+	<a title="Databases" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/database" id="sidebar-database-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-database"> 
+		<i class="fa-fw fa fa-database fa-lg"></i>
+		Databases
+		<span id="sidebar-database-mobile-badge" class="badge"></span>
+	</a>
+
+		
+		
+	
+
+	
+		
+
+	<a title="Wiki" href="https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/wiki" id="sidebar-wiki-mobile" class="noborderitem list-group-item sidebar-item sidebar-item-wiki"> 
+		<i class="fa-fw fa fa-book fa-lg"></i>
+		Wiki
+		<span id="sidebar-wiki-mobile-badge" class="badge"></span>
+	</a>
+
+	
+
+	
+		
+
+			
+
+		
+
+	
+
+							
+								<a class="noborderitem list-group-item sidebar-item" href="https://groups.io/static/tos" target="_blank">
+									<i class="fa-fw fal fa-newspaper fa-lg"></i>
+									Terms
+								</a>
+								
+							
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+
+<!-- Modal Dialog for Autocomplete -->
+<div class="modal fade" id="quickActionsModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <input type="text" class="form-control" id="quickActionsInput" placeholder="Go to page..." style="margin-bottom:10px">
+        <div id="quickActionsContainer" class="autocompleteResults" style="max-height:250px; overflow-y: auto;"></div>
+		<div class="text-center" style="margin-top:10px; font-size:12px;"><i class="fa-sharp fa-arrow-up-arrow-down"></i> to navigate&nbsp;&nbsp;&nbsp;<i class="fa-sharp fa-arrow-turn-down-left"></i> to use&nbsp;&nbsp;&nbsp;<strong>esc</strong> to dismiss</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+	var quickActionsData = [
+		
+		
+			{name: "Subscription Settings", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/editsub"},
+			{name: "Group Profile", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/profile/6115309"},
+			{name: "Delivery History", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subdeliveries"},
+			{name: "Member Integrations", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subintegrations"},
+		
+			{name: "Group Home", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG"},
+		
+
+		
+			{name: "Topics", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics"},
+			{name: "Messages", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages"},
+			{name: "Expanded Messages", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/messages?expanded=1"},
+		
+		
+		
+			{name: "Polls", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/polls"},
+		
+		
+			{name: "Hashtags", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/hashtags"},
+		
+		
+			{name: "New Topic", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/post"},
+		
+		
+			{name: "New Poll", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/addpoll"},
+		
+		
+			{name: "Drafts", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/drafts"},
+		
+
+		
+			
+				{name: "Chats", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/chats"},
+			
+		
+
+		
+			{name: "Subgroups", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/subgroups"},
+		
+		
+		
+			{name: "Member Directory", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/directory"},
+		
+
+		
+			{name: "Calendar", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/calendar"},
+		
+
+		
+			
+				{name: "Photos", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/photos"},
+			
+			
+				{name: "Files", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/files"},
+			
+
+			
+				{name: "Databases", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/database"},
+			
+			
+		
+		
+			{name: "Wiki", url: "https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/wiki"},
+		
+		
+		/* other pages */
+		{name: "Help", url: "/helpcenter"},
+		{name: "Feed", url: "/feed"},
+		{name: "Your Groups", url: "/groups"},
+		{name: "Your Calendar", url: "/calendar"},
+		{name: "Your Activity", url: "/activity"},
+		{name: "Your Pending Messages", url: "/pendingmsgs"},
+		{name: "Account Login", url: "/account"},
+		{name: "Account Preferences", url: "/account?page=prefs"},
+		{name: "Account Security", url: "/account?page=security"},
+		{name: "Account Identity", url: "/account?page=profile&member_info_id=0"},
+		{name: "Account Notifications", url: "/account?page=notifications"},
+		{name: "Account Other Services", url: "/account?page=oauth"},
+		{name: "Account Bounces", url: "/account?page=bounces"},
+		{name: "Account Billing", url: "/account?page=billing"},
+		{name: "Find a Group", url: "/search?p=SubsCount,,,20,2,0,0"},
+	];
+
+
+	InitAutocomplete("quickActions", quickActionsData);
+
+	document.addEventListener('keydown', function(event) {
+		var tagName = event.target.tagName.toLowerCase();
+		if (tagName === 'input' || tagName === 'textarea' || event.target.isContentEditable) {
+			return;
+		}
+		// check if the viewimages viewer is up
+		let element = document.getElementById('overlay');
+		if (element && element.classList.contains('visible')) {
+			return;
+		}
+		if (event.key.toLowerCase() === '/') {
+			if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+				// For Mac
+				// Check if Command (event.metaKey) is pressed, and either Option (event.altKey) is pressed or not
+				if (event.metaKey) {
+					event.preventDefault();
+					showAutocompleteModal("quickActions");
+					return;
+				}
+			} else {
+				// For Windows and Linux
+				if (event.ctrlKey) {
+					event.preventDefault();
+					showAutocompleteModal("quickActions");
+					return;
+				}
+			}
+		}
+	});
+	function UpdateSidebar(id) {
+		console.log(id + " was clicked");
+		if (typeof HideHeaderAction === 'function') {
+			HideHeaderAction();
+		}
+		// restore mobile bottom nav in case a previous page (e.g. /post) hid it
+		var mobSidebar = document.getElementById("mobileSidebar");
+		if (mobSidebar) mobSidebar.style.display = '';
+		var mainContent = document.getElementById("maincontent");
+		if (mainContent) mainContent.style.bottom = '';
+		var sidebarItems = document.querySelectorAll('.mobilesidebar-item');
+		sidebarItems.forEach(function(item) {
+			var iElement = item.getElementsByTagName('div')[0].getElementsByTagName('i')[0];
+			if (item.id == "mobilesidebar-" + id) {
+				console.log("making solid " + id)
+				iElement.classList.add('fa-solid');
+				iElement.classList.remove('fa-light');
+			} else {
+				iElement.classList.remove('fa-solid');
+				iElement.classList.add('fa-light');
+			}
+		});
+		var sidebarItems = document.querySelectorAll('.sidebar-item');
+		// remove 'active' class from all 'sidebar-item' elements
+		sidebarItems.forEach(function(item) {
+			if (item.id == "sidebar-" + id) {
+				console.log("making active " + id)
+				item.classList.add('active');
+			} else {
+				item.classList.remove('active');
+			}
+		});
+	}
+</script>
+
+
+			</div>
+			
+				<div id="scroll-top-outer">
+					<div id="scroll-top" class="scroll-top-wrapper hidden-xs">
+						<span class="scroll-top-inner">
+							<i class="fa fa-arrow-circle-up fa-fw fa-2x"></i>
+						</span>
+					</div>
+				</div>
+<script>
+	$(function() {
+		$(document).on('scroll', function() {
+			if ($(window).scrollTop() > 100) {
+				$('.scroll-top-wrapper').addClass('show');
+			} else {
+				$('.scroll-top-wrapper').removeClass('show');
+			}
+		});
+		$('.scroll-top-wrapper').on('click', scrollToTop);
+	});
+
+	function scrollToTop() {
+		verticalOffset = typeof(verticalOffset) != 'undefined' ? verticalOffset : 0;
+		element = $('body');
+		offset = element.offset();
+		offsetTop = offset.top;
+		$('html, body').animate({
+			scrollTop: offsetTop
+		}, 100, 'linear');
+	}
+
+	if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+		let elements = document.querySelectorAll('strong.ctrlmeta');
+		elements.forEach((element) => {
+			// Check if the innerText is "ctrl"
+			if (element.innerText === 'ctrl') {
+				// Create a new "i" element
+				let newElement = document.createElement('i');
+				newElement.classList.add('fa-solid', 'fa-command');
+				
+				// Replace the old "strong" element with the new "i" element
+				element.parentNode.replaceChild(newElement, element);
+			}
+		});
+	}
+</script>
+			
+			
+
+
+		</body>
+	</html>
+

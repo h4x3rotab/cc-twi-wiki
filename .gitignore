@@ -6,12 +6,13 @@ __pycache__/
 venv/
 .python-version
 
-# Scraper raw cache (HTML responses, failures log)
-data/raw/
-
 # llmwiki workspace-derived state (rebuilt by `llmwiki init`).
-# We DO commit data/threads/wiki/ — that's the wiki output.
+# We DO commit data/threads/wiki/ and data/raw/ — those ship with the
+# repo so a fresh clone can serve and rebuild without re-scraping.
 data/threads/.llmwiki/
+
+# node_modules at repo root (repoview is fetched via npm install)
+/node_modules/
 
 # llmwiki runtime artifacts inside the vendored copy
 llmwiki/api/.venv/

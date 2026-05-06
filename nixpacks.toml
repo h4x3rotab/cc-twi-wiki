@@ -1,0 +1,13 @@
+# Nixpacks build for cc-twi-wiki.
+# Serves data/threads/wiki/ via the npm package `repoview`.
+providers = ['node']
+
+[phases.setup]
+# git is needed so repoview can render commit history / diffs at runtime.
+nixPkgs = ['nodejs_20', 'git']
+
+[phases.install]
+cmds = ['npm ci --omit=dev --no-audit --no-fund --prefer-offline || npm install --omit=dev --no-audit --no-fund']
+
+[start]
+cmd = 'npm start'
