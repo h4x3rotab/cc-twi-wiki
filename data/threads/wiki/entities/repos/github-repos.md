@@ -17,13 +17,12 @@ The TWI SIG works in the open on GitHub under the `confidential-computing` org. 
 | `confidential-computing/twi-ietf` (requested) | "Future drafts" so the SIG doesn't need a fresh repo for every IETF venue | Requested 2026-04-22 from Riaan[^newrepo] | Created on demand; Vienna ended up reusing `twi-rats` |
 | [`confidential-computing/governance`](https://github.com/confidential-computing/governance) | CCC TAC governance — TWI Definitions were pulled out of the SIG charter here | Sep 2025[^defs] | TAC-owned |
 
-[^repo1]: 112436186-twi-repository-for-ietf-internet-draft.md
-[^pr1]: 113075755-twi-wimse-pr-1.md
-[^firstdraft]: 115689796-first-draft-of-twi-exchange-draft-ready-for-review.md
-[^repo]: 118988634-repository-for-vienna-ietf-submission.md
-[^newrepo]: 118959565-new-github-repo-request-for-twi-sig.md
-[^defs]: 115172041-two-pull-requests-around-twi-definitions.md
-
+[^repo1]: [112436186-twi-repository-for-ietf-internet-draft.md](../../../112436186-twi-repository-for-ietf-internet-draft.md)
+[^pr1]: [113075755-twi-wimse-pr-1.md](../../../113075755-twi-wimse-pr-1.md)
+[^firstdraft]: [115689796-first-draft-of-twi-exchange-draft-ready-for-review.md](../../../115689796-first-draft-of-twi-exchange-draft-ready-for-review.md)
+[^repo]: [118988634-repository-for-vienna-ietf-submission.md](../../../118988634-repository-for-vienna-ietf-submission.md)
+[^newrepo]: [118959565-new-github-repo-request-for-twi-sig.md](../../../118959565-new-github-repo-request-for-twi-sig.md)
+[^defs]: [115172041-two-pull-requests-around-twi-definitions.md](../../../115172041-two-pull-requests-around-twi-definitions.md)
 ## Repo lifecycle pattern
 
 ```mermaid
@@ -50,8 +49,7 @@ The pattern is: durable content lives in `twi`; per-IETF-venue submission repos 
 - `confidential-computing/twi-rats/blob/main/draft-novak-twi-attestation.md` — the IETF 124 TWI eXchange draft.[^firstdraft]
 - `confidential-computing/twi-rats/archive/2025/` — frozen IETF 124 draft tree (post-Vienna repo reuse).[^repo]
 
-[^reqs]: 113075164-twi-requirements-now-in-github.md
-
+[^reqs]: [113075164-twi-requirements-now-in-github.md](../../../113075164-twi-requirements-now-in-github.md)
 ## Other GitHub references
 
 External repos the SIG tracks:
@@ -62,11 +60,10 @@ External repos the SIG tracks:
 - `attest-framework` — "Attest LLM" framework[^attllm].
 - `modelcontextprotocol/modelcontextprotocol/issues/1415` — MCP HTTP message-signing proposal Mark forwarded to the Attestation SIG[^mcp].
 
-[^spiffe]: 119049410-brokered-and-agentless-modes-for-spiffe.md
-[^geofence]: 113801931-agenda-for-tuesday-june-24-2025.md
-[^attllm]: 118314175-quot-attest-llm-quot-framework.md
-[^mcp]: 115127912-fw-mcp-binding-could-be-improved-with-confidential-computing.md
-
+[^spiffe]: [119049410-brokered-and-agentless-modes-for-spiffe.md](../../../119049410-brokered-and-agentless-modes-for-spiffe.md)
+[^geofence]: [113801931-agenda-for-tuesday-june-24-2025.md](../../../113801931-agenda-for-tuesday-june-24-2025.md)
+[^attllm]: [118314175-quot-attest-llm-quot-framework.md](../../../118314175-quot-attest-llm-quot-framework.md)
+[^mcp]: [115127912-fw-mcp-binding-could-be-improved-with-confidential-computing.md](../../../115127912-fw-mcp-binding-could-be-improved-with-confidential-computing.md)
 ## See also
 
 - [TWI Informational Draft (IETF 123)](../drafts/informational-draft-ietf-123.md)

@@ -18,11 +18,10 @@ tags: [people, hushmesh, founder, philosopher]
 | "Workload identity registry" — identity does not lie within the workload, but in a (TEE-resident) registry | [^couplings] |
 | Provenance forces "chains of workloads" thinking — a mesh | [^prov] |
 
-[^tc]: 113326321-trustworthy-composability.md
-[^couplings]: 114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md
-[^chatgptlinkedin]: 115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md
-[^prov]: 118625119-let-39-s-discuss-provenance.md
-
+[^tc]: [113326321-trustworthy-composability.md](../../../113326321-trustworthy-composability.md)
+[^couplings]: [114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md](../../../114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md)
+[^chatgptlinkedin]: [115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md](../../../115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md)
+[^prov]: [118625119-let-39-s-discuss-provenance.md](../../../118625119-let-39-s-discuss-provenance.md)
 ## Other contributions
 
 - Forwarded Löwy's *Righting Software* system-design summary as context for SIG architectural discussions[^lowy].
@@ -30,10 +29,9 @@ tags: [people, hushmesh, founder, philosopher]
 - Attended NIST "Metrology for Digital Twins" event 2025-06-24, articulating TWI as the substrate for trustworthy digital twins[^digtwin].
 - Attended MIT "agentic web" workshop 2025-07-15[^couplings].
 
-[^lowy]: 115046504-overview-of-l-wy-s-system-design-method.md
-[^seccoding]: 113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md
-[^digtwin]: 113801931-agenda-for-tuesday-june-24-2025.md
-
+[^lowy]: [115046504-overview-of-l-wy-s-system-design-method.md](../../../115046504-overview-of-l-wy-s-system-design-method.md)
+[^seccoding]: [113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md](../../../113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md)
+[^digtwin]: [113801931-agenda-for-tuesday-june-24-2025.md](../../../113801931-agenda-for-tuesday-june-24-2025.md)
 ## See also
 
 - [Hushmesh](../orgs/hushmesh.md)

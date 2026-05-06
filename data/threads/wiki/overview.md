@@ -27,13 +27,12 @@ The corpus indexed here is the public groups.io mailing-list archive: **119 thre
 | 4 | The SIG explicitly chose **deployability over architectural purity**: the Vienna draft argues that asking existing relying parties to become "CC-aware" has historically blocked adoption, so the Attester-side mechanism for obtaining standard credentials is what needs standardising[^deploy]. | [RATS-Unaware Relying Parties](concepts/rats-unaware-relying-parties.md) |
 | 5 | A recurring tension: Hushmesh's **Trustworthy Composability** view (verifiers/registries themselves must run in TEEs; entire chains must be trustworthy) vs. JPMorgan-style **risk-tolerated composability** (trust your CSP for some claims if your business risk allows it)[^compose]. | [Trustworthy Composability](concepts/trustworthy-composability.md) |
 
-[^twin]: 118116641-final-review-twi-profile-for-twin-workloads.md
-[^replica]: 118596716-trustworthy-workload-identity-for-replica-workloads.md
-[^vienna]: 118990275-early-draft-of-the-vienna-submission.md
-[^twivswimse]: 113926112-twi-vs-wimse-recap.md
-[^deploy]: 118990275-early-draft-of-the-vienna-submission.md
-[^compose]: 114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md
-
+[^twin]: [118116641-final-review-twi-profile-for-twin-workloads.md](../118116641-final-review-twi-profile-for-twin-workloads.md)
+[^replica]: [118596716-trustworthy-workload-identity-for-replica-workloads.md](../118596716-trustworthy-workload-identity-for-replica-workloads.md)
+[^vienna]: [118990275-early-draft-of-the-vienna-submission.md](../118990275-early-draft-of-the-vienna-submission.md)
+[^twivswimse]: [113926112-twi-vs-wimse-recap.md](../113926112-twi-vs-wimse-recap.md)
+[^deploy]: [118990275-early-draft-of-the-vienna-submission.md](../118990275-early-draft-of-the-vienna-submission.md)
+[^compose]: [114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md](../114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md)
 ## Structure of the Effort
 
 ```mermaid

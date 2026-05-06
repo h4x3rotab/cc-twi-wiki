@@ -7,8 +7,7 @@ tags: [ietf, rats, vienna, draft, rup, 2026, in-progress]
 
 The SIG's third IETF deliverable, **in active drafting as of late April 2026**. Targets the IETF meeting in **Vienna (July 2026)**. The early draft was circulated by [Mark Novak](../people/mark-novak.md) on 2026-04-24[^early].
 
-[^early]: 118990275-early-draft-of-the-vienna-submission.md
-
+[^early]: [118990275-early-draft-of-the-vienna-submission.md](../../../118990275-early-draft-of-the-vienna-submission.md)
 ## Quick facts
 
 | | |
@@ -19,9 +18,8 @@ The SIG's third IETF deliverable, **in active drafting as of late April 2026**. 
 | **Likely WG target** | RATS |
 | **Possible separate repo** | `twi-ietf` requested 2026-04-22 for "future drafts" but Vienna re-used `twi-rats`[^newrepo] |
 
-[^repo]: 118988634-repository-for-vienna-ietf-submission.md
-[^newrepo]: 118959565-new-github-repo-request-for-twi-sig.md
-
+[^repo]: [118988634-repository-for-vienna-ietf-submission.md](../../../118988634-repository-for-vienna-ietf-submission.md)
+[^newrepo]: [118959565-new-github-repo-request-for-twi-sig.md](../../../118959565-new-github-repo-request-for-twi-sig.md)
 ## Abstract (verbatim from the early draft)
 
 > "There is a large class of 'RATS-Unaware' Relying Parties (RUPs) that Attesters nevertheless need to interoperate with. RUPs cannot process Attestation Results or execute Appraisal Policy for Attestation Results. This specification extends the RATS Architecture to interoperate with RUPs."[^early]
@@ -57,9 +55,8 @@ Mark floated narrowing the Vienna submission to *only* the **"Anticipating Refer
 > 1. More concrete: 'Achieving Relying Party stability'…
 > 2. Less concrete: A discussion of a relationship between remote attestation and attester credential issuance."[^attsig]
 
-[^antrv]: 118845083-fw-anticipating-reference-values.md
-[^attsig]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-
+[^antrv]: [118845083-fw-anticipating-reference-values.md](../../../118845083-fw-anticipating-reference-values.md)
+[^attsig]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
 ## See also
 
 - [RATS-Unaware Relying Parties](../../concepts/rats-unaware-relying-parties.md) — the conceptual page

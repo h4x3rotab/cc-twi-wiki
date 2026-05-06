@@ -17,10 +17,9 @@ The first IETF deliverable from the SIG. An *informational* draft for the **IETF
 | **Submitter** | [Henk Birkholz](../people/henk-birkholz.md) (volunteered)[^submit] |
 | **Final review window** | end-of-day Thursday, ~3 Jul 2025[^finishline] |
 
-[^recap]: 113926112-twi-vs-wimse-recap.md
-[^submit]: 113970559-i-d-submission.md
-[^finishline]: 113955130-getting-the-i-d-over-the-finish-line.md
-
+[^recap]: [113926112-twi-vs-wimse-recap.md](../../../113926112-twi-vs-wimse-recap.md)
+[^submit]: [113970559-i-d-submission.md](../../../113970559-i-d-submission.md)
+[^finishline]: [113955130-getting-the-i-d-over-the-finish-line.md](../../../113955130-getting-the-i-d-over-the-finish-line.md)
 ## What it argues
 
 The draft's strategic position, set by Mark Novak[^pr33]:
@@ -29,8 +28,7 @@ The draft's strategic position, set by Mark Novak[^pr33]:
 
 That single architectural ask is the core of the draft. Anything more (full provenance treatment, deep credential-issuance machinery) was deliberately left out so the ask wouldn't be rejected on cost-of-change grounds[^pr33].
 
-[^pr33]: 113881043-general-comment-on-pull-request-33.md
-
+[^pr33]: [113881043-general-comment-on-pull-request-33.md](../../../113881043-general-comment-on-pull-request-33.md)
 ## Editorial discipline
 
 Several PRs pruned scope on the way to submission:
@@ -44,11 +42,10 @@ Several PRs pruned scope on the way to submission:
 | #34 | Security Considerations | Mark Novak; pending review at finish-line[^finishline] |
 | #39 | Capitalisation / grammar nits | Mark Novak[^prupdates] |
 
-[^pr1]: 113075755-twi-wimse-pr-1.md
-[^pr3]: 113098918-please-review-pull-request-3.md
-[^pr12]: 113383233-continue-review-of-pr-12-and-other-t-asks.md
-[^prupdates]: 113967361-new-and-updated-prs.md
-
+[^pr1]: [113075755-twi-wimse-pr-1.md](../../../113075755-twi-wimse-pr-1.md)
+[^pr3]: [113098918-please-review-pull-request-3.md](../../../113098918-please-review-pull-request-3.md)
+[^pr12]: [113383233-continue-review-of-pr-12-and-other-t-asks.md](../../../113383233-continue-review-of-pr-12-and-other-t-asks.md)
+[^prupdates]: [113967361-new-and-updated-prs.md](../../../113967361-new-and-updated-prs.md)
 ## Relation to later drafts
 
 ```mermaid

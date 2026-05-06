@@ -7,8 +7,7 @@ tags: [ccc, org, consortium, governance]
 
 The **Confidential Computing Consortium** is the parent organisation for the TWI SIG. The SIG was originally a project track inside the CCC's governance structure, then graduated to its own mailing list at the start of April 2025 (the first message in this archive is Dan Middleton announcing "moving the conversation over to our shiny new mail list")[^firstpost].
 
-[^firstpost]: 112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md
-
+[^firstpost]: [112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md](../../../112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md)
 ## How the SIG fits into the CCC
 
 ```mermaid
@@ -43,23 +42,21 @@ flowchart TD
 | **CCC Outreach** | Asked the SIG (Mar 2025) for citable references linking CC with software-supply-chain security for the CC Wikipedia article[^firstpost]. |
 | **CCC Governance repo** | TWI Definitions were extracted from the SIG charter via PR #325[^defs]. |
 
-[^tac]: 118843190-please-review-tomorrow-39-s-draft-presentation.md
-[^cmw]: 114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md
-[^ar4si]: 114723280-ar4si-draft-from-rats.md
-[^attsig]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-[^seccoding]: 113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md
-[^enterprise]: 114798382-sharing-an-email-thread-concerning-the-twi-enterprise-case-d.md
-[^defs]: 115172041-two-pull-requests-around-twi-definitions.md
-
+[^tac]: [118843190-please-review-tomorrow-39-s-draft-presentation.md](../../../118843190-please-review-tomorrow-39-s-draft-presentation.md)
+[^cmw]: [114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md](../../../114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md)
+[^ar4si]: [114723280-ar4si-draft-from-rats.md](../../../114723280-ar4si-draft-from-rats.md)
+[^attsig]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
+[^seccoding]: [113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md](../../../113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md)
+[^enterprise]: [114798382-sharing-an-email-thread-concerning-the-twi-enterprise-case-d.md](../../../114798382-sharing-an-email-thread-concerning-the-twi-enterprise-case-d.md)
+[^defs]: [115172041-two-pull-requests-around-twi-definitions.md](../../../115172041-two-pull-requests-around-twi-definitions.md)
 ## CCC Reference Architecture
 
 The TWI SIG's Reference Architecture work feeds into the broader CCC Reference Architecture. The relationship between the two — and Hushmesh's Mesh blueprint feeding both — was the topic of a dedicated 2025-09-02 meeting[^mesh].
 
-[^mesh]: 115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md
-
+[^mesh]: [115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md](../../../115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md)
 ## Meetings
 
 The SIG meets weekly on **Tuesdays, 6 AM Pacific** via Zoom (Linux Foundation hosting)[^horiz]. Meeting agendas drive the bulk of the mailing-list traffic; meeting minutes appear sporadically (one such update on 2025-04-08[^minutes]).
 
-[^horiz]: 117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md
-[^minutes]: 112162988-meeting-minutes-updated-for-april-8-2025.md
+[^horiz]: [117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md](../../../117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md)
+[^minutes]: [112162988-meeting-minutes-updated-for-april-8-2025.md](../../../112162988-meeting-minutes-updated-for-april-8-2025.md)

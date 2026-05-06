@@ -12,8 +12,7 @@ tags: [provenance, supply-chain, wimse, charter, recursive]
 
 [Mateusz Bronk](../entities/people/mateusz-bronk.md) and [Mark Novak](../entities/people/mark-novak.md) drew that line in the [PR-33 discussion](https://github.com/confidential-computing/twi-wimse/pull/33) — strategic discipline to keep the IETF ask narrow[^pr33].
 
-[^pr33]: 113881043-general-comment-on-pull-request-33.md
-
+[^pr33]: [113881043-general-comment-on-pull-request-33.md](../../113881043-general-comment-on-pull-request-33.md)
 ## The minimal WIMSE ask
 
 WIMSE's charter excludes provenance, so the IETF 123 informational draft was reduced to:
@@ -28,8 +27,7 @@ Manu Fontaine reframed provenance in April 2026 after work on the Replica Worklo
 
 > "The entire attestation verification chain ends up in the Attester workload's TCB. […] All bits originate from other workloads, it follows that we need to approach this as a recursive system architecture for workload chains. (Dare I say, a 'mesh' of workloads.)"
 
-[^prov]: 118625119-let-39-s-discuss-provenance.md
-
+[^prov]: [118625119-let-39-s-discuss-provenance.md](../../118625119-let-39-s-discuss-provenance.md)
 This connects provenance directly to [Trustworthy Composability](trustworthy-composability.md): if every bit your verification depends on came from another workload, then provenance and the recursive-trust architecture are the same problem.
 
 ## Where additional metadata could ride
@@ -55,9 +53,8 @@ The SIG deliberately kept all three open in the IETF document.
 - **CCC TAC secure-coding & workload-administration guidelines** — a separate document the SIG advocated for, addressing how a verified workload's identity can be silently altered by post-attestation configuration changes (the "Grok unauthorized modification" example)[^seccoding].
 - **Outreach: Wikipedia citation request** — Dan Middleton's Mar 2025 ask for citable references linking CC with software-supply-chain security[^outreach].
 
-[^seccoding]: 113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md
-[^outreach]: 112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md
-
+[^seccoding]: [113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md](../../113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md)
+[^outreach]: [112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md](../../112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md)
 ## See also
 
 - [Trustworthy Composability](trustworthy-composability.md)

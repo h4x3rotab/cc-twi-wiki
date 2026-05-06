@@ -36,8 +36,7 @@ The SIG's view is that **credential issuance falls into a crack**[^crack]: WIMSE
 - The [TWI eXchange Draft (IETF 124)](../entities/drafts/twi-exchange-draft.md) — `draft-novak-twi-attestation` — extends RATS with the message exchanges needed to issue credentials based on Attestation Results.
 - The [Vienna submission](../entities/drafts/vienna-submission.md) extends the architecture itself with a new role: the [RATS-Unaware Relying Party](rats-unaware-relying-parties.md).
 
-[^crack]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-
+[^crack]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
 ## Other RATS work the SIG tracks
 
 | Draft | Why it matters | Source |
@@ -46,10 +45,9 @@ The SIG's view is that **credential issuance falls into a crack**[^crack]: WIMSE
 | `draft-ietf-rats-ar4si` (Attestation Results for Secure Interactions) | A richer Attestation-Results information model than what TWI proposes. Compatibility with WIMSE is unclear. | [^ar4si] |
 | `draft-mihalcea-seat-use-cases` (SEAT) | Use-cases for attestation-bound credentials. Mark Novak's review noted it omits *manageability*, which is core to the TWI angle. | [^seat] |
 
-[^cmw]: 114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md
-[^ar4si]: 114723280-ar4si-draft-from-rats.md
-[^seat]: 116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md
-
+[^cmw]: [114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md](../../114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md)
+[^ar4si]: [114723280-ar4si-draft-from-rats.md](../../114723280-ar4si-draft-from-rats.md)
+[^seat]: [116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md](../../116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md)
 ## See also
 
 - [IETF RATS WG](../entities/orgs/ietf-rats.md)

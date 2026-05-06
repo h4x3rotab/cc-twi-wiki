@@ -7,8 +7,7 @@ tags: [hushmesh, manu-fontaine, mesh, composability, vendor]
 
 **Hushmesh** is the company founded and led by [Manu Fontaine](../people/manu-fontaine.md). Inside the SIG, Hushmesh provides the architectural counterweight to the JPMorgan-style "deploy what's possible today" position — pushing the SIG and the CCC Reference Architecture to articulate a fully trustworthy end state first, then plan the migration[^couplings].
 
-[^couplings]: 114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md
-
+[^couplings]: [114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md](../../../114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md)
 ## The Mesh
 
 Hushmesh's architectural blueprint, presented to the SIG on 2025-09-02 as input to the CCC Reference Architecture[^mesh]:
@@ -22,8 +21,7 @@ Hushmesh's architectural blueprint, presented to the SIG on 2025-09-02 as input 
 | Local registry per agent | Private, confidential, tamper-proof — relaxes uptime requirements on the central network. |
 | StemIDs | Cryptographic identifiers; only possible thanks to CC. |
 
-[^mesh]: 115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md
-
+[^mesh]: [115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md](../../../115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md)
 A LinkedIn post on 2025-07-15 announced "the Mesh is becoming the secure-by-design [...]" — referenced in the composability thread as evidence the architecture is being deployed in practice[^couplings].
 
 ## Recurring positions
@@ -37,10 +35,9 @@ A LinkedIn post on 2025-07-15 announced "the Mesh is becoming the secure-by-desi
 | "Protection in use" should be through encryption | [^couplings] |
 | Trustworthy digital twins, "trustworthy composability" for systems-of-systems | [^digtwin] |
 
-[^prov]: 118625119-let-39-s-discuss-provenance.md
-[^chatgptlinkedin]: 115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md
-[^digtwin]: 113801931-agenda-for-tuesday-june-24-2025.md
-
+[^prov]: [118625119-let-39-s-discuss-provenance.md](../../../118625119-let-39-s-discuss-provenance.md)
+[^chatgptlinkedin]: [115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md](../../../115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md)
+[^digtwin]: [113801931-agenda-for-tuesday-june-24-2025.md](../../../113801931-agenda-for-tuesday-june-24-2025.md)
 ## See also
 
 - [Manu Fontaine](../people/manu-fontaine.md)

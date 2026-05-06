@@ -7,8 +7,7 @@ tags: [people, edgeless-systems, vienna-critic]
 
 **Markus Rudy**, Edgeless Systems (`mr@edgeless.systems`). First appears in the archive on the [Vienna submission](../drafts/vienna-submission.md) thread on 2026-04-24, where he provided the day-of critique that is shaping the SIG's pre-Vienna deliberations[^vienna].
 
-[^vienna]: 118990275-early-draft-of-the-vienna-submission.md
-
+[^vienna]: [118990275-early-draft-of-the-vienna-submission.md](../../../118990275-early-draft-of-the-vienna-submission.md)
 ## The Vienna critique
 
 Two threads of pushback on Mark's early Vienna draft[^vienna]:

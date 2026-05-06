@@ -47,8 +47,7 @@ timeline
 
 The first message in the archive — *"Moving the conversation over to our shiny new mail list"* (Dan Middleton, 2025-03-31) — relays a CCC Outreach request: find citable references linking Confidential Computing with software supply chain security, for the CC Wikipedia article. The seed is provenance, even before TWI has its own architecture[^firstpost].
 
-[^firstpost]: 112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md
-
+[^firstpost]: [112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md](../112008953-fw-twi-request-from-outreach-secure-s-w-supply-chain-referen.md)
 ## April–May 2025 — repository, requirements, first PRs
 
 - **2025-04-24** — Yogesh Deshpande sets up `github.com/confidential-computing/twi`, asks for GitHub IDs for collaborator access[^repo1].
@@ -60,23 +59,21 @@ The first message in the archive — *"Moving the conversation over to our shiny
 - **2025-05-17** — Manu's secure-coding / "Agentic DID" thread, citing the Grok unauthorised-modification incident[^seccoding].
 - **2025-05-27** — *Trustworthy Composability* — Manu's bullet-point manifesto sent to David Quigley and forwarded to the SIG[^tc].
 
-[^repo1]: 112436186-twi-repository-for-ietf-internet-draft.md
-[^cmwfwd]: 113039986-fw-ccc-attestation-tech-attestation-digest-28.md
-[^wivai]: 113061126-workload-identity-vs-agent-identity.md
-[^reqs]: 113075164-twi-requirements-now-in-github.md
-[^pr1]: 113075755-twi-wimse-pr-1.md
-[^pr3]: 113098918-please-review-pull-request-3.md
-[^seccoding]: 113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md
-[^tc]: 113326321-trustworthy-composability.md
-
+[^repo1]: [112436186-twi-repository-for-ietf-internet-draft.md](../112436186-twi-repository-for-ietf-internet-draft.md)
+[^cmwfwd]: [113039986-fw-ccc-attestation-tech-attestation-digest-28.md](../113039986-fw-ccc-attestation-tech-attestation-digest-28.md)
+[^wivai]: [113061126-workload-identity-vs-agent-identity.md](../113061126-workload-identity-vs-agent-identity.md)
+[^reqs]: [113075164-twi-requirements-now-in-github.md](../113075164-twi-requirements-now-in-github.md)
+[^pr1]: [113075755-twi-wimse-pr-1.md](../113075755-twi-wimse-pr-1.md)
+[^pr3]: [113098918-please-review-pull-request-3.md](../113098918-please-review-pull-request-3.md)
+[^seccoding]: [113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md](../113161461-ccc-tac-secure-coding-and-workload-administration-guidelines.md)
+[^tc]: [113326321-trustworthy-composability.md](../113326321-trustworthy-composability.md)
 ## June 2025 — provenance scoping
 
 - **2025-06-24** — Mark queues `draft-klspa-wimse-verifiable-geo-fence` and OpenSSF Model Signing for review[^geofence].
 - **2025-06-28/29** — *PR #33 review* — Mark and Mateusz Bronk align on dropping deep provenance text from the IETF 123 ID; provenance moves to the TWI Reference Architecture[^pr33].
 
-[^geofence]: 113801931-agenda-for-tuesday-june-24-2025.md
-[^pr33]: 113881043-general-comment-on-pull-request-33.md
-
+[^geofence]: [113801931-agenda-for-tuesday-june-24-2025.md](../113801931-agenda-for-tuesday-june-24-2025.md)
+[^pr33]: [113881043-general-comment-on-pull-request-33.md](../113881043-general-comment-on-pull-request-33.md)
 ## July 2025 — IETF 123 Madrid
 
 - **2025-07-01** — *TWI vs WIMSE — recap*. Mark's line-by-line audit. **Pivot:** "after Madrid we should focus most of our attention on [RATS]"[^recap].
@@ -84,11 +81,10 @@ The first message in the archive — *"Moving the conversation over to our shiny
 - **2025-07-03** — Mark asks for a submission volunteer; **Henk Birkholz** raises his hand (2025-07-04)[^submit].
 - **2025-07-10/15** — *Composability and strength of "Couplings"* — Manu and Mark stake out the deployability vs. North Star positions that will recur for the next year[^couplings].
 
-[^recap]: 113926112-twi-vs-wimse-recap.md
-[^finishline]: 113955130-getting-the-i-d-over-the-finish-line.md
-[^submit]: 113970559-i-d-submission.md
-[^couplings]: 114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md
-
+[^recap]: [113926112-twi-vs-wimse-recap.md](../113926112-twi-vs-wimse-recap.md)
+[^finishline]: [113955130-getting-the-i-d-over-the-finish-line.md](../113955130-getting-the-i-d-over-the-finish-line.md)
+[^submit]: [113970559-i-d-submission.md](../113970559-i-d-submission.md)
+[^couplings]: [114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md](../114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md)
 ## August–September 2025 — pivot to RATS, definitions split
 
 - **2025-08-12** — *TWI Business Use Case* (Mark) and *Conceptual Message Wrapper (CMW)* forwarded from RATS[^cmw].
@@ -100,15 +96,14 @@ The first message in the archive — *"Moving the conversation over to our shiny
 - **2025-09-10** — TWI **Definitions** extracted from the SIG Charter into their own doc; corresponding governance PR #325[^defs].
 - **2025-09-12** — IETF 124 informational-draft scoping[^id124].
 
-[^cmw]: 114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md
-[^ar4si]: 114723280-ar4si-draft-from-rats.md
-[^mesh]: 115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md
-[^twiforrats]: 115048575-twi-for-rats-initial-document.md
-[^chatgptlinkedin]: 115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md
-[^mcp]: 115127912-fw-mcp-binding-could-be-improved-with-confidential-computing.md
-[^defs]: 115172041-two-pull-requests-around-twi-definitions.md
-[^id124]: 115209132-informational-draft-for-ietf-124.md
-
+[^cmw]: [114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md](../114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md)
+[^ar4si]: [114723280-ar4si-draft-from-rats.md](../114723280-ar4si-draft-from-rats.md)
+[^mesh]: [115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md](../115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md)
+[^twiforrats]: [115048575-twi-for-rats-initial-document.md](../115048575-twi-for-rats-initial-document.md)
+[^chatgptlinkedin]: [115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md](../115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md)
+[^mcp]: [115127912-fw-mcp-binding-could-be-improved-with-confidential-computing.md](../115127912-fw-mcp-binding-could-be-improved-with-confidential-computing.md)
+[^defs]: [115172041-two-pull-requests-around-twi-definitions.md](../115172041-two-pull-requests-around-twi-definitions.md)
+[^id124]: [115209132-informational-draft-for-ietf-124.md](../115209132-informational-draft-for-ietf-124.md)
 ## October–November 2025 — TWIX draft and IETF 124 Montreal
 
 - **2025-10-01** — *Help needed editing the TWIX draft*[^twix].
@@ -118,35 +113,32 @@ The first message in the archive — *"Moving the conversation over to our shiny
 - **2025-10-22** — Yogesh forwards `draft-ni-wimse-ai-agent-identity` (FYI: WIMSE for AI Agents)[^aiagent].
 - **2025-10-31 / 11-04 / 11-07** — IETF 124 final-draft presentation, SEAT use-cases comment, RATS WG presentation[^pres][^seat].
 
-[^twix]: 115537750-help-needed-editing-the-twix-draft.md
-[^cocopres]: 115554186-twi-presentation-this-morning.md
-[^firstdraft]: 115689796-first-draft-of-twi-exchange-draft-ready-for-review.md
-[^finishing]: 115809076-putting-finishing-touches-on-our-ietf-submission.md
-[^aiagent]: 115889621-fyi-workload-identity-for-ai-agents.md
-[^pres]: 116048814-ietf-124-presentation-final-draft.md
-[^seat]: 116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md
-
+[^twix]: [115537750-help-needed-editing-the-twix-draft.md](../115537750-help-needed-editing-the-twix-draft.md)
+[^cocopres]: [115554186-twi-presentation-this-morning.md](../115554186-twi-presentation-this-morning.md)
+[^firstdraft]: [115689796-first-draft-of-twi-exchange-draft-ready-for-review.md](../115689796-first-draft-of-twi-exchange-draft-ready-for-review.md)
+[^finishing]: [115809076-putting-finishing-touches-on-our-ietf-submission.md](../115809076-putting-finishing-touches-on-our-ietf-submission.md)
+[^aiagent]: [115889621-fyi-workload-identity-for-ai-agents.md](../115889621-fyi-workload-identity-for-ai-agents.md)
+[^pres]: [116048814-ietf-124-presentation-final-draft.md](../116048814-ietf-124-presentation-final-draft.md)
+[^seat]: [116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md](../116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md)
 ## December 2025 – January 2026 — replanning
 
 - **2025-12-09** — Reference-Architecture TODO close-out; Manu raises *chains of relying parties* and "verifiers of verifiers"[^chains].
 - **2026-01-07** — *Trustworthy Workload Identity for horizontally scaling workloads* — 2026 plan: WIMSE profile (interim) + RATS submission for Shenzhen, plus a CCC implementation PoC (Trustee mentioned)[^horiz].
 - **2026-01-20** — WIMSE thread on early routing vs identity in mTLS forwarded for awareness[^early].
 
-[^chains]: 116689050-agenda-for-tuesday-9-november-2025.md
-[^horiz]: 117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md
-[^early]: 117367917-fw-wimse-re-problem-statement-early-routing-vs-workload-iden.md
-
+[^chains]: [116689050-agenda-for-tuesday-9-november-2025.md](../116689050-agenda-for-tuesday-9-november-2025.md)
+[^horiz]: [117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md](../117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md)
+[^early]: [117367917-fw-wimse-re-problem-statement-early-routing-vs-workload-iden.md](../117367917-fw-wimse-re-problem-statement-early-routing-vs-workload-iden.md)
 ## February–March 2026 — Twin → Replica Workloads
 
 - **2026-02 / early Mar** — TWI Profile for **Twin Workloads** drafted; final review on **2026-03-03**[^twin].
 - **2026-03-03** — *Next topics for TWI SIG* — call for ideas[^next].
 - **2026-03-31** — Profile renamed **Replica Workloads** v1.0; Mark approaches Dan Middleton about a CCC TAC presentation[^replica]. Henk briefed about getting it in front of RATS for Vienna[^replicarats].
 
-[^twin]: 118116641-final-review-twi-profile-for-twin-workloads.md
-[^next]: 118116751-next-topics-for-twi-sig.md
-[^replica]: 118596716-trustworthy-workload-identity-for-replica-workloads.md
-[^replicarats]: 118596984-twi-profile-for-replica-workloads-and-the-ietf-rats.md
-
+[^twin]: [118116641-final-review-twi-profile-for-twin-workloads.md](../118116641-final-review-twi-profile-for-twin-workloads.md)
+[^next]: [118116751-next-topics-for-twi-sig.md](../118116751-next-topics-for-twi-sig.md)
+[^replica]: [118596716-trustworthy-workload-identity-for-replica-workloads.md](../118596716-trustworthy-workload-identity-for-replica-workloads.md)
+[^replicarats]: [118596984-twi-profile-for-replica-workloads-and-the-ietf-rats.md](../118596984-twi-profile-for-replica-workloads-and-the-ietf-rats.md)
 ## April 2026 — Vienna draft
 
 - **2026-04-01** — Manu opens the *Provenance / mesh of workloads* thread (triggered by Abdullah)[^prov].
@@ -157,14 +149,13 @@ The first message in the archive — *"Moving the conversation over to our shiny
 - **2026-04-24** — Vienna draft circulated; Markus Rudy's critique on the same day[^vienna].
 - **2026-04-28** — *Brokered and agentless modes for SPIFFE* — proposals queued for SIG review[^spiffe].
 
-[^prov]: 118625119-let-39-s-discuss-provenance.md
-[^antrv]: 118845083-fw-anticipating-reference-values.md
-[^tac]: 118843190-please-review-tomorrow-39-s-draft-presentation.md
-[^attsig]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-[^newrepo]: 118959565-new-github-repo-request-for-twi-sig.md
-[^vienna]: 118990275-early-draft-of-the-vienna-submission.md
-[^spiffe]: 119049410-brokered-and-agentless-modes-for-spiffe.md
-
+[^prov]: [118625119-let-39-s-discuss-provenance.md](../118625119-let-39-s-discuss-provenance.md)
+[^antrv]: [118845083-fw-anticipating-reference-values.md](../118845083-fw-anticipating-reference-values.md)
+[^tac]: [118843190-please-review-tomorrow-39-s-draft-presentation.md](../118843190-please-review-tomorrow-39-s-draft-presentation.md)
+[^attsig]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
+[^newrepo]: [118959565-new-github-repo-request-for-twi-sig.md](../118959565-new-github-repo-request-for-twi-sig.md)
+[^vienna]: [118990275-early-draft-of-the-vienna-submission.md](../118990275-early-draft-of-the-vienna-submission.md)
+[^spiffe]: [119049410-brokered-and-agentless-modes-for-spiffe.md](../119049410-brokered-and-agentless-modes-for-spiffe.md)
 ## See also
 
 - [Overview](overview.md)

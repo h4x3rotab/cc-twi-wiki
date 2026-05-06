@@ -7,8 +7,7 @@ tags: [composability, hushmesh, mesh, twi, philosophy, recursive-architecture]
 
 **Trustworthy Composability** is the position that, since end users consume *composite* services made of many workloads, the composition mechanisms themselves must preserve the security strength of every component — otherwise a single non-CC "weak link" undoes the whole chain[^tc]. It was articulated for the SIG by [Manu Fontaine](../entities/people/manu-fontaine.md) (Hushmesh) starting in May 2025.
 
-[^tc]: 113326321-trustworthy-composability.md
-
+[^tc]: [113326321-trustworthy-composability.md](../../113326321-trustworthy-composability.md)
 ## The core argument
 
 1. Confidential Computing offers orders-of-magnitude stronger security than non-CC alternatives (smallest attack surface + chip-level verifiability).
@@ -28,10 +27,9 @@ This implies that WIMSE — which today does not require trustworthy components 
 | Provenance | Forces "chains of workloads" thinking; the whole verification chain ends up in the Attester's TCB → recursive system architecture (a "mesh"). | [^prov] |
 | Attestation evidence | Compositional: a "composite verifier agent" gathers evidence from many "entity verifier agents". | [^mesh] |
 
-[^couplings]: 114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md
-[^prov]: 118625119-let-39-s-discuss-provenance.md
-[^mesh]: 115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md
-
+[^couplings]: [114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md](../../114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md)
+[^prov]: [118625119-let-39-s-discuss-provenance.md](../../118625119-let-39-s-discuss-provenance.md)
+[^mesh]: [115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md](../../115008881-twi-reference-architecture-lt-gt-mesh-blueprint.md)
 ## The Mesh as a worked example
 
 Hushmesh's "Mesh" is offered as a blueprint for what a recursive-trust architecture looks like[^mesh]:

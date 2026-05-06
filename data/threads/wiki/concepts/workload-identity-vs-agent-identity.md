@@ -7,8 +7,7 @@ tags: [workload-identity, agent-identity, hushmesh, terminology, ai-agents]
 
 A **workload** is what's running — code in a TEE, with its own attestation evidence. An **agent** is a *role* a workload can play: it acts on behalf of some entity (a user, an organisation, a physical thing, another agent) and may hold credentials on that entity's behalf. Confidential Computing matters because a TEE-bound workload can act *exclusively* as an agent for an entity by managing a unique keychain per entity it serves[^wivai].
 
-[^wivai]: 113061126-workload-identity-vs-agent-identity.md
-
+[^wivai]: [113061126-workload-identity-vs-agent-identity.md](../../113061126-workload-identity-vs-agent-identity.md)
 ## Why the SIG cares about the distinction
 
 Once "AI agents" became a household term, drafts started showing up in IETF proposing a single workload-identity-token also serve as the agent's identity[^aiagent]. The SIG's view is that workload identity is necessary but **not sufficient** for personal agents:
@@ -17,9 +16,8 @@ Once "AI agents" became a household term, drafts started showing up in IETF prop
 
 The trigger discussion was a public incident where ChatGPT logged into a user's LinkedIn — a textbook case of an agent without proper per-entity credential isolation[^chatgptlinkedin].
 
-[^aiagent]: 115889621-fyi-workload-identity-for-ai-agents.md
-[^chatgptlinkedin]: 115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md
-
+[^aiagent]: [115889621-fyi-workload-identity-for-ai-agents.md](../../115889621-fyi-workload-identity-for-ai-agents.md)
+[^chatgptlinkedin]: [115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md](../../115104223-workload-identity-for-ai-agents-can-t-come-soon-enough.md)
 ## The "exclusivity" question
 
 Manu Fontaine's original framing — a workload "acts exclusively on behalf of" an entity — provoked a productive disagreement[^wivai]:
@@ -41,8 +39,7 @@ The SIG tracks (without owning) several drafts in this space[^reading]:
 - `draft-klrc-aiagent-auth` — AI Agent Authentication and Authorization (Network WG, not WIMSE).
 - `draft-mw-wimse-transitive-attestation` — transitive attestation for "sovereign workloads".
 
-[^reading]: 118844386-some-reading-for-next-week-39-s-twi-meeting.md
-
+[^reading]: [118844386-some-reading-for-next-week-39-s-twi-meeting.md](../../118844386-some-reading-for-next-week-39-s-twi-meeting.md)
 ## See also
 
 - [Trustworthy Composability](trustworthy-composability.md) — the recursive trust frame in which "agent" is layered

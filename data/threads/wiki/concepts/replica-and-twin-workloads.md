@@ -9,8 +9,7 @@ A **Replica Workload** is a workload that is functionally indistinguishable from
 
 The "TWI Profile for Replica Workloads" is the SIG's first concrete deliverable — finalised v1.0 in March 2026[^replica] and presented to the CCC TAC in April 2026.
 
-[^replica]: 118596716-trustworthy-workload-identity-for-replica-workloads.md
-
+[^replica]: [118596716-trustworthy-workload-identity-for-replica-workloads.md](../../118596716-trustworthy-workload-identity-for-replica-workloads.md)
 ## Naming history
 
 | Date | Name | Trigger |
@@ -19,9 +18,8 @@ The "TWI Profile for Replica Workloads" is the SIG's first concrete deliverable 
 | 2026-03-03 | TWI Profile for **Twin Workloads** v1.0 — final review | [^twin] |
 | 2026-03-31 | renamed to TWI Profile for **Replica Workloads** v1.0 | [^replica] |
 
-[^horiz]: 117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md
-[^twin]: 118116641-final-review-twi-profile-for-twin-workloads.md
-
+[^horiz]: [117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md](../../117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md)
+[^twin]: [118116641-final-review-twi-profile-for-twin-workloads.md](../../118116641-final-review-twi-profile-for-twin-workloads.md)
 ## Why this scope first
 
 > "Replica workloads represent the lion's share of cloud-based computing, encompassing confidential VMs, containers and serverless functions that share identity with their replicas."[^replica]
@@ -49,8 +47,7 @@ sequenceDiagram
 
 The **CSK release policy** can be updated alongside reference-value rollouts so that older versions of the workload lose access to the credential after a rollout completes — a security requirement, not a side-effect[^stability].
 
-[^stability]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-
+[^stability]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
 ## What stays stable for the relying party
 
 The whole point of the profile is that the **Relying Party sees the same credential** before and after a workload upgrade — *"a payroll app is a payroll app before and after, whether it is moving from legacy to confidential, or from one known-good version to another"*[^stability]. Two ways to achieve this:
@@ -69,8 +66,7 @@ A precomputed credential requires knowing the Attestation Results *before* the w
 
 Mark Novak forwarded this question to the IETF RATS list in April 2026 and is considering scoping the Vienna submission specifically around this aspect of the profile[^antrv].
 
-[^antrv]: 118845083-fw-anticipating-reference-values.md
-
+[^antrv]: [118845083-fw-anticipating-reference-values.md](../../118845083-fw-anticipating-reference-values.md)
 ## See also
 
 - [TWI Profile for Replica Workloads](../entities/drafts/twi-profile-replica-workloads.md) — the document itself

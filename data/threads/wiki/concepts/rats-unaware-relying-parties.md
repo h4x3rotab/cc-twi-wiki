@@ -13,8 +13,7 @@ A **RATS-Unaware Relying Party (RUP)** is the SIG's term for a relying party tha
 
 The TWI position — articulated by [Mark Novak](../entities/people/mark-novak.md) for the IETF [Vienna submission](../entities/drafts/vienna-submission.md) (Apr 2026) — is that this category exists, is large, and that the RATS architecture must be **extended**, not assumed-away, to interoperate with it[^vienna].
 
-[^vienna]: 118990275-early-draft-of-the-vienna-submission.md
-
+[^vienna]: [118990275-early-draft-of-the-vienna-submission.md](../../118990275-early-draft-of-the-vienna-submission.md)
 ## The deployability argument
 
 > "Success of a technology is ultimately measured by its adoption. The RATS architecture, by requiring that Relying Parties understand Attestation Results and execute Appraisal Policy for Attestation Results, intrinsically limits adoption to Relying Parties that understand RATS protocols and standards. Additionally, the unstated assumption present in the RATS architecture that a change in Evidence may lead to a change in Attestation Results makes it impossible to manage Relying Parties whose authentication policies remain static for long periods of time."[^vienna]

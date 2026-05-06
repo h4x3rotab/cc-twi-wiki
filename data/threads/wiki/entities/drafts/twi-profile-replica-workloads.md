@@ -19,11 +19,10 @@ The SIG's first concrete technical profile, completed v1.0 in **March 2026**. De
 | **Author** | Mark Novak |
 | **Driving organisations** | CCC TWI SIG; followed by interest from WIMSE, RATS, Attestation SIG |
 
-[^twin]: 118116641-final-review-twi-profile-for-twin-workloads.md
-[^replica]: 118596716-trustworthy-workload-identity-for-replica-workloads.md
-[^tac]: 118843190-please-review-tomorrow-39-s-draft-presentation.md
-[^attsig]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-
+[^twin]: [118116641-final-review-twi-profile-for-twin-workloads.md](../../../118116641-final-review-twi-profile-for-twin-workloads.md)
+[^replica]: [118596716-trustworthy-workload-identity-for-replica-workloads.md](../../../118596716-trustworthy-workload-identity-for-replica-workloads.md)
+[^tac]: [118843190-please-review-tomorrow-39-s-draft-presentation.md](../../../118843190-please-review-tomorrow-39-s-draft-presentation.md)
+[^attsig]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
 ## Why "replica"
 
 The earlier name was "Twin Workloads", with a definition focused on *workloads that share code, security-sensitive configuration, and other compliance-relevant attributes such as location*[^twin]. Mark Novak renamed v1.0 to "Replica Workloads" by 2026-03-31[^replica]:
@@ -40,8 +39,7 @@ Mark's pitch to Dan Middleton (CCC TAC) framed v1.0 as "a major milestone" and m
 
 A WIMSE-friendly framing was also chosen: per Mark's Jan 2026 "horizontal scale-out" post[^horiz], the WIMSE leadership had agreed this could be a **WIMSE profile with no architectural or design changes** — a deliberate "big win for interoperability" choice.
 
-[^horiz]: 117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md
-
+[^horiz]: [117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md](../../../117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md)
 ## Technical core (one-paragraph summary)
 
 The profile pre-computes a credential for each known-good workload version and gates the **Credential Signing Key (CSK)** on attestation results: only a workload whose Evidence appraises against the *current* known-good policy gets the CSK. When a rollout completes the policy advances and older versions lose access[^attsig]. The relying party sees a stable credential throughout the rollout — that's the "Replica" property: the replicas all share identity from the RP's point of view.
@@ -78,9 +76,8 @@ sequenceDiagram
 | Provenance / chains of workloads | Spawned [Manu's mesh-of-workloads thread](../../concepts/provenance.md) | [^prov] |
 | WIMSE / RATS interim presentations | Goal: submit revised IETF drafts in 2026 | [^horiz] |
 
-[^antrv]: 118845083-fw-anticipating-reference-values.md
-[^prov]: 118625119-let-39-s-discuss-provenance.md
-
+[^antrv]: [118845083-fw-anticipating-reference-values.md](../../../118845083-fw-anticipating-reference-values.md)
+[^prov]: [118625119-let-39-s-discuss-provenance.md](../../../118625119-let-39-s-discuss-provenance.md)
 ## See also
 
 - [Replica & Twin Workloads](../../concepts/replica-and-twin-workloads.md)

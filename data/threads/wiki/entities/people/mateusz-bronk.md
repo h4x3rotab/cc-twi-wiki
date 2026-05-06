@@ -18,8 +18,7 @@ tags: [people, intel, provenance, pr-author]
 - Articulated the three association mechanisms for provenance — by-ID (e.g. `jti`), inline locator/claim, and hash-based fingerprinting — and argued for keeping all three open in the IETF document[^pr33].
 - Pointed out that future provenance work likely warrants a **separate Internet-Draft** (probably not WIMSE-targeted)[^pr33].
 
-[^pr33]: 113881043-general-comment-on-pull-request-33.md
-
+[^pr33]: [113881043-general-comment-on-pull-request-33.md](../../../113881043-general-comment-on-pull-request-33.md)
 ## See also
 
 - [Provenance & Supply Chain](../../concepts/provenance.md)

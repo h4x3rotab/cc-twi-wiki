@@ -9,8 +9,7 @@ The IETF **WIMSE** WG (Workload Identity in a Multi-System Environment) is the s
 
 > "TWI is mostly compatible with WIMSE as is, but care must be taken to ensure that it remains so in everything they do. […] All matters of credentials issuance should be dealt with inside the RATS working group, and after Madrid we should focus most of our attention on that."
 
-[^recap]: 113926112-twi-vs-wimse-recap.md
-
+[^recap]: [113926112-twi-vs-wimse-recap.md](../../113926112-twi-vs-wimse-recap.md)
 ## The compatibility audit
 
 A point-by-point read of WIMSE drafts, with TWI annotations[^recap]:
@@ -34,8 +33,7 @@ Across all the line-by-line nits, there is one thing the SIG insists must change
 
 > "The one thing we MUST get out of WIMSE is agreement at IETF 123 to invert the trust relationship between the workload and its hosting environment, where the workload does not trust the hosting environment to attest itself and instead must rely on RATS-style attestation."
 
-[^pr33]: 113881043-general-comment-on-pull-request-33.md
-
+[^pr33]: [113881043-general-comment-on-pull-request-33.md](../../113881043-general-comment-on-pull-request-33.md)
 A "good but secondary" goal is **compound attestation** combining workload + platform claims (already being explored in the geofencing draft).
 
 ## Strategic discipline: don't ask for too much
@@ -59,10 +57,9 @@ The PR-33 discussion shows the SIG actively pruning its asks of WIMSE[^pr33]:
 | `draft-rosomakho-tls-wimse-cert-hint` (early routing vs identity in mTLS) | Discussion forwarded for awareness[^early]. |
 | TWI Profile for WIMSE (later renamed Replica Workloads profile) | Targeted as a **WIMSE profile**, no architectural changes — "a big win for interoperability."[^horiz] |
 
-[^reading]: 118844386-some-reading-for-next-week-39-s-twi-meeting.md
-[^early]: 117367917-fw-wimse-re-problem-statement-early-routing-vs-workload-iden.md
-[^horiz]: 117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md
-
+[^reading]: [118844386-some-reading-for-next-week-39-s-twi-meeting.md](../../118844386-some-reading-for-next-week-39-s-twi-meeting.md)
+[^early]: [117367917-fw-wimse-re-problem-statement-early-routing-vs-workload-iden.md](../../117367917-fw-wimse-re-problem-statement-early-routing-vs-workload-iden.md)
+[^horiz]: [117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md](../../117140104-trustworthy-workload-identity-for-horizontally-scaling-workl.md)
 ## See also
 
 - [IETF WIMSE WG](../entities/orgs/ietf-wimse.md)

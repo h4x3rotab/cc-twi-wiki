@@ -14,11 +14,10 @@ tags: [people, ietf, rats, ietf-submitter]
 - Active on the [Vienna submission / Replica Workloads ↔ IETF RATS](../drafts/twi-profile-replica-workloads.md) thread (Mar–Apr 2026)[^replicarats].
 - Replied to Mark on the Vienna repo / submission planning ("ASCII art takes some time")[^replicarats].
 
-[^submit]: 113970559-i-d-submission.md
-[^cmw]: 114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md
-[^ar4si]: 114723280-ar4si-draft-from-rats.md
-[^replicarats]: 118596984-twi-profile-for-replica-workloads-and-the-ietf-rats.md
-
+[^submit]: [113970559-i-d-submission.md](../../../113970559-i-d-submission.md)
+[^cmw]: [114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md](../../../114663896-conceptual-message-wrapper-cmw-ietf-draft-from-rats.md)
+[^ar4si]: [114723280-ar4si-draft-from-rats.md](../../../114723280-ar4si-draft-from-rats.md)
+[^replicarats]: [118596984-twi-profile-for-replica-workloads-and-the-ietf-rats.md](../../../118596984-twi-profile-for-replica-workloads-and-the-ietf-rats.md)
 ## See also
 
 - [IETF RATS](../orgs/ietf-rats.md)

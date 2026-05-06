@@ -15,12 +15,11 @@ tags: [people, arm, ietf-submitter, repo-steward]
 - **Submitted the IETF 124 draft** on 2025-10-19/20 ("I can do the submission on Monday. Regards, Yogesh")[^finishing].
 - **Forwarded relevant external drafts** to the SIG, including `draft-ni-wimse-ai-agent-identity` (FYI: Workload Identity for AI Agents)[^aiagent] and Google's workload-identity / ALTS docs[^google].
 
-[^repo1]: 112436186-twi-repository-for-ietf-internet-draft.md
-[^pr1]: 113075755-twi-wimse-pr-1.md
-[^finishing]: 115809076-putting-finishing-touches-on-our-ietf-submission.md
-[^aiagent]: 115889621-fyi-workload-identity-for-ai-agents.md
-[^google]: 116499118-google-use-of-workload-identity.md
-
+[^repo1]: [112436186-twi-repository-for-ietf-internet-draft.md](../../../112436186-twi-repository-for-ietf-internet-draft.md)
+[^pr1]: [113075755-twi-wimse-pr-1.md](../../../113075755-twi-wimse-pr-1.md)
+[^finishing]: [115809076-putting-finishing-touches-on-our-ietf-submission.md](../../../115809076-putting-finishing-touches-on-our-ietf-submission.md)
+[^aiagent]: [115889621-fyi-workload-identity-for-ai-agents.md](../../../115889621-fyi-workload-identity-for-ai-agents.md)
+[^google]: [116499118-google-use-of-workload-identity.md](../../../116499118-google-use-of-workload-identity.md)
 ## See also
 
 - [TWI eXchange Draft](../drafts/twi-exchange-draft.md)

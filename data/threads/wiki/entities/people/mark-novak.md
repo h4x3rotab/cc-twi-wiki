@@ -11,9 +11,8 @@ tags: [people, jpmorgan, author, chair-de-facto]
 
 - **JPMorgan Chase** — primary affiliation in email signatures (`mark.novak@...`, `Mark.Novak@jpmchase.com`). Confidentiality footer present on most JPMC mail[^jpmc]. Presented the CCC OC3 deck (Mar 2026)[^oc3].
 
-[^jpmc]: 116242682-fosdem-39-26-confidential-computing-devroom-cfp.md
-[^oc3]: 118076670-ccc-oc3-deck-pptx-mark-f-novak-jpmchase-com-kindly-rec.md
-
+[^jpmc]: [116242682-fosdem-39-26-confidential-computing-devroom-cfp.md](../../../116242682-fosdem-39-26-confidential-computing-devroom-cfp.md)
+[^oc3]: [118076670-ccc-oc3-deck-pptx-mark-f-novak-jpmchase-com-kindly-rec.md](../../../118076670-ccc-oc3-deck-pptx-mark-f-novak-jpmchase-com-kindly-rec.md)
 ## Drafts authored / co-authored
 
 - [TWI Informational Draft (IETF 123)](../drafts/informational-draft-ietf-123.md) — primary editor of PR #34 (Security Considerations), #39, others.
@@ -31,10 +30,9 @@ tags: [people, jpmorgan, author, chair-de-facto]
 | **Tight scope on every IETF ask** | "I cannot stress highly enough how important it is to keep the focus where the focus belongs."[^pr33] |
 | **CC integration with existing IdPs needs a seat at the table** | Hence the [RUP](../../concepts/rats-unaware-relying-parties.md) extension. |
 
-[^couplings]: 114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md
-[^crack]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-[^pr33]: 113881043-general-comment-on-pull-request-33.md
-
+[^couplings]: [114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md](../../../114091547-thoughts-about-quot-composability-quot-and-strength-of-quot.md)
+[^crack]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
+[^pr33]: [113881043-general-comment-on-pull-request-33.md](../../../113881043-general-comment-on-pull-request-33.md)
 ## Notable presentations
 
 - **2025-10-02** — Confidential Containers (Sam Ortiz)[^cocopres]
@@ -43,12 +41,11 @@ tags: [people, jpmorgan, author, chair-de-facto]
 - **2026-04-16** — CCC TAC, Replica Workloads v1.0[^tac]
 - **2026-04-21** — CCC Attestation SIG[^attsig]
 
-[^cocopres]: 115554186-twi-presentation-this-morning.md
-[^seat]: 116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md
-[^pres]: 116048814-ietf-124-presentation-final-draft.md
-[^tac]: 118843190-please-review-tomorrow-39-s-draft-presentation.md
-[^attsig]: 118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md
-
+[^cocopres]: [115554186-twi-presentation-this-morning.md](../../../115554186-twi-presentation-this-morning.md)
+[^seat]: [116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md](../../../116109344-mail-regarding-draft-mihalcea-seat-use-cases-one-key-quot-in.md)
+[^pres]: [116048814-ietf-124-presentation-final-draft.md](../../../116048814-ietf-124-presentation-final-draft.md)
+[^tac]: [118843190-please-review-tomorrow-39-s-draft-presentation.md](../../../118843190-please-review-tomorrow-39-s-draft-presentation.md)
+[^attsig]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../../118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
 ## See also
 
 - [Manu Fontaine](manu-fontaine.md) — frequent productive disagreement
