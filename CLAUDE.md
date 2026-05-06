@@ -33,8 +33,6 @@ What we keep from llmwiki: the **structural conventions** (`/wiki/concepts/`, `/
 - **Cross-references** with relative markdown links to other wiki pages.
 - **Don't write summaries that read like chat replies.** Wiki pages are persistent artifacts — denser and more structured than a conversation answer.
 
-The full guide is reachable via `mcporter --config config/mcporter.json call llmwiki-twi.guide`.
-
 ## Repeatable build flow (the "make wiki" mental model)
 
 This is the workflow to refresh the wiki when the SIG accumulates new threads:
@@ -82,15 +80,7 @@ If upstream llmwiki adds these features, prefer to drop our patches.
 
 ### MCP
 
-The llmwiki MCP server is registered with mcporter at project scope (`config/mcporter.json`). Use it for *queries* and *targeted edits*:
-
-```bash
-mcporter --config config/mcporter.json call llmwiki-twi.guide
-mcporter --config config/mcporter.json call llmwiki-twi.search knowledge_base=threads mode=search query="vienna draft"
-mcporter --config config/mcporter.json call llmwiki-twi.read knowledge_base=threads path=/wiki/overview.md
-```
-
-Don't loop the MCP `write` tool for batch authoring — see "Mental model" above.
+Generate an MCP-server snippet for this workspace with `cd llmwiki && ./llmwiki mcp-config ../data/threads` and register it with whichever MCP client you use (Claude Code: `.mcp.json` at repo root). Use the server for *queries* and *targeted edits* — search, read, and the `guide` tool. Don't loop the MCP `write` tool for batch authoring — see "Mental model" above.
 
 ## Scraping notes
 
