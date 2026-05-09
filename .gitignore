@@ -6,20 +6,15 @@ __pycache__/
 venv/
 .python-version
 
-# llmwiki workspace-derived state (rebuilt by `llmwiki init`).
-# We DO commit data/threads/wiki/ and data/raw/ — those ship with the
-# repo so a fresh clone can serve and rebuild without re-scraping.
-data/threads/.llmwiki/
+# public-inbox mirror (large, derived) — re-created by public-inbox-init + fetch
+linux-coco/git/
+linux-coco/xap15/
+linux-coco/msgmap.sqlite3*
+linux-coco/inbox.lock
+linux-coco/all.git/
 
-# node_modules at repo root (repoview is fetched via npm install)
+# node_modules at repo root (repoview fetched via npm install)
 /node_modules/
 
-# llmwiki runtime artifacts inside the vendored copy
-llmwiki/api/.venv/
-llmwiki/mcp/.venv/
-llmwiki/node_modules/
-llmwiki/web/node_modules/
-llmwiki/web/.next/
-llmwiki/web/.turbo/
-llmwiki/api/__pycache__/
-llmwiki/mcp/__pycache__/
+# scraper raw response cache
+data/raw/

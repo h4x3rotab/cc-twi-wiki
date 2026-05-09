@@ -1,27 +1,23 @@
-# CLAUDE.md — TWI SIG Wiki
+# CLAUDE.md — Confidential Computing Wiki Hub
 
-This repo turns the public groups.io archive of the **Confidential Computing TWI SIG** mailing list into a browsable, citation-linked wiki. It vendors [llmwiki](https://github.com/lucasastorian/llmwiki) for the storage / serving layer and a custom scraper for ingest.
+This repo is a single-repo hub for two mailing list archives, both covering confidential computing:
 
-The notes below are for Claude (or any agent) working in this repo on a future session.
+| List | Source | Data path | Wiki path |
+|---|---|---|---|
+| **CCC TWI SIG** | groups.io (cookie-auth scrape) | `data/twi/*.md` | `data/twi/wiki/` |
+| **linux-coco** | public-inbox mirror at `linux-coco/` | `data/linux-coco/*.md` | `data/linux-coco/wiki/` |
+
+Both are served together by a single `repoview` instance on port 3000, with `data/index.md` as the root landing page.
 
 ## Mental model
 
-We use llmwiki as **infrastructure**, not as the authoring framework it was designed to be.
+Scrape → curate → write all wiki pages in one synthesis pass with the `Write` tool directly to the filesystem. There is no llmwiki MCP loop — batch authoring is done by directly writing `.md` files and committing.
 
-- **llmwiki's intended flow**: point it at a folder, connect Claude over MCP, Claude calls `write` per page over many turns, the SQLite index updates incrementally as the wiki grows.
-- **What we do instead**: scrape → curate → write all pages in one synthesis pass with the `Write` tool → `./llmwiki reindex` once. The MCP loop is reserved for *follow-up edits* (answering specific questions, updating after a new scrape, lint passes), not bootstrap.
-
-This is better for batch ingestion because:
-
-- One synthesis pass keeps voice, structure, and cross-references coherent across the whole wiki.
-- No per-write tool-call overhead.
-- The whole structure (overview → concepts → entities → timeline) can be planned with the corpus in mind, instead of one page at a time.
-
-What we keep from llmwiki: the **structural conventions** (`/wiki/concepts/`, `/wiki/entities/`, frontmatter shape, citation style), the **web UI**, the **search/MCP tools** for later incremental work, and the **SQLite index** built once at the end.
+One synthesis pass keeps voice, structure, and cross-references coherent across the whole wiki. The `data/index.md` root page links to both list wikis.
 
 ## Wiki conventions to follow
 
-- **Layout** under `data/threads/wiki/`:
+- **Layout** under `data/<list>/wiki/`:
   - `overview.md` — hub page; key findings table, source inventory, structural Mermaid diagram, wiki map.
   - `concepts/<topic>.md` — abstract ideas (one file per concept).
   - `entities/{drafts,orgs,people,repos}/<name>.md` — concrete things.
@@ -29,72 +25,61 @@ What we keep from llmwiki: the **structural conventions** (`/wiki/concepts/`, `/
   - `log.md` — append-only record of ingests / lint passes.
 - **Frontmatter required** on every page: `title`, `description`, `date` (YYYY-MM-DD), `tags` (≥2).
 - **At least one visual element** per page (Mermaid diagram or table). Pages with prose only are incomplete.
-- **Citations** as markdown footnotes using the **full source filename** — e.g. `[^src]: 118990275-early-draft-of-the-vienna-submission.md`. Don't truncate.
+- **Citations** as markdown footnotes using the **full source filename** — e.g. `[^src]: 20240508-foo.md`. Don't truncate.
+  - Citation depth: `wiki/*.md` → `../THREAD.md`; `wiki/concepts/*.md` → `../../THREAD.md`; `wiki/entities/<sub>/*.md` → `../../../THREAD.md`
 - **Cross-references** with relative markdown links to other wiki pages.
 - **Don't write summaries that read like chat replies.** Wiki pages are persistent artifacts — denser and more structured than a conversation answer.
 
-## Repeatable build flow (the "make wiki" mental model)
+## Repeatable build flow
 
-This is the workflow to refresh the wiki when the SIG accumulates new threads:
+### TWI SIG (groups.io)
 
-1. **Scrape** — `make scrape`. Idempotent; the cache under `data/raw/` makes reruns free. Cookie may need refreshing in `.env` if you see 402s.
-2. **Read** — Read substantive threads in batches by `cat`-ing the markdown files directly. Don't try to read every thread — filter out the agendas-and-admin noise first (~half the corpus is procedural). The substantive threads are listed at the top of each batch read in past sessions; pattern is anything that's *not*: `agenda-for-…`, `meeting-(agenda|minutes)-…`, `no-(twi-)?meeting-…`, `cannot-attend-…`, `please-read-…`, `reminder-to-review-…`, single-sentence threads (`hey.md`, `back.md`).
-3. **Plan** — Sketch the new/updated structure: which concept pages need new sections, which entity pages need new dates, what timeline entries to append. Don't reorganise existing pages unless the corpus has materially shifted.
-4. **Write** — Use the `Write` tool directly to the filesystem. One synthesis pass. Cite every factual claim with the originating thread filename.
-5. **Reindex** — `cd llmwiki && . api/.venv/bin/activate && ./llmwiki reindex ../data/threads`. The SQLite index and reference graph rebuild in seconds.
-6. **Append to `log.md`** with the date and a one-line summary per added/updated page.
-7. **Commit** — separate commits for `data/threads/*.md` (raw scrape additions) and `data/threads/wiki/**` (wiki authoring), so the diff is readable.
+1. **Scrape** — `make scrape-twi`. Idempotent; `data/raw/` cache makes reruns free. Cookie may need refreshing in `.env` if you see 402s.
+2. **Read** — filter out agendas/admin noise (~half the corpus). Substantive threads are anything that's *not*: `agenda-for-…`, `meeting-(agenda|minutes)-…`, `no-(twi-)?meeting-…`, `cannot-attend-…`, single-sentence threads.
+3. **Write** — `Write` tool directly to `data/twi/wiki/`. Cite every factual claim with the originating thread filename.
+4. **Append to `log.md`**, then **commit** (separate commits for raw thread `.md` additions and wiki authoring).
 
-For new corpora that aren't this mailing list, the same flow works — adjust the substantive-thread filter and the wiki structure (concepts/entities is the right backbone for almost any technical-community archive).
+### linux-coco (public-inbox)
+
+1. **Fetch new mail** — `cd linux-coco/git/0.git && git fetch origin`. Incremental; only new commits fetched.
+2. **Reindex** — `public-inbox-index ./linux-coco` (updates `linux-coco/xap15/` and `over.sqlite3`).
+3. **Scrape** — `make scrape-linux-coco` (uses `scraper/linux-coco/main.py` → reads over.sqlite3 + git blobs → writes `data/linux-coco/*.md`).
+4. **Write** — `Write` tool directly to `data/linux-coco/wiki/`. Cite every factual claim.
+5. **Append to `log.md`**, then **commit**.
+
+For new corpora, the same flow works — adjust the substantive-thread filter and the wiki structure.
 
 ## Operating the stack
 
-### Local dev (single user)
+### Local dev
 
 ```bash
-make scrape     # data/threads/<id>-<slug>.md
-make build      # ./llmwiki init data/threads
-make serve      # http://localhost:3000
+npm install     # install repoview
+npm start       # http://localhost:3000 — serves data/ (both wikis + landing page)
 ```
 
 ### Tailnet / LAN exposure
 
 ```bash
-make serve LLMWIKI_HOST=h4xbox,100.108.169.21,localhost \
-           LLMWIKI_PROD=1 \
-           LLMWIKI_API_PORT=8001 LLMWIKI_WEB_PORT=3001
+PORT=3001 npm start   # repoview binds 0.0.0.0 by default
 ```
 
-- `LLMWIKI_PROD=1` is **required** for remote access. `next dev`'s HMR WebSocket assumes the browser hostname matches the bind interface; over a tailnet that's not true and the page comes up blank. The wrapper auto-runs `next build` on first prod start.
-- `LLMWIKI_HOST` is comma-separated. The first host wins for `NEXT_PUBLIC_API_URL` (baked into the JS bundle at build time); all hosts are added to the API's CORS allow-origin list. If you change the primary host, you must `rm -rf llmwiki/web/.next` to force a rebuild.
-- `LLMWIKI_BIND` is auto-set to `0.0.0.0` whenever any host is non-local; override only if you want to bind to a specific interface.
+## Scraping notes (TWI SIG)
 
-### Patches we made to vendored llmwiki
+- **Groups.io blocks unauthenticated/non-Chrome traffic** with a 402. We use `curl_cffi` with `impersonate="chrome"` + a logged-in session cookie from `.env` (`GROUPSIO_COOKIE`).
+- Cookies expire — when you see `402`, refresh the cookie from a logged-in browser (DevTools → Network → reload `/topics` → copy the `Cookie` header) and rerun.
+- `data/raw/` is the response cache (gitignored). `make clean-cache` wipes it.
+- `discover_all_topics` walks `/topics?page=N` until a page yields no new topic IDs.
 
-- **`llmwiki/llmwiki`**: stale schema path fix (`api/infra/db/sqlite_schema.sql` → `shared/sqlite_schema.sql`); `LLMWIKI_API_PORT` / `LLMWIKI_WEB_PORT` / `LLMWIKI_HOST` / `LLMWIKI_BIND` / `LLMWIKI_PROD` env vars; `cmd_mcp` uses the `mcp/.venv` interpreter and chdirs into `mcp/`.
-- **`llmwiki/api/main.py`**: `APP_URL` is parsed as a comma-separated list of CORS origins.
-- **`llmwiki/web/package.json`**: both `dev` and `start` scripts include `-H 0.0.0.0`.
-- **`llmwiki/api/.venv/`** and **`llmwiki/mcp/.venv/`**: separate venvs because the `mcp[cli]` deps are not in the API requirements. Both are gitignored.
+## Scraping notes (linux-coco)
 
-If upstream llmwiki adds these features, prefer to drop our patches.
-
-### MCP
-
-Generate an MCP-server snippet for this workspace with `cd llmwiki && ./llmwiki mcp-config ../data/threads` and register it with whichever MCP client you use (Claude Code: `.mcp.json` at repo root). Use the server for *queries* and *targeted edits* — search, read, and the `guide` tool. Don't loop the MCP `write` tool for batch authoring — see "Mental model" above.
-
-## Scraping notes
-
-- **Groups.io blocks unauthenticated/non-Chrome traffic** with a "Groups.io AI Crawler Policy" 402 page. Firecrawl's chrome-cdp + tlsclient + stealth-proxy engines all fail.
-- We use **`curl_cffi` with `impersonate="chrome"` + a logged-in session cookie** from `.env` (`GROUPSIO_COOKIE`). This is the only thing that works.
-- Cookies expire — when you see `402` from the scraper, refresh the cookie from a logged-in browser (DevTools → Network → reload `/topics` → copy the `Cookie` header) and rerun.
-- One topic page renders the full thread inline as `div.expanded-message` blocks, so we don't need separate `/message/<id>` fetches.
-- `data/raw/` is the response cache and is gitignored. `make clean-cache` wipes it; reruns of `make scrape` skip already-fetched URLs.
-- `discover_all_topics` walks `/topics?page=N` until a page yields no new topic IDs (groups.io advertises ghost pages in nav past the real last page).
+- **Source**: public-inbox git mirror at `linux-coco/git/0.git`. Fetch with `git fetch` inside the bare repo.
+- **Extraction**: `scraper/linux-coco/extract.py` queries `linux-coco/xap15/over.sqlite3` for message metadata (subject, from, blob hash, thread ID), then reads email bytes via `git cat-file blob <hash>`.
+- `over.sqlite3` computes thread grouping (`tid`) automatically — no need to parse References headers.
+- Date range: pass `SINCE` / `UNTIL` to `load_messages()` to extract a time window incrementally.
 
 ## Things to *not* do
 
-- Don't loop MCP `write` calls for >5 pages of batch authoring. Use `Write` directly + `reindex`.
-- Don't commit `data/threads/.llmwiki/` (derived state — gitignored). Do commit `data/threads/wiki/**` (authored content).
-- Don't bypass the `next build` step for tailnet exposure. `next dev` will appear to work but show an empty wiki because the HMR WebSocket fails.
-- Don't add features to the vendored llmwiki beyond what's needed for tailnet exposure / CLI ergonomics. Track upstream where possible.
-- Don't write wiki pages without footnote citations to source filenames. The whole point of the wiki is grounding claims in the corpus.
+- Don't batch-write wiki pages using an MCP loop. Use `Write` directly to the filesystem.
+- Don't write wiki pages without footnote citations to source filenames.
+- Don't commit `linux-coco/` (gitignored, 600MB public-inbox mirror).

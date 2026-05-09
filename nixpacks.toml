@@ -1,5 +1,5 @@
-# Nixpacks build for cc-twi-wiki.
-# Serves data/threads/wiki/ via the npm package `repoview`.
+# Nixpacks build for the Confidential Computing wiki hub.
+# Serves data/ (both TWI SIG and linux-coco wikis) via the npm package `repoview`.
 providers = ['node']
 
 [phases.setup]
