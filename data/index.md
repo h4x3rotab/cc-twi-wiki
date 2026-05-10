@@ -11,8 +11,8 @@ Two mailing list corpora, both covering confidential computing from different an
 
 | List | Coverage | Threads | Description |
 |---|---|---|---|
-| [TWI SIG](twi/wiki/overview.md) | 2024–2025 | ~200 | Confidential Computing Consortium TWI SIG on groups.io — use-case definitions, attestation workflows, cross-vendor interop |
-| [linux-coco](linux-coco/wiki/overview.md) | May 2024 – May 2026 | 602 | `linux-coco@lists.linux.dev` — upstream kernel patches for TDX, SEV-SNP, ARM CCA, TDISP, guest_memfd |
+| [TWI SIG](twi/overview.md) | 2024–2025 | ~200 | Confidential Computing Consortium TWI SIG on groups.io — use-case definitions, attestation workflows, cross-vendor interop |
+| [linux-coco](linux-coco/overview.md) | May 2024 – May 2026 | 602 | `linux-coco@lists.linux.dev` — upstream kernel patches for TDX, SEV-SNP, ARM CCA, TDISP, guest_memfd |
 
 ## What Is Confidential Computing?
 

@@ -12,6 +12,7 @@ linux-coco/xap15/
 linux-coco/msgmap.sqlite3*
 linux-coco/inbox.lock
 linux-coco/all.git/
+linux-coco/description
 
 # node_modules at repo root (repoview fetched via npm install)
 /node_modules/

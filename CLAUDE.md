@@ -26,7 +26,7 @@ One synthesis pass keeps voice, structure, and cross-references coherent across 
 - **Frontmatter required** on every page: `title`, `description`, `date` (YYYY-MM-DD), `tags` (≥2).
 - **At least one visual element** per page (Mermaid diagram or table). Pages with prose only are incomplete.
 - **Citations** as markdown footnotes using the **full source filename** — e.g. `[^src]: 20240508-foo.md`. Don't truncate.
-  - Citation depth: `wiki/*.md` → `../THREAD.md`; `wiki/concepts/*.md` → `../../THREAD.md`; `wiki/entities/<sub>/*.md` → `../../../THREAD.md`
+  - Thread files live in `<list>/threads/`. Citation depth: `<list>/*.md` → `threads/THREAD.md`; `<list>/concepts/*.md` → `../threads/THREAD.md`; `<list>/entities/<sub>/*.md` → `../../threads/THREAD.md`
 - **Cross-references** with relative markdown links to other wiki pages.
 - **Don't write summaries that read like chat replies.** Wiki pages are persistent artifacts — denser and more structured than a conversation answer.
 

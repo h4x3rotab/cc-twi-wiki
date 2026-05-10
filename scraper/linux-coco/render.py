@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .extract import Thread, Message
 
-OUT_DIR = Path(__file__).parent.parent.parent / "data" / "linux-coco"
+OUT_DIR = Path(__file__).parent.parent.parent / "data" / "linux-coco" / "threads"
 
 
 def _slugify(text: str, maxlen: int = 60) -> str:
