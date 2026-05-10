@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "repoview": "^0.5.0"
+    "repoview": "^0.5.1"
   },
   "scripts": {
     "start": "repoview --repo data --host 0.0.0.0 --port ${PORT:-3000} --no-watch"

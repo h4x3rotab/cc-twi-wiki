@@ -7,13 +7,13 @@ This repo is a single-repo hub for two mailing list archives, both covering conf
 | **CCC TWI SIG** | groups.io (cookie-auth scrape) | `data/twi/*.md` | `data/twi/wiki/` |
 | **linux-coco** | public-inbox mirror at `linux-coco/` | `data/linux-coco/*.md` | `data/linux-coco/wiki/` |
 
-Both are served together by a single `repoview` instance on port 3000, with `data/index.md` as the root landing page.
+Both are served together by a single `repoview` instance on port 3000, with `data/README.md` as the root landing page.
 
 ## Mental model
 
 Scrape → curate → write all wiki pages in one synthesis pass with the `Write` tool directly to the filesystem. There is no llmwiki MCP loop — batch authoring is done by directly writing `.md` files and committing.
 
-One synthesis pass keeps voice, structure, and cross-references coherent across the whole wiki. The `data/index.md` root page links to both list wikis.
+One synthesis pass keeps voice, structure, and cross-references coherent across the whole wiki. The `data/README.md` root page links to both list wikis.
 
 ## Wiki conventions to follow
 

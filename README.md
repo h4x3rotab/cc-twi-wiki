@@ -48,7 +48,7 @@ make scrape-linux-coco   # → data/linux-coco/threads/YYYYMMDD-slug.md
 
 ```
 data/
-├── index.md               ← root landing page
+├── README.md              ← root landing page (auto-rendered by repoview)
 ├── twi/                   ← TWI SIG wiki
 │   ├── overview.md
 │   ├── concepts/
