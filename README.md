@@ -1,73 +1,70 @@
-# TWI SIG Wiki
+# Confidential Computing Wiki Hub
 
-A local, browsable wiki of the Confidential Computing [Trustworthy Workload Identity SIG](https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG) mailing list. The scraper pulls the public groups.io archive (using a logged-in cookie since groups.io blocks unauthenticated/non-Chrome traffic with a "Groups.io AI Crawler Policy" 402 page), renders each thread as markdown, and feeds the corpus into a vendored copy of [llmwiki](https://github.com/lucasastorian/llmwiki).
+A browsable wiki of two confidential computing mailing list archives:
 
-## Setup
+- **CCC TWI SIG** — `lists.confidentialcomputing.io` (groups.io), scraped with a logged-in cookie
+- **linux-coco** — `linux-coco@lists.linux.dev` (lore.kernel.org), mirrored via public-inbox
+
+Served as a single site using [repoview](https://www.npmjs.com/package/repoview).
+
+## Quick start
 
 ```bash
-# 1. Get a cookie
-#    Log into groups.io in Chrome as a member of the SIG.
-#    Open DevTools → Network → reload the topics page → copy the
-#    'Cookie' request header value. Paste it into .env:
+npm install
+npm start         # → http://localhost:3000
+```
+
+## Scraping
+
+### TWI SIG (groups.io)
+
+Groups.io blocks unauthenticated traffic with a 402. You need a logged-in cookie:
+
+```bash
 cp .env.example .env
-$EDITOR .env   # paste cookie into GROUPSIO_COOKIE
-
-# 2. Install deps
-make install
-
-# 3. llmwiki has its own setup (Python + Node)
-#    Two Python venvs because api/ and mcp/ have different deps.
-cd llmwiki
-python3 -m venv api/.venv && . api/.venv/bin/activate && \
-  pip install -r api/requirements.txt && deactivate
-python3 -m venv mcp/.venv && . mcp/.venv/bin/activate && \
-  pip install -r mcp/requirements.txt && deactivate
-( cd web && npm install )
-cd ..
+$EDITOR .env      # paste GROUPSIO_COOKIE (from browser DevTools → Network → Cookie header)
+make install      # create Python venv
+make scrape-twi   # → data/twi/threads/<id>-<slug>.md
 ```
 
-## Use
+`data/raw/` is a raw-HTML cache (gitignored). Reruns skip already-fetched URLs. `make clean-cache` wipes it. If you see 402 errors, refresh the cookie.
+
+### linux-coco (public-inbox)
 
 ```bash
-make scrape   # scrape archive → data/threads/<id>-<slug>.md
-make build    # llmwiki init data/threads
-make serve    # llmwiki serve data/threads → http://localhost:3000
-              # ports collide? `make serve LLMWIKI_API_PORT=8001 LLMWIKI_WEB_PORT=3001`
-              # Expose over tailnet/LAN (binds 0.0.0.0, builds for prod):
-              #   make serve LLMWIKI_HOST=<tailnet-ip> LLMWIKI_PROD=1 \
-              #              LLMWIKI_API_PORT=8001 LLMWIKI_WEB_PORT=3001
+# First-time: fetch the public-inbox mirror (~87MB git + ~500MB Xapian index)
+git clone --mirror https://lore.kernel.org/linux-coco/0 linux-coco/git/0.git
+public-inbox-init -V2 --ng dev.linux.lists.linux-coco \
+  linux-coco ./linux-coco https://lore.kernel.org/linux-coco linux-coco@lists.linux.dev
+public-inbox-index ./linux-coco
+
+# Incremental update
+cd linux-coco/git/0.git && git fetch origin && cd -
+public-inbox-index ./linux-coco
+make scrape-linux-coco   # → data/linux-coco/threads/YYYYMMDD-slug.md
 ```
-
-`data/raw/` is a raw-HTML cache (gitignored). Reruns of `make scrape` skip already-fetched URLs. `make clean-cache` wipes it.
-
-If you start seeing 402 errors during `make scrape`, your cookie has expired — paste a fresh one into `.env` and rerun.
-
-## Connect Claude (MCP)
-
-Once threads are scraped and `llmwiki init` has indexed them, hand the workspace to Claude over MCP so Claude can author the wiki:
-
-```bash
-cd llmwiki
-./llmwiki mcp-config ../data/threads
-```
-
-This prints a `mcpServers` snippet. For Claude Code, save it as `.mcp.json` at the repo root (or merge it into `~/.claude.json`):
-
-```json
-{
-  "mcpServers": {
-    "llmwiki-threads": {
-      "command": "/abs/path/to/llmwiki/llmwiki",
-      "args": ["mcp", "/abs/path/to/data/threads"]
-    }
-  }
-}
-```
-
-Restart Claude Code so it picks up the new MCP server, then ask: *"Read the guide, then ingest my sources and start building the wiki."*
-
-The MCP server uses `mcp/.venv` for its deps — running `make install` in this repo doesn't set that up, only the llmwiki step in **Setup** above does.
 
 ## Layout
 
-See `docs/superpowers/specs/2026-04-29-twi-wiki-design.md` for the design.
+```
+data/
+├── index.md               ← root landing page
+├── twi/                   ← TWI SIG wiki
+│   ├── overview.md
+│   ├── concepts/
+│   ├── entities/
+│   ├── timeline.md
+│   └── threads/           ← raw scraped threads
+└── linux-coco/            ← linux-coco wiki
+    ├── overview.md
+    ├── concepts/
+    ├── entities/
+    ├── timeline.md
+    └── threads/           ← raw thread files (YYYYMMDD-slug.md)
+```
+
+See `CLAUDE.md` for the wiki authoring methodology and citation conventions.
+
+## Deployment
+
+Configured for [Nixpacks](https://nixpacks.com) (`nixpacks.toml`). Set `PORT` to override the default port (3000).
