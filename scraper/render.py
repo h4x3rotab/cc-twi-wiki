@@ -11,7 +11,7 @@ from markdownify import markdownify
 from .thread import Thread
 
 
-THREADS_DIR = Path("data/threads")
+THREADS_DIR = Path("data/twi/threads")
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 

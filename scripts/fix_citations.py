@@ -2,13 +2,15 @@
 """Rewrite footnote citations from bare filenames to relative markdown links.
 
 markdown-it's `linkify` setting auto-detects `something.md` as a URL and
-renders citations like `[^src]: 118990275-foo.md` as broken external links
-to http://118990275-foo.md/. Wrapping the filename in a markdown link kills
-the auto-linkifier and gives us a working click-through to the source thread.
+renders citations like `[^src]: 20240508-foo.md` as broken external links.
+Wrapping the filename in a markdown link fixes this.
 
-Wiki pages live under data/threads/wiki/{,concepts/,entities/<sub>/}.
-Source threads live at data/threads/<file>. We compute the per-page depth
-to threads and rewrite each citation in place.
+Wiki pages live directly under data/<list>/{,concepts/,entities/<sub>/}.
+Thread files live in data/<list>/threads/. Citation prefix depends on the
+page's depth below its list root:
+  overview.md, timeline.md, ...  → threads/<file>.md
+  concepts/foo.md                → ../threads/<file>.md
+  entities/patches/foo.md        → ../../threads/<file>.md
 """
 
 from __future__ import annotations
@@ -17,30 +19,25 @@ import re
 import sys
 from pathlib import Path
 
-THREADS_DIR = Path("data/threads")
-WIKI_DIR = THREADS_DIR / "wiki"
+LIST_ROOTS = [Path("data/twi"), Path("data/linux-coco")]
 
-# Match `[^name]: <filename>.md` at the start of a line, with the filename
-# being a typical scraped thread name (digits-then-text). Avoid matching
-# already-linked citations like `[^x]: [foo.md](bar)`.
+# Match bare `[^name]: <filename>.md` citations (not already-linked ones).
 CITATION = re.compile(
-    r"^(\[\^[^\]]+\]:\s+)(\d{8,}-[A-Za-z0-9_.-]+\.md)\s*$",
+    r"^(\[\^[^\]]+\]:\s+)(\d{6,}-[A-Za-z0-9_.-]+\.md)\s*$",
     re.MULTILINE,
 )
 
 
-def relpath_to_thread(wiki_page: Path) -> str:
-    """Return the relative-path prefix from a wiki page back to data/threads/."""
-    # wiki_page is absolute or repo-relative; we want depth below data/threads/
-    rel = wiki_page.resolve().relative_to(THREADS_DIR.resolve())
-    # rel is like 'wiki/overview.md' or 'wiki/concepts/foo.md'
-    depth = len(rel.parts) - 1  # number of dirs between page and threads/
-    return "../" * depth
+def thread_prefix(wiki_page: Path, list_root: Path) -> str:
+    """Relative path prefix from wiki_page to the list's threads/ directory."""
+    rel = wiki_page.resolve().relative_to(list_root.resolve())
+    depth = len(rel.parts) - 1  # number of directories between page and list root
+    return "../" * depth + "threads/"
 
 
-def fix_file(path: Path) -> int:
+def fix_file(path: Path, list_root: Path) -> int:
     text = path.read_text(encoding="utf-8")
-    prefix = relpath_to_thread(path)
+    prefix = thread_prefix(path, list_root)
 
     def repl(m: re.Match) -> str:
         head, fname = m.group(1), m.group(2)
@@ -53,17 +50,19 @@ def fix_file(path: Path) -> int:
 
 
 def main() -> int:
-    if not WIKI_DIR.is_dir():
-        print(f"error: {WIKI_DIR} not found", file=sys.stderr)
-        return 1
     total_files = 0
     total_subs = 0
-    for p in sorted(WIKI_DIR.rglob("*.md")):
-        n = fix_file(p)
-        if n:
-            print(f"  {p}: {n} citations")
-            total_files += 1
-            total_subs += n
+    for list_root in LIST_ROOTS:
+        if not list_root.is_dir():
+            continue
+        for p in sorted(list_root.rglob("*.md")):
+            if "threads" in p.parts:  # skip raw thread files themselves
+                continue
+            n = fix_file(p, list_root)
+            if n:
+                print(f"  {p}: {n} citations")
+                total_files += 1
+                total_subs += n
     print(f"\nfixed {total_subs} citations across {total_files} files")
     return 0
 

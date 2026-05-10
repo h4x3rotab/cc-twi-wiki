@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scrape the TWI SIG archive into data/threads/<id>-<slug>.md."""
+"""Scrape the TWI SIG archive into data/twi/threads/<id>-<slug>.md."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Redact phone numbers in data/threads/**/*.md."""
+"""Redact phone numbers in data/twi/threads/**/*.md and data/linux-coco/threads/**/*.md."""
 import re
 import sys
 from pathlib import Path
@@ -17,6 +17,8 @@ PATTERNS = [
 
 REPLACEMENT = "[redacted-phone]"
 
+THREAD_DIRS = [Path("data/twi/threads"), Path("data/linux-coco/threads")]
+
 def redact(text: str) -> tuple[str, int]:
     count = 0
     for pat in PATTERNS:
@@ -25,18 +27,20 @@ def redact(text: str) -> tuple[str, int]:
     return text, count
 
 def main(dry_run: bool):
-    root = Path("data/threads")
     total = 0
     touched = 0
-    for path in sorted(root.rglob("*.md")):
-        original = path.read_text()
-        new, n = redact(original)
-        if n:
-            print(f"{path}: {n} match(es)")
-            total += n
-            touched += 1
-            if not dry_run:
-                path.write_text(new)
+    for root in THREAD_DIRS:
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("*.md")):
+            original = path.read_text()
+            new, n = redact(original)
+            if n:
+                print(f"{path}: {n} match(es)")
+                total += n
+                touched += 1
+                if not dry_run:
+                    path.write_text(new)
     mode = "DRY RUN" if dry_run else "APPLIED"
     print(f"\n{mode}: {total} redactions across {touched} files")
 
