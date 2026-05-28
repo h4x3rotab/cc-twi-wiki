@@ -1,8 +1,8 @@
 ---
 title: '[RFC PATCH 00/12] Private MMIO support for private assigned dev'
 date: 2025-05-09
-last_reply: 2026-05-07
-message_count: 42
+last_reply: 2026-05-12
+message_count: 46
 participants: ['Alexey Kardashevskiy', 'Xu Yilun', 'Jason Gunthorpe', 'Zhi Wang', 'Baolu Lu']
 ---
 
@@ -1586,6 +1586,103 @@ true but either way dmabuf slicing will be directed by QEMU's msix-table emulati
 
 
 ps. I like nntp.lore.kernel.org very much for ability to dig out old stuff and then just reply to it :)
+
+> 
+> Jason
+
+---
+
+## [43] Jason Gunthorpe — 2026-05-11
+*Subject: Re: [RFC PATCH 04/12] vfio/pci: Allow MMIO regions to be exported
+ through dma-buf*
+
+On Thu, May 07, 2026 at 05:16:56PM +1000, Alexey Kardashevskiy wrote:
+
+> true but either way dmabuf slicing will be directed by QEMU's
+> msix-table emulation MR and this slicing needs to match the TDISP
+
+I don't think so.. It just needs to slice it into the MSI page
+blindly. When the VM goes to validate the TDISP report against the
+mappings it will fail to accept the device if there is a mismatch.
+
+The only thing qemu could do is fail sooner, but I don't know that is
+worth the complexity as we do expect all devices to have their MSI
+range unprotected.
+
+Jason
+
+---
+
+## [44] Alexey Kardashevskiy — 2026-05-12
+*Subject: Re: [RFC PATCH 04/12] vfio/pci: Allow MMIO regions to be exported
+ through dma-buf*
+
+On 7/5/26 17:16, Alexey Kardashevskiy wrote:
+> On 6/5/26 23:16, Jason Gunthorpe wrote:
+>> On Wed, May 06, 2026 at 12:35:42PM +1000, Alexey Kardashevskiy wrote:
+
+Or TDISP devices are going to align MSIX BARs to 4K, and QEMU will do the same and it should "just work", and if it does not - the host won't crash. Can this work? Thanks,
+
+
+
+
+> I am worried if I miss something obvious, again. Thanks,
+>
+
+---
+
+## [45] Jason Gunthorpe — 2026-05-11
+*Subject: Re: [RFC PATCH 04/12] vfio/pci: Allow MMIO regions to be exported
+ through dma-buf*
+
+On Tue, May 12, 2026 at 09:42:01AM +1000, Alexey Kardashevskiy wrote:
+
+> > true but either way dmabuf slicing will be directed by QEMU's msix-table
+> > emulation MR and this slicing needs to match the TDISP report so I'll
+
+Host crashing stuff is a different issue, I think the plan was to
+revoke the entire MMIO space from userspace and remove it from the
+kernel mapping. Entire because we don't want to parse the TDISP report
+to figure out something more narrow.
+
+Therefore there is no way the host can crash.
+
+When qemu constructs the VM memory map it already has a scheme to
+insert a hole for a SW emulated page for MSI. That will keep working
+exactly as it is.
+
+When the VM validates the MMIO the hole has to fall within a T=0 space
+of the TDISP report or the VM will reject it.
+
+This means devices need to have a T=0 hole around their MSI-X/etc
+suitable for a 64K page size OS.
+
+This is already the case, if a device mixes MSIx with other things
+qemu will work but it becomes horribly slow and a little broken.
+
+Jason
+
+---
+
+## [46] Alexey Kardashevskiy — 2026-05-12
+*Subject: Re: [RFC PATCH 04/12] vfio/pci: Allow MMIO regions to be exported
+ through dma-buf*
+
+On 12/5/26 09:56, Jason Gunthorpe wrote:
+> On Tue, May 12, 2026 at 09:42:01AM +1000, Alexey Kardashevskiy wrote:
+> 
+
+Ah ok.
+
+> When qemu constructs the VM memory map it already has a scheme to
+> insert a hole for a SW emulated page for MSI. That will keep working
+
+Since we are ditching mappings, the entire MSIX-containing 64K block will be ioctl()ed instead of directly accessed from QEMU via mmap (which is slower the VM direct access but still)?
+
+> This is already the case, if a device mixes MSIx with other things
+> qemu will work but it becomes horribly slow and a little broken.
+
+Really only when MSIX is not system page size aligned but yeah, I had enough of that with PPC. Thanks,
 
 > 
 > Jason

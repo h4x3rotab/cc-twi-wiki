@@ -1,9 +1,9 @@
 ---
 title: 'KVM: TDX: Fix x2APIC MSR handling in tdx_has_emulated_msr()'
 date: 2026-04-10
-last_reply: 2026-04-13
-message_count: 2
-participants: ['Rick Edgecombe', 'Binbin Wu']
+last_reply: 2026-05-18
+message_count: 3
+participants: ['Rick Edgecombe', 'Binbin Wu', 'Sean Christopherson']
 ---
 
 ## [1] Rick Edgecombe — 2026-04-10
@@ -124,5 +124,22 @@ emulating.
 
 > +	case X2APIC_MSR(APIC_ID):
 > +	case X2APIC_MSR(APIC_LVR):
+
+---
+
+## [3] Sean Christopherson — 2026-05-18
+*Subject: Re: [PATCH v2] KVM: TDX: Fix x2APIC MSR handling in tdx_has_emulated_msr()*
+
+On Fri, 10 Apr 2026 16:26:54 -0700, Rick Edgecombe wrote:
+> Rework tdx_has_emulated_msr() to explicitly enumerate the x2APIC MSRs
+> that KVM can emulate, instead of trying to enumerate the MSRs that KVM
+
+Applied to kvm-x86 vmx, with a massaged comment as suggested by Binbin.  Thanks!
+
+[1/1] KVM: TDX: Fix x2APIC MSR handling in tdx_has_emulated_msr()
+      https://github.com/kvm-x86/linux/commit/1f3e69af5f93
+
+--
+https://github.com/kvm-x86/linux/tree/next
 
 ---

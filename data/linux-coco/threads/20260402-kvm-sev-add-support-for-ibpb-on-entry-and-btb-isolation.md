@@ -1,9 +1,9 @@
 ---
 title: 'KVM: SEV: Add support for IBPB-on-Entry and BTB Isolation'
 date: 2026-04-02
-last_reply: 2026-04-28
-message_count: 9
-participants: ['Kim Phillips', 'Pawan Gupta']
+last_reply: 2026-05-08
+message_count: 10
+participants: ['Kim Phillips', 'Pawan Gupta', 'Borislav Petkov']
 ---
 
 ## [1] Kim Phillips — 2026-04-02
@@ -536,5 +536,21 @@ arise to submit one.
 Thanks,
 
 Kim
+
+---
+
+## [10] Borislav Petkov — 2026-05-08
+*Subject: Re: [PATCH v3 0/6] KVM: SEV: Add support for IBPB-on-Entry and BTB
+ Isolation*
+
+On Thu, Apr 02, 2026 at 03:25:52PM -0500, Kim Phillips wrote:
+> IBPB-on-Entry and BTB Isolation are supplemental Spectre V2 mitigations
+> available to SNP guests.
+
+Sashiko has a bunch of comments, pls address them:
+
+https://sashiko.dev/#/patchset/20260402202558.195005-1-kim.phillips%40amd.com
+
+Thx.
 
 ---

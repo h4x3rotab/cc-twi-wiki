@@ -1,8 +1,8 @@
 ---
 title: '[RFC PATCH v5 00/45] TDX: Dynamic PAMT + S-EPT Hugepage'
 date: 2026-01-28
-last_reply: 2026-04-17
-message_count: 151
+last_reply: 2026-05-18
+message_count: 152
 participants: ['Sean Christopherson', 'Konrad Rzeszutek Wilk', 'Dave Hansen', 'Edgecombe, Rick P', 'Yan Zhao', 'Huang, Kai']
 ---
 
@@ -11310,5 +11310,30 @@ On Fri, 2026-04-17 at 09:59 -0700, Sean Christopherson wrote:
 > > If it won't throw a wrench in things for you, I'll wait until 7.1-rc2 to get
 
 Sounds great from my side. Thanks!
+
+---
+
+## [152] Sean Christopherson — 2026-05-18
+*Subject: Re: [RFC PATCH v5 00/45] TDX: Dynamic PAMT + S-EPT Hugepage*
+
+On Wed, 28 Jan 2026 17:14:32 -0800, Sean Christopherson wrote:
+> This is a combined series of Dynamic PAMT (from Rick), and S-EPT hugepage
+> support (from Yan).  Except for some last minute tweaks to the DPAMT array
+
+Applied 1-4 to kvm-x86 mmu.  Please yell if this was unexpected in any way.
+I'm pretty sure this is what we agreed on, but the last few week have been a
+bit chaotic...
+
+[01/45] x86/tdx: Use pg_level in TDX APIs, not the TDX-Module's 0-based level
+        https://github.com/kvm-x86/linux/commit/4487492b92a4
+[02/45] KVM: x86/mmu: Update iter->old_spte if cmpxchg64 on mirror SPTE "fails"
+        https://github.com/kvm-x86/linux/commit/02eaaffdd865
+[03/45] KVM: TDX: Account all non-transient page allocations for per-TD structures
+        https://github.com/kvm-x86/linux/commit/a8b2924676ec
+[04/45] KVM: x86: Make "external SPTE" ops that can fail RET0 static calls
+        https://github.com/kvm-x86/linux/commit/e1a31ca28c9d
+
+--
+https://github.com/kvm-x86/linux/tree/next
 
 ---

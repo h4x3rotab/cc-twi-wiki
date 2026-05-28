@@ -1,9 +1,9 @@
 ---
 title: '[RFC PATCH v4 00/14] coco/TSM: Host-side Arm CCA IDE setup via connect/disconnect callbacks'
 date: 2026-04-27
-last_reply: 2026-04-27
-message_count: 15
-participants: ['Aneesh Kumar K.V (Arm)']
+last_reply: 2026-05-27
+message_count: 20
+participants: ['Aneesh Kumar K.V (Arm)', 'Will Deacon', 'Suzuki K Poulose', 'Dan Williams (nvidia)']
 ---
 
 ## [1] Aneesh Kumar K.V (Arm) — 2026-04-27
@@ -3423,5 +3423,164 @@ index a10ac6ff03d1..33a2551fd09f 100644
  	default:
  		return -EINVAL;
  	}
+
+---
+
+## [16] Will Deacon — 2026-05-18
+*Subject: Re: [RFC PATCH v4 00/14] coco/TSM: Host-side Arm CCA IDE setup via
+ connect/disconnect callbacks*
+
+On Mon, Apr 27, 2026 at 12:21:07PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>  arch/arm64/include/asm/rmi_cmds.h         |  85 +++
+>  arch/arm64/include/asm/rmi_smc.h          | 168 +++++
+
+Curious, but why does this stuff have to live in the arch code? Wouldn't
+it be better off somewhere like drivers/firmware/ or
+include/linux/arm-rmi.h?
+
+Will
+
+---
+
+## [17] Aneesh Kumar K.V — 2026-05-18
+*Subject: Re: [RFC PATCH v4 00/14] coco/TSM: Host-side Arm CCA IDE setup via
+ connect/disconnect callbacks*
+
+Will Deacon <will@kernel.org> writes:
+
+> On Mon, Apr 27, 2026 at 12:21:07PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>>  arch/arm64/include/asm/rmi_cmds.h         |  85 +++
+
+Those headers are used to collect all RMI-related helpers and #defines.
+They were introduced by the Realm KVM/host support patch series, and I
+am continuing to use the same headers to add more helpers.
+
+We can consider moving the RMI helpers used by virt/coco/arm-caa-guest/,
+virt/coco/arm-cca-host/, and
+drivers/iommu/arm/arm-smmu-v3/arm-smmu-v3-realm.c into a more generic
+header such as include/linux/arm-rmi.h. However, that would either
+require moving all the helpers currently used by KVM there as well,
+otherwise we would end up with two separate headers carrying RMI
+helpers.
+
+Additionally, there are also arch/arm64/include/asm/rsi_cmds.h and
+arch/arm64/include/asm/rsi_smc.h to consider.
+
+-aneesh
+
+---
+
+## [18] Suzuki K Poulose — 2026-05-19
+*Subject: Re: [RFC PATCH v4 00/14] coco/TSM: Host-side Arm CCA IDE setup via
+ connect/disconnect callbacks*
+
+On 18/05/2026 13:59, Will Deacon wrote:
+> On Mon, Apr 27, 2026 at 12:21:07PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>>   arch/arm64/include/asm/rmi_cmds.h         |  85 +++
+
+Good point. RMI interface is only available for arm64 (not in Arm32). 
+That said, it is indeed a firmware ! ;-) interface. The APIs are closely
+integrated with the KVM Realm management. If the general consensus is
+to move them under drivers/firmware (like PSCI), we could take that
+approach.
+
+Suzuki
+
+> 
+> Will
+
+---
+
+## [19] Will Deacon — 2026-05-19
+*Subject: Re: [RFC PATCH v4 00/14] coco/TSM: Host-side Arm CCA IDE setup via
+ connect/disconnect callbacks*
+
+On Tue, May 19, 2026 at 09:24:07AM +0100, Suzuki K Poulose wrote:
+> On 18/05/2026 13:59, Will Deacon wrote:
+> > On Mon, Apr 27, 2026 at 12:21:07PM +0530, Aneesh Kumar K.V (Arm) wrote:
+
+I'd certainly prefer that as it means it's co-located with other firmware
+interface code and also means that the arch maintainers don't need to
+worry about changes to driver code :p
+
+Will
+
+---
+
+## [20] Dan Williams (nvidia) — 2026-05-27
+*Subject: Re: [RFC PATCH v4 01/14] coco: host: arm64: Add host TSM callback and
+ IDE stream allocation support*
+
+Aneesh Kumar K.V (Arm) wrote:
+> Register the TSM callback when the DA feature is supported by KVM.
+> 
+
+Do you want to call out that this is an infrastructure / scaffolding
+patch that only handles the PCI-TSM skeleton. The CCA meat comes later,
+in particular IDE key management. Tell a bit more of the story 
+
+Otherwise, mostly looks good.
+
+Minor comments below...
+
+> Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
+> ---
+[..]
+> diff --git a/drivers/firmware/smccc/rmm.c b/drivers/firmware/smccc/rmm.c
+> index 2a6187df3285..7444cc3a588c 100644
+[..]
+> diff --git a/drivers/firmware/smccc/rmm.h b/drivers/firmware/smccc/rmm.h
+> index a47a650d4f51..37d0d95a099e 100644
+[..]
+> diff --git a/drivers/firmware/smccc/smccc.c b/drivers/firmware/smccc/smccc.c
+> index fc9b44b7c687..2bf2d59e686d 100644
+
+Would splitting the above three hunks make this series stand on its own
+relative to the base CCA series? I assume likely not as soon as we get
+to patch2.
+
+Otherwise, just curious what your intended merge strategy is for this,
+tsm.git or arm.git, and what help this needs?
+
+[..]
+snip code that looks good.
+
+> diff --git a/drivers/virt/coco/arm-cca-host/Makefile b/drivers/virt/coco/arm-cca-host/Makefile
+> new file mode 100644
+
+kzalloc_obj(*fn_dsc)
+
+> +
+> +		if (!fn_dsc)
+
+Bailing early?
+
+Maybe the RMM knows something about this device not needing IDE? I have
+a similar question in patch2 around trusted sources for whether a device
+is internal or not. 
+
+> +
+> +	struct cca_host_pf0_ep_dsc *pf0_ep_dsc __free(kfree) =
+
+Is 256 total an RMM limit, and/or does it require globally unique
+stream-ids? If not you could do what SEV-TIO does and just set stream-id
+== stream-index.
+
+> +}
+> +
+
+The end point of these patches follows the spec recommendation of
+delaying enable until after key programming.
+
+> +	}
+> +	return 0;
+
+Should this be making security claims to userspace without taking any
+action for non-endpoint devices that happen to be passed in?
+
+Thinking about a bisection case this should either fail here, print a
+message that is removed in the final enabling patch, or do the
+__maybe_unused arrangement to land all the CCA bits first and then do
+this hookup. Up to you.
 
 ---

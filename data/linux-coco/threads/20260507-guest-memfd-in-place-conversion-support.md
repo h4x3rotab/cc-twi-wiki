@@ -1,9 +1,9 @@
 ---
 title: 'guest_memfd: In-place conversion support'
 date: 2026-05-07
-last_reply: 2026-05-07
-message_count: 50
-participants: ['Ackerley Tng via B4 Relay', 'Ackerley Tng']
+last_reply: 2026-05-27
+message_count: 96
+participants: ['Ackerley Tng via B4 Relay', 'Ackerley Tng', 'Fuad Tabba', 'Sean Christopherson']
 ---
 
 ## [1] Ackerley Tng via B4 Relay — 2026-05-07
@@ -5470,5 +5470,1290 @@ index 8b859adf4cf6f..8869cca748879 100644
  
  	return 0;
  }
+
+---
+
+## [51] Ackerley Tng — 2026-05-08
+*Subject: Re: [PATCH v6 01/43] KVM: guest_memfd: Introduce per-gmem attributes,
+ use to guard user mappings*
+
+Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+writes:
+
+>
+> [...snip...]
+
+Concretely, if the entire guest_memfd is 2M in size, indices [0, 511] is
+represented with some value, either 0 (SHARED) or
+KVM_MEMORY_ATTRIBUTE_PRIVATE. [512, ULONG_MAX] is also defined in the
+tree, as NULL.
+
+Since guest_memfd uses xa_mk_value(0) to store the value 0 ("SHARED"),
+that makes 0 distinct from NULL, which works for guest_memfd.
+
+
+(Liam and I discussed this off-list due to a email configuration issue)
+
+> +	 */
+> +	struct maple_tree attributes;
+
+---
+
+## [52] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 02/43] KVM: Rename KVM_GENERIC_MEMORY_ATTRIBUTES to KVM_VM_MEMORY_ATTRIBUTES*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+
+> ---
+>  arch/x86/include/asm/kvm_host.h |  2 +-
+
+---
+
+## [53] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 03/43] KVM: Enumerate support for PRIVATE memory iff
+ kvm_arch_has_private_mem is defined*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  include/linux/kvm_host.h | 2 +-
+
+---
+
+## [54] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 04/43] KVM: Stub in ability to disable per-VM memory
+ attribute tracking*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  arch/x86/include/asm/kvm_host.h |  2 +-
+
+---
+
+## [55] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Doesn't this imply that all consumers of kvm_mem_is_private() should
+validate the result using mmu_lock and the invalidation sequence?
+sev_handle_rmp_fault() calls kvm_mem_is_private() without holding
+mmu_lock and without any retry mechanism. Is that a problem?
+
+Cheers,
+/fuad
+
+
+> +EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_memory_attributes);
+> +
+
+---
+
+## [56] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 06/43] KVM: x86/mmu: Bug the VM if gmem attributes are
+ queried to determine max mapping level*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+This directly takes the address of kvm_gmem_get_memory_attributes,
+which is only compiled if CONFIG_KVM_GUEST_MEMFD=y. This breaks
+ARCH=i386.
+
+Cheers,
+/fuad
+
+>                 max_level = PG_LEVEL_NUM;
+>                 is_private = kvm_mem_is_private(kvm, gfn);
+
+---
+
+## [57] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 07/43] KVM: guest_memfd: Update kvm_gmem_populate() to
+ use gmem attributes*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+/fuad
+
+
+> ---
+>  arch/x86/kvm/mmu/mmu.c   |  2 +-
+
+---
+
+## [58] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 08/43] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+> ---
+>  virt/kvm/guest_memfd.c | 9 ++++++---
+
+---
+
+## [59] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 09/43] KVM: Move kvm_supported_mem_attributes() to kvm_host.h*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+> ---
+>  include/linux/kvm_host.h | 10 ++++++++++
+
+---
+
+## [60] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 10/43] KVM: guest_memfd: Add base support for KVM_SET_MEMORY_ATTRIBUTES2*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+/fuad
+> ---
+>  include/uapi/linux/kvm.h |  13 ++++++
+
+---
+
+## [61] Sean Christopherson — 2026-05-20
+*Subject: Re: [PATCH v6 06/43] KVM: x86/mmu: Bug the VM if gmem attributes are
+ queried to determine max mapping level*
+
+On Wed, May 20, 2026, Fuad Tabba wrote:
+> On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+> <devnull+ackerleytng.google.com@kernel.org> wrote:
+
+And this bleeds guest_memfd implementation details into places they don't belong.
+The right way to deal with this is to use lockdep_assert_not_held() in whatever
+code mustn't run with mmu_lock held.  E.g.
+
+diff --git virt/kvm/guest_memfd.c virt/kvm/guest_memfd.c
+index c9f155c2dc5c..3bea9c1137ef 100644
+--- virt/kvm/guest_memfd.c
++++ virt/kvm/guest_memfd.c
+@@ -547,6 +547,9 @@ unsigned long kvm_gmem_get_memory_attributes(struct kvm *kvm, gfn_t gfn)
+        struct kvm_memory_slot *slot = gfn_to_memslot(kvm, gfn);
+        struct inode *inode;
+ 
++       /* Comment goes here. */
++       lockdep_assert_not_held(&kvm->mmu_lock);
++
+        /*
+         * If this gfn has no associated memslot, there's no chance of the gfn
+         * being backed by private memory, since guest_memfd must be used for
+
+But I'm confused, because kvm_gmem_get_memory_attributes() doesn't actually take
+filemap_invalidate_lock(), so what exactly is the problem?
+
+> >                 max_level = PG_LEVEL_NUM;
+> >                 is_private = kvm_mem_is_private(kvm, gfn);
+
+---
+
+## [62] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 11/43] KVM: guest_memfd: Ensure pages are not in use
+ before conversion*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+> ---
+>  include/uapi/linux/kvm.h |  3 ++-
+
+---
+
+## [63] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 12/43] KVM: guest_memfd: Call arch invalidate hooks on conversion*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Minor nit below, but lgtm.
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  virt/kvm/guest_memfd.c | 41 +++++++++++++++++++++++++++++++++++++++++
+
+Why the unrelated extra space?
+
+>         kvm_gmem_invalidate_end(inode, start, end);
+>  out:
+
+---
+
+## [64] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 13/43] KVM: guest_memfd: Return early if range already
+ has requested attributes*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+> ---
+>  virt/kvm/guest_memfd.c | 33 +++++++++++++++++++++++----------
+
+---
+
+## [65] Fuad Tabba — 2026-05-20
+*Subject: Re: [PATCH v6 14/43] KVM: guest_memfd: Advertise KVM_SET_MEMORY_ATTRIBUTES2
+ ioctl*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  Documentation/virt/kvm/api.rst | 78 +++++++++++++++++++++++++++++++++++++++++-
+
+---
+
+## [66] Sean Christopherson — 2026-05-20
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+On Wed, May 20, 2026, Fuad Tabba wrote:
+> On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+> <devnull+ackerleytng.google.com@kernel.org> wrote:
+
+Yes, but my understanding is that sev_handle_rmp_fault() can tolerate false
+positives and false negatives.  It's not optimal, but it's "fine", and already
+KVM's existing behavior, e.g. KVM gets the PFN and then smashes the RMP, without
+ensuring the PFN is fresh.
+
+Mike, is that all correct?
+
+---
+
+## [67] Ackerley Tng — 2026-05-20
+*Subject: Re: [PATCH v6 06/43] KVM: x86/mmu: Bug the VM if gmem attributes are
+ queried to determine max mapping level*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+>
+> [...snip...]
+
+Ahh I can drop this patch now. kvm_gmem_get_memory_attributes() used to
+take the filemap_invalidate_lock(), but after Liam pointed out that
+the attributes maple tree should be using MT_FLAGS_USE_RCU, I stopped
+taking filemap_invalidate_lock() and forgot to undo this.
+
+I'll wait a bit for more reviews and then put out another revision
+without this patch.
+
+>> >                 max_level = PG_LEVEL_NUM;
+>> >                 is_private = kvm_mem_is_private(kvm, gfn);
+
+---
+
+## [68] Ackerley Tng — 2026-05-20
+*Subject: Re: [PATCH v6 12/43] KVM: guest_memfd: Call arch invalidate hooks on conversion*
+
+Fuad Tabba <tabba@google.com> writes:
+
+> On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+> <devnull+ackerleytng.google.com@kernel.org> wrote:
+
+Hmm this space provides vertical space between invalidate_{begin,end}
+and the STUFF it wraps, like
+
+  invalidate_begin
+
+  STUFF
+
+  invalidate_end
+
+More STUFF is going to go here in future patch series, such as splitting
+private pages in TDX.
+
+>>         kvm_gmem_invalidate_end(inode, start, end);
+>>  out:
+
+---
+
+## [69] Sean Christopherson — 2026-05-20
+*Subject: Re: [PATCH v6 06/43] KVM: x86/mmu: Bug the VM if gmem attributes are
+ queried to determine max mapping level*
+
+On Wed, May 20, 2026, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> >> >         } else {
+
+If this is the only issue with v6, don't send a new version, I'll just drop it
+when applying.
+
+---
+
+## [70] Ackerley Tng — 2026-05-20
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+Fuad Tabba <tabba@google.com> writes:
+
+>
+> [...snip...]
+
+Let me know how I can improve the comment.
+
+I think the "consumption" of private vs shared here actually means
+something like "don't commit a page being faulted into page tables based
+on the result of kvm_gmem_get_memory_attributes() without checking
+kvm->mmu_invalidate_in_progress.", since a racing conversion may
+complete before you commit.
+
+kvm_mem_is_private() is used from these places:
+
+1. Fault handling in KVM, like page_fault_can_be_fast(),
+   kvm_mmu_faultin_pfn(), kvm_mmu_page_fault(): this already handles the
+   entire mmu_lock and invalidation dance. No fault will be committed if
+   a racing conversion happened after kvm_mem_is_private() but before
+   the commit.
+
+2. kvm_mmu_max_mapping_level() from recovering huge pages after
+   disabling dirty logging: Other than that it can't be used with
+   guest_memfd now since dirty logging can't be used with guest_memfd
+   and guest_memfd memslots are not updatable, this holds mmu_lock
+   throughout until the huge page recovery is done. invalidate_begin
+   also involves zapping the pages in the range, so if the order of
+   events is
+
+   | Thread A                     | Thread B          |
+   |------------------------------|-------------------|
+   | invalidate_begin + zap       |                   |
+   | update attributes maple_tree | recover huge page |
+   | invalidate_end               |                   |
+
+   Then recovering will never see the zapped pages, nothing to
+   recover, no kvm_mem_is_private() lookup.
+
+3. kvm_arch_vcpu_pre_fault_memory()
+
+   This eventually calls kvm_tdp_mmu_page_fault(), which checks
+   is_page_fault_stale(), so it does check before committing.
+
+Were there any other calls I missed?
+
+> sev_handle_rmp_fault() calls kvm_mem_is_private() without holding
+> mmu_lock and without any retry mechanism. Is that a problem?
+
+Sean already replied on your actual question separately :)
+
+> Cheers,
+> /fuad
+
+---
+
+## [71] Ackerley Tng — 2026-05-20
+*Subject: Re: [PATCH v6 20/43] KVM: guest_memfd: Enable INIT_SHARED on
+ guest_memfd for x86 Coco VMs*
+
+Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+writes:
+
+> From: Sean Christopherson <seanjc@google.com>
+>
+
+Adding a note here from PUCK on 2026-05-20:
+
+Michael pointed out that it's odd that when vm_memory_attributes is
+available, guest_memfd still can only be used for private memory.
+
+It is a little odd, but we don't want to investigate the complexities of
+supporting it, and Sean says this is working as intended, in line with
+deprecating vm_memory_attributes=true.
+
+>  }
+>
+
+---
+
+## [72] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 11/43] KVM: guest_memfd: Ensure pages are not in use
+ before conversion*
+
+Hi Ackerley,
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+https://sashiko.dev/#/patchset/20260507-gmem-inplace-conversion-v6-0-91ab5a8b19a4%40google.com?part=11
+
+Sashiko raised a few issues here, but I think this one might be
+genuine. Can you look into it please?
+
+If that's right, when huge page support lands, if start falls in the
+middle of a large folio, returning folio->index as the err_index will
+return an offset strictly less than the requested start. A naive
+userspace retry loop resuming from error_offset would step backwards
+and corrupt attributes on memory it didn't intend to convert.
+err_index should be clamped to max(start, folio->index).
+
+Cheers,
+/fuad
+
+> +                       }
+> +               }
+
+---
+
+## [73] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 15/43] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Not an area I've worked with that much, but it seems right to me:
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+
+> ---
+>  mm/swap.c              |  2 ++
+
+---
+
+## [74] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+On Wed, 20 May 2026 at 22:44, Ackerley Tng <ackerleytng@google.com> wrote:
+>
+> Fuad Tabba <tabba@google.com> writes:
+
+Given Sean's context, the comment is good I think. I would quibble
+with the the "_must_ still protect" phrasing being a bit too strict.
+
+Maybe just soften it slightly to acknowledge the exception? Something like:
+
+  * lock is dropped, so callers that require a strict result _must_ protect
+  * consumption of private vs. shared by checking mmu_invalidate_retry_gfn()
+  * under mmu_lock to serialize against ongoing attribute updates. Callers
+  * doing lockless reads must be able to tolerate a stale result.
+
+That aligns the comment with how KVM is actually using it today. That
+said, this is nitpicking. Feel free to use or ignore.
+
+>
+> I think the "consumption" of private vs shared here actually means
+
+The one I was looking at was `sev_handle_rmp_fault()`, which does a lockless
+read without the retry loop. But as Sean just pointed out, that path can
+tolerate false positives/negatives and relies on the guest faulting again,
+so the lack of synchronization there is existing behavior and considered "fine".
+
+>
+> > sev_handle_rmp_fault() calls kvm_mem_is_private() without holding
+
+---
+
+## [75] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 16/43] KVM: guest_memfd: Use actual size for
+ invalidation in kvm_gmem_release()*
+
+Hi Ackerley,
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Want to look at what Sashiko has to say? Seems to be a real issue:
+
+https://sashiko.dev/#/patchset/20260507-gmem-inplace-conversion-v6-0-91ab5a8b19a4%40google.com?part=16
+
+If I understand correctly, the fix should simple: use
+check_add_overflow() to validate the offset and size parameters in
+kvm_gmem_bind()
+
+   int kvm_gmem_bind(struct kvm *kvm, struct kvm_memory_slot *slot,
+             unsigned int fd, loff_t offset)
+   {
+       loff_t size = slot->npages << PAGE_SHIFT;
+   +    loff_t end;
+       unsigned long start, end_index;
+       struct gmem_file *f;
+...
+   -    if (offset < 0 || !PAGE_ALIGNED(offset) ||
+   -        offset + size > i_size_read(inode))
+   +    if (offset < 0 || !PAGE_ALIGNED(offset) ||
+   +        check_add_overflow(offset, size, &end) ||
+   +        end > i_size_read(inode))
+           goto err;
+
+What do you think?
+
+/fuad
+
+> ---
+>  virt/kvm/guest_memfd.c | 6 ++++--
+
+---
+
+## [76] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 17/43] KVM: guest_memfd: Determine invalidation filter
+ from memory attributes*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+> ---
+>  virt/kvm/guest_memfd.c | 27 ++++++++++++++++++++-------
+
+---
+
+## [77] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 18/43] KVM: Move KVM_VM_MEMORY_ATTRIBUTES config
+ definition to x86*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+> ---
+>  arch/x86/kvm/Kconfig | 4 ++++
+
+---
+
+## [78] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 19/43] KVM: Let userspace disable per-VM mem
+ attributes, enable per-gmem attributes*
+
+Hi Ackerley,
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Config files always confuse me, but Sashiko might be onto something:
+
+https://sashiko.dev/#/patchset/20260507-gmem-inplace-conversion-v6-0-91ab5a8b19a4%40google.com?part=19
+
+I think this partially goes back to commit 6, the one I flagged
+yesterday. But also adding "default y" to KVM_VM_MEMORY_ATTRIBUTES?
+The default value should at least fix this issue, but I'm not sure if
+it would cause other problems...
+
+Cheers,
+/fuad
+
+
+> ---
+>  arch/x86/kvm/Kconfig | 13 +++++++++----
+
+---
+
+## [79] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 20/43] KVM: guest_memfd: Enable INIT_SHARED on
+ guest_memfd for x86 Coco VMs*
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+
+> ---
+>  arch/x86/kvm/x86.c | 11 +++++------
+
+---
+
+## [80] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 21/43] KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE*
+
+Hi,
+
+On Thu, 7 May 2026 at 21:22, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Michael Roth <michael.roth@amd.com>
+
+I'm not very familiar with the SEV-SNP populate flows, but it looks
+like Sashiko is on to something:
+https://sashiko.dev/#/patchset/20260507-gmem-inplace-conversion-v6-0-91ab5a8b19a4%40google.com?part=21
+
+- a potential read-only page overwrite, because src_page is acquired
+via get_user_pages_fast() without the FOLL_WRITE flag, but is then
+overwritten via memcpy
+- an ordering violation with the kunmap_local() calls
+
+These predate this patch series and are just being touched by the
+'src_page' addition, but if Sashiko's right, these should probably be
+fixed sooner rather than later.
+
+Cheers,
+/fuad
+
+
+
+> ---
+>  Documentation/virt/kvm/x86/amd-memory-encryption.rst | 15 +++++++++++----
+
+---
+
+## [81] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 23/43] KVM: selftests: Create gmem fd before "regular"
+ fd when adding memslot*
+
+On Thu, 7 May 2026 at 21:23, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/lib/kvm_util.c | 45 +++++++++++++++---------------
+
+---
+
+## [82] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 24/43] KVM: selftests: Rename guest_memfd{,_offset} to gmem_{fd,offset}*
+
+On Thu, 7 May 2026 at 21:23, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/kvm_util.h |  6 +++---
+
+---
+
+## [83] Sean Christopherson — 2026-05-21
+*Subject: Re: [PATCH v6 16/43] KVM: guest_memfd: Use actual size for
+ invalidation in kvm_gmem_release()*
+
+On Thu, May 21, 2026, Fuad Tabba wrote:
+> Hi Ackerley,
+> 
+
+Eww, TIL I'm not a fan of check_add_overflow().  Burying an out-param in an
+if-statement is nasty.
+
+>    +        end > i_size_read(inode))
+
+This is all rather silly.  @offset and and @slot->npages are fundamentally
+unsigned values.   I don't see any reason to convert them to signed values, only
+to convert them *back* to unsigned values (when stored in start/end, because xarrays
+operate on "unsigned long" indices).
+
+i_size_read() obviously has to return a positive value, so can't we just do this?
+
+diff --git virt/kvm/guest_memfd.c virt/kvm/guest_memfd.c
+index a35a55571a2d..9c6dbb54e800 100644
+--- virt/kvm/guest_memfd.c
++++ virt/kvm/guest_memfd.c
+@@ -640,9 +640,9 @@ int kvm_gmem_create(struct kvm *kvm, struct kvm_create_guest_memfd *args)
+ }
+ 
+ int kvm_gmem_bind(struct kvm *kvm, struct kvm_memory_slot *slot,
+-                 unsigned int fd, loff_t offset)
++                 unsigned int fd, u64 offset)
+ {
+-       loff_t size = slot->npages << PAGE_SHIFT;
++       u64 size = slot->npages << PAGE_SHIFT;
+        unsigned long start, end;
+        struct gmem_file *f;
+        struct inode *inode;
+@@ -664,8 +664,7 @@ int kvm_gmem_bind(struct kvm *kvm, struct kvm_memory_slot *slot,
+ 
+        inode = file_inode(file);
+ 
+-       if (offset < 0 || !PAGE_ALIGNED(offset) ||
+-           offset + size > i_size_read(inode))
++       if (!PAGE_ALIGNED(offset) || offset + size > i_size_read(inode))
+                goto err;
+ 
+        filemap_invalidate_lock(inode->i_mapping);
+diff --git virt/kvm/kvm_mm.h virt/kvm/kvm_mm.h
+index 9fcc5d5b7f8d..3cb5ef86d0d9 100644
+--- virt/kvm/kvm_mm.h
++++ virt/kvm/kvm_mm.h
+@@ -72,7 +72,7 @@ int kvm_gmem_init(struct module *module);
+ void kvm_gmem_exit(void);
+ int kvm_gmem_create(struct kvm *kvm, struct kvm_create_guest_memfd *args);
+ int kvm_gmem_bind(struct kvm *kvm, struct kvm_memory_slot *slot,
+-                 unsigned int fd, loff_t offset);
++                 unsigned int fd, u64 offset);
+ void kvm_gmem_unbind(struct kvm_memory_slot *slot);
+ #else
+ static inline int kvm_gmem_init(struct module *module)
+@@ -80,9 +80,8 @@ static inline int kvm_gmem_init(struct module *module)
+        return 0;
+ }
+ static inline void kvm_gmem_exit(void) {};
+-static inline int kvm_gmem_bind(struct kvm *kvm,
+-                                        struct kvm_memory_slot *slot,
+-                                        unsigned int fd, loff_t offset)
++static inline int kvm_gmem_bind(struct kvm *kvm, struct kvm_memory_slot *slot,
++                               unsigned int fd, u64 offset)
+ {
+        WARN_ON_ONCE(1);
+        return -EIO;
+
+---
+
+## [84] Sean Christopherson — 2026-05-21
+*Subject: Re: [PATCH v6 21/43] KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE*
+
+On Thu, May 21, 2026, Fuad Tabba wrote:
+> Hi,
+> 
+
+Oof, yeah, that's bad.  Adding FOLL_WRITE to kvm_gmem_populate() feels wrong, and
+could break uABI, but doing gup() in SNP code would reintroduce the AB-BA issue
+with filemap_invalidate_lock().
+
+Aha!  Not if we use get_user_page_fast_only().  Ugh, but then we'd have to plumb
+the userspace address into the post-populated callback.
+
+Hrm.  Given that no one has yelled about overwriting their CPUID page, and given
+that the CPUID page is likely dynamically created and thus is unlikely to be a
+read-only mapping (e.g. versus the initial image), maybe this?
+
+diff --git arch/x86/kvm/svm/sev.c arch/x86/kvm/svm/sev.c
+index 37d4cfa5d980..c73c028d72c1 100644
+--- arch/x86/kvm/svm/sev.c
++++ arch/x86/kvm/svm/sev.c
+@@ -2456,6 +2456,7 @@ static int snp_launch_update(struct kvm *kvm, struct kvm_sev_cmd *argp)
+        sev_populate_args.type = params.type;
+ 
+        count = kvm_gmem_populate(kvm, params.gfn_start, src, npages,
++                                 params.type == KVM_SEV_SNP_PAGE_TYPE_CPUID,
+                                  sev_gmem_post_populate, &sev_populate_args);
+        if (count < 0) {
+                argp->error = sev_populate_args.fw_error;
+diff --git arch/x86/kvm/vmx/tdx.c arch/x86/kvm/vmx/tdx.c
+index f97bcf580e6d..33f35be4455b 100644
+--- arch/x86/kvm/vmx/tdx.c
++++ arch/x86/kvm/vmx/tdx.c
+@@ -3188,7 +3188,7 @@ static int tdx_vcpu_init_mem_region(struct kvm_vcpu *vcpu, struct kvm_tdx_cmd *c
+                };
+                gmem_ret = kvm_gmem_populate(kvm, gpa_to_gfn(region.gpa),
+                                             u64_to_user_ptr(region.source_addr),
+-                                            1, tdx_gmem_post_populate, &arg);
++                                            1, false, tdx_gmem_post_populate, &arg);
+                if (gmem_ret < 0) {
+                        ret = gmem_ret;
+                        break;
+diff --git include/linux/kvm_host.h include/linux/kvm_host.h
+index 61a3430957f2..b83cda2870ba 100644
+--- include/linux/kvm_host.h
++++ include/linux/kvm_host.h
+@@ -2596,7 +2596,8 @@ int kvm_arch_gmem_prepare(struct kvm *kvm, gfn_t gfn, kvm_pfn_t pfn, int max_ord
+ typedef int (*kvm_gmem_populate_cb)(struct kvm *kvm, gfn_t gfn, kvm_pfn_t pfn,
+                                    struct page *page, void *opaque);
+ 
+-long kvm_gmem_populate(struct kvm *kvm, gfn_t gfn, void __user *src, long npages,
++long kvm_gmem_populate(struct kvm *kvm, gfn_t start_gfn, void __user *src,
++                      long npages, bool writable,
+                       kvm_gmem_populate_cb post_populate, void *opaque);
+ #endif
+ 
+diff --git virt/kvm/guest_memfd.c virt/kvm/guest_memfd.c
+index a35a55571a2d..6553d4e032ce 100644
+--- virt/kvm/guest_memfd.c
++++ virt/kvm/guest_memfd.c
+@@ -858,7 +858,8 @@ static long __kvm_gmem_populate(struct kvm *kvm, struct kvm_memory_slot *slot,
+        return ret;
+ }
+ 
+-long kvm_gmem_populate(struct kvm *kvm, gfn_t start_gfn, void __user *src, long npages,
++long kvm_gmem_populate(struct kvm *kvm, gfn_t start_gfn, void __user *src,
++                      long npages, bool writable,
+                       kvm_gmem_populate_cb post_populate, void *opaque)
+ {
+        struct kvm_memory_slot *slot;
+@@ -892,8 +893,9 @@ long kvm_gmem_populate(struct kvm *kvm, gfn_t start_gfn, void __user *src, long
+ 
+                if (src) {
+                        unsigned long uaddr = (unsigned long)src + i * PAGE_SIZE;
++                       unsigned int flags = writable ? FOLL_WRITE : 0;
+ 
+-                       ret = get_user_pages_fast(uaddr, 1, 0, &src_page);
++                       ret = get_user_pages_fast(uaddr, 1, flags, &src_page);
+                        if (ret < 0)
+                                break;
+                        if (ret != 1) {
+
+> - an ordering violation with the kunmap_local() calls
+
+Yeesh, that's a new one for me.  Thankfully this is 64-bit only, so it's not an
+issue.
+
+> These predate this patch series and are just being touched by the
+> 'src_page' addition, but if Sashiko's right, these should probably be
+
+Yeah, ditto with the offset wrapping case.
+
+---
+
+## [85] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 16/43] KVM: guest_memfd: Use actual size for
+ invalidation in kvm_gmem_release()*
+
+On Thu, 21 May 2026 at 13:59, Sean Christopherson <seanjc@google.com> wrote:
+>
+> On Thu, May 21, 2026, Fuad Tabba wrote:
+
+lgtm,
+/fuad
+
+>
+> diff --git virt/kvm/guest_memfd.c virt/kvm/guest_memfd.c
+
+---
+
+## [86] Sean Christopherson — 2026-05-21
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+On Thu, May 21, 2026, Fuad Tabba wrote:
+> On Wed, 20 May 2026 at 22:44, Ackerley Tng <ackerleytng@google.com> wrote:
+> >
+
+Hmm, I wonder if we can figure out a way to consolidate some documentation,
+because this is _exactly_ the same pattern that x86's host_pfn_mapping_level()
+deals with (see its big comment below).
+
+There's also the stale comment in kvm_invalidate_memslot(), which, stating the
+obvious, speaks to the memslot+SRCU side of things.
+
+Maybe it makes sense to to find a central location for one giant comment about
+how how MMU notifier events and memslot+SRCU protections work?  And then refer
+to that in paths where some asset needs to be tied into MMU notifiers and/or
+memslots+SRCU?
+
+[*] https://lore.kernel.org/all/agcbWe8s9lmPuJwG@google.com
+
+
+/*
+ * Lookup the mapping level for @gfn in the current mm.
+ *
+ * WARNING!  Use of host_pfn_mapping_level() requires the caller and the end
+ * consumer to be tied into KVM's handlers for MMU notifier events!
+ *
+ * There are several ways to safely use this helper:
+ *
+ * - Check mmu_invalidate_retry_gfn() after grabbing the mapping level, before
+ *   consuming it.  In this case, mmu_lock doesn't need to be held during the
+ *   lookup, but it does need to be held while checking the MMU notifier.
+ *
+ * - Hold mmu_lock AND ensure there is no in-progress MMU notifier invalidation
+ *   event for the hva.  This can be done by explicit checking the MMU notifier
+ *   or by ensuring that KVM already has a valid mapping that covers the hva.
+ *
+ * - Do not use the result to install new mappings, e.g. use the host mapping
+ *   level only to decide whether or not to zap an entry.  In this case, it's
+ *   not required to hold mmu_lock (though it's highly likely the caller will
+ *   want to hold mmu_lock anyways, e.g. to modify SPTEs).
+ *
+ * Note!  The lookup can still race with modifications to host page tables, but
+ * the above "rules" ensure KVM will not _consume_ the result of the walk if a
+ * race with the primary MMU occurs.
+ */
+
+---
+
+## [87] Fuad Tabba — 2026-05-21
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+On Thu, 21 May 2026 at 14:31, Sean Christopherson <seanjc@google.com> wrote:
+>
+> On Thu, May 21, 2026, Fuad Tabba wrote:
+
+This would fix a few related issues at once. sgtm
+/fuad
+
+
+/fuad
+
+>
+> /*
+
+---
+
+## [88] Sean Christopherson — 2026-05-21
+*Subject: Re: [PATCH v6 19/43] KVM: Let userspace disable per-VM mem
+ attributes, enable per-gmem attributes*
+
+On Thu, May 21, 2026, Fuad Tabba wrote:
+> Hi Ackerley,
+> 
+
+: Since this prompt does not have a default value, will it default to N
+: and silently drop KVM_VM_MEMORY_ATTRIBUTES during configuration updates
+: like make olddefconfig?
+: 
+: Existing userspace VMMs that rely on the KVM_SET_MEMORY_ATTRIBUTES ioctl
+: for TDX or SEV VMs might fail to boot if the feature is unexpectedly
+: compiled out. Could a default y be used to preserve backwards
+: compatibility for existing configurations?
+
+> I think this partially goes back to commit 6, the one I flagged
+> yesterday. But also adding "default y" to KVM_VM_MEMORY_ATTRIBUTES?
+
+Hrm.  As much as I want per-gmem attributes to be the default going forward,
+silently breaking existing setups isn't great.  On the other hand, I'm *very*
+skeptical there are any SNP or TDX deployments using a distro kernel, so I'm
+still leaning towards forcing the issue and turning per-VM attributes off by
+default.
+
+---
+
+## [89] Ackerley Tng — 2026-05-21
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Thu, May 21, 2026, Fuad Tabba wrote:
+>> On Wed, 20 May 2026 at 22:44, Ackerley Tng <ackerleytng@google.com> wrote:
+
+This would be great, are you thinking an actual comment or something in
+Documentation/?
+
+Perhaps we could iterate on this a little with me providing the newbie
+perspective. Do you want me to take a stab at writing something up?
+
+> There's also the stale comment in kvm_invalidate_memslot(), which, stating the
+> obvious, speaks to the memslot+SRCU side of things.
+
+---
+
+## [90] Ackerley Tng — 2026-05-21
+*Subject: Re: [PATCH v6 11/43] KVM: guest_memfd: Ensure pages are not in use
+ before conversion*
+
+Fuad Tabba <tabba@google.com> writes:
+
+>
+> [...snip...]
+
+Sashiko's first issue on lru is addressed in a separate patch later. :)
+
+> Sashiko raised a few issues here, but I think this one might be
+> genuine. Can you look into it please?
+
+For these ones, I was thinking to defer all the huge-page related issues
+to be fixed when huge pages land, since there are probably quite a few
+places to update.
+
+On second thought, this isn't a huge change, I'll fix this in the next
+revision.
+
+> Cheers,
+> /fuad
+
+---
+
+## [91] Ackerley Tng — 2026-05-21
+*Subject: Re: [PATCH v6 16/43] KVM: guest_memfd: Use actual size for
+ invalidation in kvm_gmem_release()*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+>
+> [...snip...]
+
+My mental model was:
+
++ offsets => loff_t
++ indices => pgoff_t
++ sizes => size_t
+
+But looks like loff_t is more suitable for places where return values
+(possibly negative) matter.
+
+Good to go with u64!
+
+> [...snip...]
+>
+
+---
+
+## [92] Ackerley Tng — 2026-05-21
+*Subject: Re: [PATCH v6 21/43] KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Thu, May 21, 2026, Fuad Tabba wrote:
+>> Hi,
+
+Overwriting the CPUID page is by design, I think. IIUC if the SNP
+firmware doesn't like something about the CPUID page, it can update
+src_page and then return an error to userspace.
+
+Userspace should then check if it agrees with the updated CPUID contents
+and then retry if it agrees.
+
+> diff --git arch/x86/kvm/svm/sev.c arch/x86/kvm/svm/sev.c
+> index 37d4cfa5d980..c73c028d72c1 100644
+
+I think this makes sense given that writing to src_page can only happen
+when params.type == KVM_SEV_SNP_PAGE_TYPE_CPUID (this is explicitly one
+of the guards in sev_gmem_post_populate()):
+
+	/*
+	 * If the firmware command failed handle the reclaim and cleanup of that
+	 * PFN before reporting an error.
+	 *
+	 * Additionally, when invalid CPUID function entries are detected,
+	 * firmware writes the expected values into the page and leaves it
+	 * unencrypted so it can be used for debugging and error-reporting.
+	 *
+	 * Copy this page back into the source buffer so userspace can use this
+	 * information to provide information on which CPUID leaves/fields
+	 * failed CPUID validation.
+	 */
+	if (ret && !snp_page_reclaim(kvm, pfn) &&
+	    sev_populate_args->type == KVM_SEV_SNP_PAGE_TYPE_CPUID &&
+	    sev_populate_args->fw_error == SEV_RET_INVALID_PARAM && src_page) {
+		void *src_vaddr = kmap_local_page(src_page);
+		void *dst_vaddr = kmap_local_pfn(pfn);
+
+		memcpy(src_vaddr, dst_vaddr, PAGE_SIZE);
+
+		kunmap_local(src_vaddr);
+		kunmap_local(dst_vaddr);
+	}
+
+>                                   sev_gmem_post_populate, &sev_populate_args);
+>         if (count < 0) {
+
+And TDX doesn't try to write src_page, so this is good too.
+
+>                 if (gmem_ret < 0) {
+>                         ret = gmem_ret;
+
+What do you think of need_writable_src instead of just writable for the
+variable name?
+
+>                        kvm_gmem_populate_cb post_populate, void *opaque);
+>  #endif
+
+How about using FOLL_WRITE | FOLL_NOFAULT so if it weren't writable to
+start with, don't CoW, just error out?
+
+Like you said above the CPUID page provided as src_page would have been
+written to before, so it should have been mapped as writable.
+
+>
+> -                       ret = get_user_pages_fast(uaddr, 1, 0, &src_page);
+
+If we stick with FOLL_WRITE, this also solves the case where a read-only
+mapping or global zero page are provided as src_page, since
+get_user_pages_fast() will do a copy-on-write if those were the inputs,
+making it writable before the write happens (on failure) in
+sev_gmem_post_populate().
+
+>                         if (ret < 0)
+>                                 break;
+
+---
+
+## [93] Sean Christopherson — 2026-05-22
+*Subject: Re: [PATCH v6 21/43] KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE*
+
+On Thu, May 21, 2026, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> 
+
+How about "may_write_src" or "may_writeback_src"?
+
+> >                        kvm_gmem_populate_cb post_populate, void *opaque);
+> >  #endif
+
+Eh, I don't see any value in value in erroring out if userspace is doing something
+unusual.  If breaking CoW was actually problematic somehow, then sure.  But AFAICT
+it's overall harmless.
+
+> Like you said above the CPUID page provided as src_page would have been
+> written to before, so it should have been mapped as writable.
+
+---
+
+## [94] Ackerley Tng — 2026-05-22
+*Subject: Re: [PATCH v6 01/43] KVM: guest_memfd: Introduce per-gmem attributes,
+ use to guard user mappings*
+
+Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+writes:
+
+>
+> [...snip...]
+
+Sashiko says using GFP_KERNEL with this attributes maple_tree could
+allow a process creating a very fragmented maple tree to consume lots of
+memory not charged to some memcg and proposed using GFP_KERNEL_ACCOUNT.
+
+The problem with using GFP_KERNEL_ACCOUNT is that the maple tree nodes
+are allocated from a shared kmem_cache maple_node_cache. Allocating the
+maple tree nodes using GFP_KERNEL_ACCOUNT would mean that the node could
+be reused by other maple trees unrelated to this process, and so the
+nodes might long outlive the process using this guest_memfd, keeping the
+memcg alive far longer than the VM.
+
+For now I think it's okay to stick with GFP_KERNEL? Does anyone else
+have suggestions on how to solve this?
+
+> +	filemap_invalidate_unlock(inode->i_mapping);
+> +
+
+---
+
+## [95] Ackerley Tng — 2026-05-22
+*Subject: Re: [PATCH v6 25/43] KVM: selftests: Add support for mmap() on
+ guest_memfd in core library*
+
+Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+writes:
+
+>
+> [...snip...]
+
+Sashiko pointed out these:
+
+1. When mmap() is done for region->mmap_alias, it doesn't use
+   mmap_offset. I'll fix that in the next revision.
+
+2. mmap() may map past the end of the guest_memfd if, due to alignment,
+   the mmap_size is increased. That is true, but I feel that that fix
+   should go with a bigger clean up for vm_mem_add().
+
+3. vm_mem_backing_src_alias(src_type)->flag may contain incompatible
+   mmap flags. This is true. For now, when guest_memfd is used with
+   vm_mem_add, the src_type passed has to be VM_MEM_SRC_SHMEM. I think
+   this also falls in the category of doing a bigger clean up for
+   vm_mem_add().
+
+>
+> [...snip...]
+
+---
+
+## [96] Ackerley Tng — 2026-05-27
+*Subject: Re: [PATCH v6 05/43] KVM: guest_memfd: Wire up kvm_get_memory_attributes()
+ to per-gmem attributes*
+
+Ackerley Tng <ackerleytng@google.com> writes:
+
+>
+> [...snip...]
+
+Please see https://lore.kernel.org/all/20260527-kvm-locking-docs-v1-0-4fe8b602ff47@google.com/T/!
+
+>>
+>> [...snip...]
 
 ---

@@ -13,7 +13,7 @@ scrape-twi:
 # Scrape linux-coco public-inbox mirror into data/linux-coco/
 # Requires the public-inbox mirror at linux-coco/ (see linux-coco/git/0.git)
 scrape-linux-coco:
-	python3 scraper/linux-coco/main.py
+	. .venv/bin/activate && python3 -m scraper.linux_coco.main
 
 serve:
 	npm start

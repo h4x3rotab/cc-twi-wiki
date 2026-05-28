@@ -1,9 +1,9 @@
 ---
 title: 'KVM: x86: Reg cleanups / prep work for APX'
 date: 2026-04-09
-last_reply: 2026-04-15
-message_count: 26
-participants: ['Sean Christopherson', 'Chang S. Bae', 'Huang, Kai', 'Xiaoyao Li']
+last_reply: 2026-05-13
+message_count: 27
+participants: ['Sean Christopherson', 'Chang S. Bae', 'Huang, Kai', 'Xiaoyao Li', 'Paolo Bonzini']
 ---
 
 ## [1] Sean Christopherson — 2026-04-09
@@ -1861,5 +1861,22 @@ On Wed, Apr 15, 2026, Xiaoyao Li wrote:
 > > On Tue, Apr 14, 2026, Chang S. Bae wrote:
 
 Noted, I'll expand the changelog for the next version.
+
+---
+
+## [27] Paolo Bonzini — 2026-05-13
+*Subject: Re: [PATCH v2 0/6] KVM: x86: Reg cleanups / prep work for APX*
+
+On 4/10/26 00:42, Sean Christopherson wrote:
+> Clean up KVM's register tracking and storage, primarily to prepare for landing
+> APX, which expands the maximum number of GPRs from 16 to 32.
+
+Applied to kvm/next, thanks.  Upon rereading the thread I honestly 
+didn't see anything worth changing in the commit message of patch 1.
+
+Paolo
+
+> v2:
+>   - Call out the RIP is effectively an "EX" reg too (in patch 2). [Paolo]
 
 ---

@@ -1,14 +1,14 @@
 ---
 title: 'guest_memfd: In-place conversion support'
-date: 2026-04-28
-last_reply: 2026-05-12
-message_count: 72
-participants: ['Ackerley Tng via B4 Relay', 'Ackerley Tng', 'Sean Christopherson', 'Michael Roth', 'Liam R. Howlett']
+date: 2026-05-22
+last_reply: 2026-05-22
+message_count: 43
+participants: ['Ackerley Tng via B4 Relay']
 ---
 
-## [1] Ackerley Tng via B4 Relay — 2026-04-28
+## [1] Ackerley Tng via B4 Relay — 2026-05-22
 
-This is RFC v5 of guest_memfd in-place conversion support.
+This is v7 of guest_memfd in-place conversion support.
 
 Up till now, guest_memfd supports the entire inode worth of memory being
 used as all-shared, or all-private. CoCo VMs may request guest memory to be
@@ -58,61 +58,26 @@ Tested with both CONFIG_KVM_VM_MEMORY_ATTRIBUTES enabled and disabled:
 
 Updates for this revision:
 
-+ For TDX and SNP, PRESERVE supported only before VM is finalized only for
-  to_private conversions.
-    + This allows PRESERVE to be used as part of the VM memory
-      loading/encryption flow
-    + Only support PRESERVE for to_private conversions (to_shared on
-      populated memory on TDX would cause zeroing)
-    + Relaxed constraints for SNP and TDX to allow NULL to be passed as
-      source address.
-+ Dropped KVM_CAP_MEMORY_ATTRIBUTES2. KVM_CAP_MEMORY_ATTRIBUTES reports
-  attributes supported by the KVM_SET_MEMORY_ATTRIBUTES VM ioctl, and
-  KVM_CAP_GUEST_MEMFD_MEMORY_ATTRIBUTES reports attributes supported bt the
-  KVM_SET_MEMORY_ATTRIBUTES2 guest_memfd ioctl.
-    + KVM_SET_MEMORY_ATTRIBUTES2 is not supported by the VM ioctl
-+ Resolve locking issue when kvm_gmem_get_attribute() is called from
-  kvm_mmu_zap_collapsible_spte() by bugging the VM. guest_memfd memslots
-  don't support dirty tracking, so the locking issue is not on an
-  accessible code path.
-+ Moved guest_memfd_conversions_test.c to only be compiled and tested for
-  x86, since it depends so heavily on KVM_X86_SW_PROTECTED_VM's as a
-  testing vehicle
++ Picked up Reviewed-bys from Fuad
++ Addressed Fuad, Sean and Sashiko's comments
+
+Regarding the issue where guest_memfd_conversions_test, which uses the
+kselftest framework, doesn't perform teardown on assertion failure. I think
+we can have that fixed separately from this series? Please see proposal [9].
 
 TODOs
 
-+ Perhaps further clarify PRESERVE flag: [8]
-+ Resolve issue where guest_memfd_conversions_test, which uses the
-  kselftest framework, doesn't perform teardown on assertion
-  failure. Please see proposal at [9]
 + Test with TDX selftests. We're in the process of rebasing TDX selftests
   on this series and will post updates when that's tested.
 
-I would like feedback on:
-
-+ Content modes: 0 (MODE_UNSPECIFIED), ZERO, and PRESERVE. Is that all
-  good, or does anyone think there is a use case for something else?
-+ Should the content modes apply even if no attribute changes are required?
-    + See notes added in "KVM: guest_memfd: Apply content modes while
-      setting memory attributes"
-    + Possibly related: should setting attributes be allowed if some
-      sub-range requested already has the requested attribute?
-+ Structure of how various content modes are checked for support or
-  applied? I used overridable weak functions for architectures that haven't
-  defined support, and defined overrides for x86 to show how I think it would
-  work. For CoCo platforms, I only implemented TDX for illustration purposes
-  and might need help with the other platforms. Should I have used
-  kvm_x86_ops? I tried and found myself defining lots of boilerplate.
-+ The use of private_mem_conversions_test.sh to run different options in
-  private_mem_conversions_test. If this makes sense, I'll adjust the
-  Makefile to have private_mem_conversions_test tested only via the script.
-
 This series is based on kvm/next, and here's the tree for your convenience:
 
-https://github.com/googleprodkernel/linux-cc/commits/guest_memfd-inplace-conversion-v5
+https://github.com/googleprodkernel/linux-cc/commits/guest_memfd-inplace-conversion-v7
 
 Older series:
 
++ RFCv6 is at [10]
++ RFCv5 is at [8]
 + RFCv4 is at [7]
 + RFCv3 is at [6]
 + RFCv2 is at [5]
@@ -121,23 +86,23 @@ Older series:
   [1][2][3].
 
 [1] https://lore.kernel.org/all/bd163de3118b626d1005aa88e71ef2fb72f0be0f.1726009989.git.ackerleytng@google.com/
-[2] https://lore.kernel.org/all/20250117163001.2326672-6-tabba@google.com/
+[2]
 [3] https://lore.kernel.org/all/b784326e9ccae6a08388f1bf39db70a2204bdc51.1747264138.git.ackerleytng@google.com/
 [4] https://lore.kernel.org/all/cover.1760731772.git.ackerleytng@google.com/T/
 [5] https://lore.kernel.org/all/cover.1770071243.git.ackerleytng@google.com/T/
 [6] https://lore.kernel.org/r/20260313-gmem-inplace-conversion-v3-0-5fc12a70ec89@google.com/T/
 [7] https://lore.kernel.org/all/20260326-gmem-inplace-conversion-v4-0-e202fe950ffd@google.com/T/
-[8] https://lore.kernel.org/all/CAEvNRgGbMhkX310CkFY_M5x-zod=BDTiuznrZ0XvFPUK7weL1A@mail.gmail.com/
+[8] https://lore.kernel.org/r/20260428-gmem-inplace-conversion-v5-0-d8608ccfca22@google.com
 [9] https://lore.kernel.org/all/20260414-selftest-global-metadata-v1-0-fd223922bc57@google.com/T/
+[10] https://lore.kernel.org/r/20260507-gmem-inplace-conversion-v6-0-91ab5a8b19a4@google.com
 
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
-Ackerley Tng (34):
-      KVM: x86/mmu: Bug the VM if gmem attributes are queried to determine max mapping level
+Ackerley Tng (24):
       KVM: guest_memfd: Update kvm_gmem_populate() to use gmem attributes
       KVM: guest_memfd: Only prepare folios for private pages
       KVM: Move kvm_supported_mem_attributes() to kvm_host.h
-      KVM: guest_memfd: Add basic support for KVM_SET_MEMORY_ATTRIBUTES2
+      KVM: guest_memfd: Add base support for KVM_SET_MEMORY_ATTRIBUTES2
       KVM: guest_memfd: Ensure pages are not in use before conversion
       KVM: guest_memfd: Call arch invalidate hooks on conversion
       KVM: guest_memfd: Return early if range already has requested attributes
@@ -145,13 +110,7 @@ Ackerley Tng (34):
       KVM: guest_memfd: Handle lru_add fbatch refcounts during conversion safety check
       KVM: guest_memfd: Use actual size for invalidation in kvm_gmem_release()
       KVM: guest_memfd: Determine invalidation filter from memory attributes
-      KVM: guest_memfd: Introduce default handlers for content modes
-      KVM: guest_memfd: Apply content modes while setting memory attributes
-      KVM: x86: Support SW_PROTECTED_VM in applying content modes
       KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION
-      KVM: x86: Support SNP and TDX applying content modes
-      KVM: x86: Bug CoCo VM on page fault before finalizing
-      KVM: Add CAP to enumerate supported SET_MEMORY_ATTRIBUTES2 flags
       KVM: selftests: Test basic single-page conversion flow
       KVM: selftests: Test conversion flow when INIT_SHARED
       KVM: selftests: Test conversion precision in guest_memfd
@@ -159,9 +118,6 @@ Ackerley Tng (34):
       KVM: selftests: Convert with allocated folios in different layouts
       KVM: selftests: Test that truncation does not change shared/private status
       KVM: selftests: Test conversion with elevated page refcount
-      KVM: selftests: Test that conversion to private does not support ZERO
-      KVM: selftests: Support checking that data not equal expected
-      KVM: selftests: Test that not specifying a conversion flag scrambles memory contents
       KVM: selftests: Reset shared memory after hole-punching
       KVM: selftests: Provide function to look up guest_memfd details from gpa
       KVM: selftests: Make TEST_EXPECT_SIGBUS thread-safe
@@ -171,7 +127,7 @@ Ackerley Tng (34):
 Michael Roth (1):
       KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE
 
-Sean Christopherson (18):
+Sean Christopherson (17):
       KVM: guest_memfd: Introduce per-gmem attributes, use to guard user mappings
       KVM: Rename KVM_GENERIC_MEMORY_ATTRIBUTES to KVM_VM_MEMORY_ATTRIBUTES
       KVM: Enumerate support for PRIVATE memory iff kvm_arch_has_private_mem is defined
@@ -188,41 +144,44 @@ Sean Christopherson (18):
       KVM: selftests: Test that shared/private status is consistent across processes
       KVM: selftests: Provide common function to set memory attributes
       KVM: selftests: Check fd/flags provided to mmap() when setting up memslot
-      KVM: selftests: Update pre-fault test to work with per-guest_memfd attributes
       KVM: selftests: Update private memory exits test to work with per-gmem attributes
 
- Documentation/virt/kvm/api.rst                     | 139 ++++-
- .../virt/kvm/x86/amd-memory-encryption.rst         |  19 +-
+ Documentation/virt/kvm/api.rst                     |  78 +++-
+ .../virt/kvm/x86/amd-memory-encryption.rst         |  15 +-
  Documentation/virt/kvm/x86/intel-tdx.rst           |   4 +
  arch/x86/include/asm/kvm_host.h                    |   2 +-
  arch/x86/kvm/Kconfig                               |  15 +-
- arch/x86/kvm/mmu/mmu.c                             |  20 +-
+ arch/x86/kvm/mmu/mmu.c                             |   4 +-
  arch/x86/kvm/svm/sev.c                             |  18 +-
- arch/x86/kvm/vmx/tdx.c                             |   8 +-
- arch/x86/kvm/x86.c                                 | 145 ++++-
- include/linux/kvm_host.h                           |  74 ++-
+ arch/x86/kvm/vmx/tdx.c                             |  11 +-
+ arch/x86/kvm/x86.c                                 |  13 +-
+ include/linux/kvm_host.h                           |  53 ++-
  include/trace/events/kvm.h                         |   4 +-
- include/uapi/linux/kvm.h                           |  21 +
+ include/uapi/linux/kvm.h                           |  16 +
  mm/swap.c                                          |   2 +
  tools/testing/selftests/kvm/Makefile.kvm           |   5 +
- tools/testing/selftests/kvm/include/kvm_util.h     | 141 ++++-
+ tools/testing/selftests/kvm/include/kvm_util.h     | 136 +++++-
  tools/testing/selftests/kvm/include/test_util.h    |  34 +-
  .../selftests/kvm/kvm_has_gmem_attributes.c        |  17 +
- tools/testing/selftests/kvm/lib/kvm_util.c         | 130 +++--
+ tools/testing/selftests/kvm/lib/kvm_util.c         | 141 +++---
  tools/testing/selftests/kvm/lib/test_util.c        |   7 -
- tools/testing/selftests/kvm/lib/x86/sev.c          |   2 +-
- .../testing/selftests/kvm/pre_fault_memory_test.c  |   4 +-
- .../kvm/x86/guest_memfd_conversions_test.c         | 552 +++++++++++++++++++
- .../kvm/x86/private_mem_conversions_test.c         |  55 +-
- .../kvm/x86/private_mem_conversions_test.sh        | 128 +++++
- .../selftests/kvm/x86/private_mem_kvm_exits_test.c |  38 +-
+ .../kvm/x86/guest_memfd_conversions_test.c         | 488 +++++++++++++++++++++
+ .../kvm/x86/private_mem_conversions_test.c         |  53 ++-
+ .../kvm/x86/private_mem_conversions_test.sh        | 128 ++++++
+ .../selftests/kvm/x86/private_mem_kvm_exits_test.c |  36 +-
  virt/kvm/Kconfig                                   |   3 +-
- virt/kvm/guest_memfd.c                             | 591 ++++++++++++++++++++-
- virt/kvm/kvm_main.c                                |  87 ++-
- 28 files changed, 2075 insertions(+), 190 deletions(-)
+ virt/kvm/guest_memfd.c                             | 460 +++++++++++++++++--
+ virt/kvm/kvm_main.c                                |  82 +++-
+ 26 files changed, 1633 insertions(+), 192 deletions(-)
 ---
-base-commit: 39f1c201b93f4ff71631bac72cff6eb155f976a4
+base-commit: b7fbe9a1bf9ee6c967ef77d366ca58c35fcf1887
 change-id: 20260225-gmem-inplace-conversion-bd0dbd39753a
+prerequisite-change-id: 20260522-fix-sev-gmem-post-populate-a36bef7f0698:v2
+prerequisite-patch-id: 0d1feef8af7aa3471735869080aefa58b254ed0d
+prerequisite-patch-id: f64ff55d6fe8d399e720a570fd83cc47bf12ac15
+prerequisite-patch-id: 8c52920dd7f65859cbe804c787a9293b33266a3a
+prerequisite-patch-id: 95018daf73833296a045c91cfb55cd9f53886dec
+prerequisite-patch-id: bcfd440d79bb9f59f41e3244c4392da4c95cd932
 
 Best regards,
 --
@@ -230,9 +189,9 @@ Ackerley Tng <ackerleytng@google.com>
 
 ---
 
-## [2] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 01/53] KVM: guest_memfd: Introduce per-gmem
- attributes, use to guard user mappings*
+## [2] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 01/42] KVM: guest_memfd: Introduce per-gmem attributes,
+ use to guard user mappings*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -256,11 +215,11 @@ Signed-off-by: Vishal Annapurve <vannapurve@google.com>
 Co-developed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Fuad Tabba <tabba@google.com>
 ---
- virt/kvm/guest_memfd.c | 139 +++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 123 insertions(+), 16 deletions(-)
+ virt/kvm/guest_memfd.c | 133 +++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 117 insertions(+), 16 deletions(-)
 
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 69c9d6d546b28..17e5a23fec0a1 100644
+index 5b4911ffa208a..117b726f670e8 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
 @@ -4,6 +4,7 @@
@@ -271,20 +230,21 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  #include <linux/mempolicy.h>
  #include <linux/pseudo_fs.h>
  #include <linux/pagemap.h>
-@@ -33,6 +34,12 @@ struct gmem_inode {
+@@ -33,6 +34,13 @@ struct gmem_inode {
  	struct list_head gmem_file_list;
  
  	u64 flags;
 +	/*
 +	 * Every index in this inode, whether memory is populated or
-+	 * not, is tracked in attributes. There are no gaps in this
-+	 * maple tree.
++	 * not, is tracked in attributes. The entire range of indices,
++	 * corresponding to the size of this inode, is represented in
++	 * this maple tree.
 +	 */
 +	struct maple_tree attributes;
  };
  
  static __always_inline struct gmem_inode *GMEM_I(struct inode *inode)
-@@ -60,6 +67,31 @@ static pgoff_t kvm_gmem_get_index(struct kvm_memory_slot *slot, gfn_t gfn)
+@@ -60,6 +68,24 @@ static pgoff_t kvm_gmem_get_index(struct kvm_memory_slot *slot, gfn_t gfn)
  	return gfn - slot->base_gfn + slot->gmem.pgoff;
  }
  
@@ -292,13 +252,6 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
 +{
 +	struct maple_tree *mt = &GMEM_I(inode)->attributes;
 +	void *entry = mtree_load(mt, index);
-+
-+	/*
-+	 * The lock _must_ be held for lookups, as some maple tree operations,
-+	 * e.g. append, are unsafe (return inaccurate information) with respect
-+	 * to concurrent RCU-protected lookups.
-+	 */
-+	lockdep_assert(mt_lock_is_held(mt));
 +
 +	return WARN_ON_ONCE(!entry) ? 0 : xa_to_value(entry);
 +}
@@ -316,7 +269,7 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  static int __kvm_gmem_prepare_folio(struct kvm *kvm, struct kvm_memory_slot *slot,
  				    pgoff_t index, struct folio *folio)
  {
-@@ -397,10 +429,13 @@ static vm_fault_t kvm_gmem_fault_user_mapping(struct vm_fault *vmf)
+@@ -397,10 +423,13 @@ static vm_fault_t kvm_gmem_fault_user_mapping(struct vm_fault *vmf)
  	if (((loff_t)vmf->pgoff << PAGE_SHIFT) >= i_size_read(inode))
  		return VM_FAULT_SIGBUS;
  
@@ -333,7 +286,7 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  	if (IS_ERR(folio)) {
  		if (PTR_ERR(folio) == -EAGAIN)
  			return VM_FAULT_RETRY;
-@@ -556,6 +591,51 @@ bool __weak kvm_arch_supports_gmem_init_shared(struct kvm *kvm)
+@@ -556,6 +585,51 @@ bool __weak kvm_arch_supports_gmem_init_shared(struct kvm *kvm)
  	return true;
  }
  
@@ -385,7 +338,7 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  static int __kvm_gmem_create(struct kvm *kvm, loff_t size, u64 flags)
  {
  	static const char *name = "[kvm-gmem]";
-@@ -586,16 +666,9 @@ static int __kvm_gmem_create(struct kvm *kvm, loff_t size, u64 flags)
+@@ -586,16 +660,9 @@ static int __kvm_gmem_create(struct kvm *kvm, loff_t size, u64 flags)
  		goto err_fops;
  	}
  
@@ -405,7 +358,7 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  
  	file = alloc_file_pseudo(inode, kvm_gmem_mnt, name, O_RDWR, &kvm_gmem_fops);
  	if (IS_ERR(file)) {
-@@ -797,9 +870,13 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -803,9 +870,13 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  	if (!file)
  		return -EFAULT;
  
@@ -421,7 +374,7 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  
  	if (!folio_test_uptodate(folio)) {
  		clear_highpage(folio_page(folio, 0));
-@@ -815,6 +892,8 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -821,6 +892,8 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  	else
  		folio_put(folio);
  
@@ -430,7 +383,7 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
  	return r;
  }
  EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_pfn);
-@@ -944,6 +1023,15 @@ static struct inode *kvm_gmem_alloc_inode(struct super_block *sb)
+@@ -952,6 +1025,15 @@ static struct inode *kvm_gmem_alloc_inode(struct super_block *sb)
  
  	mpol_shared_policy_init(&gi->policy, NULL);
  
@@ -441,12 +394,12 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
 +	 * before it's fully initialized results in NULL pointer dereferences
 +	 * and not more subtle bugs.
 +	 */
-+	mt_init_flags(&gi->attributes, MT_FLAGS_LOCK_EXTERN);
++	mt_init_flags(&gi->attributes, MT_FLAGS_LOCK_EXTERN | MT_FLAGS_USE_RCU);
 +
  	gi->flags = 0;
  	INIT_LIST_HEAD(&gi->gmem_file_list);
  	return &gi->vfs_inode;
-@@ -951,7 +1039,26 @@ static struct inode *kvm_gmem_alloc_inode(struct super_block *sb)
+@@ -959,7 +1041,26 @@ static struct inode *kvm_gmem_alloc_inode(struct super_block *sb)
  
  static void kvm_gmem_destroy_inode(struct inode *inode)
  {
@@ -477,8 +430,8 @@ index 69c9d6d546b28..17e5a23fec0a1 100644
 
 ---
 
-## [3] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 02/53] KVM: Rename KVM_GENERIC_MEMORY_ATTRIBUTES to
+## [3] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 02/42] KVM: Rename KVM_GENERIC_MEMORY_ATTRIBUTES to
  KVM_VM_MEMORY_ATTRIBUTES*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -491,6 +444,7 @@ memory attributes without the per-VM support, even in x86.
 No functional change intended.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  arch/x86/include/asm/kvm_host.h |  2 +-
@@ -504,10 +458,10 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  8 files changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c470e40a00aa4..60b997764beef 100644
+index 8a53ca6195701..8bb7c25240e33 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -2369,7 +2369,7 @@ void kvm_configure_mmu(bool enable_tdp, int tdp_forced_root_level,
+@@ -2393,7 +2393,7 @@ void kvm_configure_mmu(bool enable_tdp, int tdp_forced_root_level,
  		       int tdp_max_root_level, int tdp_huge_page_level);
  
  
@@ -548,10 +502,10 @@ index 801bf9e520db3..26f6afd51bbdc 100644
  	select HAVE_KVM_ARCH_GMEM_INVALIDATE
  	select HAVE_KVM_ARCH_GMEM_POPULATE
 diff --git a/arch/x86/kvm/mmu/mmu.c b/arch/x86/kvm/mmu/mmu.c
-index 24fbc9ea502a3..8276d7ca02036 100644
+index f8aa7eda661ee..b53a0c4b4dfca 100644
 --- a/arch/x86/kvm/mmu/mmu.c
 +++ b/arch/x86/kvm/mmu/mmu.c
-@@ -7906,7 +7906,7 @@ void kvm_mmu_pre_destroy_vm(struct kvm *kvm)
+@@ -7971,7 +7971,7 @@ void kvm_mmu_pre_destroy_vm(struct kvm *kvm)
  		vhost_task_stop(kvm->arch.nx_huge_page_recovery_thread);
  }
  
@@ -561,10 +515,10 @@ index 24fbc9ea502a3..8276d7ca02036 100644
  				int level)
  {
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 0a1b63c63d1a9..1560de1e95be0 100644
+index 48f259015ce44..cb4f7432a073d 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -13625,7 +13625,7 @@ static int kvm_alloc_memslot_metadata(struct kvm *kvm,
+@@ -13611,7 +13611,7 @@ static int kvm_alloc_memslot_metadata(struct kvm *kvm,
  		}
  	}
  
@@ -574,7 +528,7 @@ index 0a1b63c63d1a9..1560de1e95be0 100644
  #endif
  
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 4c14aee1fb063..7b9faa3545300 100644
+index 2c5ad9a6d5ce8..091f201251159 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -722,7 +722,7 @@ static inline int kvm_arch_vcpu_memslots_id(struct kvm_vcpu *vcpu)
@@ -717,8 +671,8 @@ index 89489996fbc1e..306153abbafa5 100644
 
 ---
 
-## [4] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 03/53] KVM: Enumerate support for PRIVATE memory iff
+## [4] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 03/42] KVM: Enumerate support for PRIVATE memory iff
  kvm_arch_has_private_mem is defined*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -733,6 +687,7 @@ KVM_MEMORY_ATTRIBUTE_PRIVATE based solely on memory attributes being
 supported _somewhere_ would result in KVM over-reporting support on arm64.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  include/linux/kvm_host.h | 2 +-
@@ -740,7 +695,7 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  2 files changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 7b9faa3545300..7d079f9701346 100644
+index 091f201251159..68142bc962953 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -722,7 +722,7 @@ static inline int kvm_arch_vcpu_memslots_id(struct kvm_vcpu *vcpu)
@@ -770,8 +725,8 @@ index 306153abbafa5..abb9cfa3eb04d 100644
 
 ---
 
-## [5] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 04/53] KVM: Stub in ability to disable per-VM memory
+## [5] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 04/42] KVM: Stub in ability to disable per-VM memory
  attribute tracking*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -793,6 +748,7 @@ whether per-VM tracking is enabled by the CONFIG.
 No functional change intended.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  arch/x86/include/asm/kvm_host.h |  2 +-
@@ -802,10 +758,10 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  4 files changed, 62 insertions(+), 11 deletions(-)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 60b997764beef..c9aa50bcdac2d 100644
+index 8bb7c25240e33..01125be81a131 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -2369,7 +2369,7 @@ void kvm_configure_mmu(bool enable_tdp, int tdp_forced_root_level,
+@@ -2393,7 +2393,7 @@ void kvm_configure_mmu(bool enable_tdp, int tdp_forced_root_level,
  		       int tdp_max_root_level, int tdp_huge_page_level);
  
  
@@ -815,7 +771,7 @@ index 60b997764beef..c9aa50bcdac2d 100644
  #endif
  
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 7d079f9701346..c5ba2cb34e45c 100644
+index 68142bc962953..29694b348df40 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -2528,19 +2528,15 @@ static inline bool kvm_memslot_is_gmem_only(const struct kvm_memory_slot *slot)
@@ -976,8 +932,8 @@ index abb9cfa3eb04d..ee26f1d9b5fda 100644
 
 ---
 
-## [6] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 05/53] KVM: guest_memfd: Wire up
+## [6] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 05/42] KVM: guest_memfd: Wire up
  kvm_get_memory_attributes() to per-gmem attributes*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -1003,12 +959,12 @@ Co-developed-by: Ackerley Tng <ackerleytng@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  include/linux/kvm_host.h |  2 ++
- virt/kvm/guest_memfd.c   | 37 +++++++++++++++++++++++++++++++++++++
+ virt/kvm/guest_memfd.c   | 31 +++++++++++++++++++++++++++++++
  virt/kvm/kvm_main.c      |  3 +++
- 3 files changed, 42 insertions(+)
+ 3 files changed, 36 insertions(+)
 
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c5ba2cb34e45c..28a54298d27db 100644
+index 29694b348df40..7de85474c75bd 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -2557,6 +2557,8 @@ bool kvm_arch_post_set_memory_attributes(struct kvm *kvm,
@@ -1021,10 +977,10 @@ index c5ba2cb34e45c..28a54298d27db 100644
  int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  		     gfn_t gfn, kvm_pfn_t *pfn, struct page **page,
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 17e5a23fec0a1..e56f89640d050 100644
+index 117b726f670e8..c55879e033d96 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -515,6 +515,43 @@ static int kvm_gmem_mmap(struct file *file, struct vm_area_struct *vma)
+@@ -509,6 +509,37 @@ static int kvm_gmem_mmap(struct file *file, struct vm_area_struct *vma)
  	return 0;
  }
  
@@ -1032,7 +988,6 @@ index 17e5a23fec0a1..e56f89640d050 100644
 +{
 +	struct kvm_memory_slot *slot = gfn_to_memslot(kvm, gfn);
 +	struct inode *inode;
-+	unsigned long attrs;
 +
 +	/*
 +	 * If this gfn has no associated memslot, there's no chance of the gfn
@@ -1049,19 +1004,14 @@ index 17e5a23fec0a1..e56f89640d050 100644
 +	inode = file_inode(file);
 +
 +	/*
-+	 * Acquire the filemap lock to ensure the mtree lookup gets a
-+	 * stable result.  The caller _must_ still protect consumption
-+	 * of private vs. shared by checking
++	 * Rely on the maple tree's internal RCU lock to ensure a
++	 * stable result. This result can become stale as soon as the
++	 * lock is dropped, so the caller _must_ still protect
++	 * consumption of private vs. shared by checking
 +	 * mmu_invalidate_retry_gfn() under mmu_lock to serialize
-+	 * against ongoing attribute updates.  Acquiring the filemap
-+	 * lock only ensures a stable _lookup_, the result can become
-+	 * stale as soon as the lock is dropped.
++	 * against ongoing attribute updates.
 +	 */
-+	filemap_invalidate_lock_shared(inode->i_mapping);
-+	attrs = kvm_gmem_get_attributes(inode, kvm_gmem_get_index(slot, gfn));
-+	filemap_invalidate_unlock_shared(inode->i_mapping);
-+
-+	return attrs;
++	return kvm_gmem_get_attributes(inode, kvm_gmem_get_index(slot, gfn));
 +}
 +EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_memory_attributes);
 +
@@ -1085,62 +1035,9 @@ index ee26f1d9b5fda..4139e903f756a 100644
 
 ---
 
-## [7] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 06/53] KVM: x86/mmu: Bug the VM if gmem attributes
- are queried to determine max mapping level*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-When the maximum mapping level is queried, KVM's MMU lock is held, and
-while the MMU lock is held, guest_memfd cannot take the
-filemap_invalidate_lock() to look up the current shared/private state of
-the gfn, for these reasons:
-
-+ The MMU lock is a spinlock or rwlock and cannot be held while taking a
-  lock that can sleep.
-+ In guest_memfd's code paths (such as truncate), the
-  filemap_invalidate_lock() is held while taking the MMU lock, and taking
-  the locks in reverse order would introduce a AB-BA deadlock.
-
-Currently, the maximum mapping level is only queried from guest_memfd in
-the process of recovering huge pages, if dirty logging is disabled on a
-memslot. Dirty logging is not currently supported for guest_memfd, and
-guest_memfd memslots also cannot be updated.
-
-For now, bug the VM if guest_memfd needs to be queried to determine the
-maximum mapping level. This guard can be removed if/when support is added.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- arch/x86/kvm/mmu/mmu.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/x86/kvm/mmu/mmu.c b/arch/x86/kvm/mmu/mmu.c
-index 8276d7ca02036..2cc848bddf190 100644
---- a/arch/x86/kvm/mmu/mmu.c
-+++ b/arch/x86/kvm/mmu/mmu.c
-@@ -3364,6 +3364,15 @@ int kvm_mmu_max_mapping_level(struct kvm *kvm, struct kvm_page_fault *fault,
- 		max_level = fault->max_level;
- 		is_private = fault->is_private;
- 	} else {
-+		/*
-+		 * Memory attributes cannot be obtained from guest_memfd while
-+		 * the MMU lock is held.
-+		 */
-+		if (KVM_BUG_ON(static_call_query(__kvm_get_memory_attributes) ==
-+			       kvm_gmem_get_memory_attributes, kvm)) {
-+			return 0;
-+		}
-+
- 		max_level = PG_LEVEL_NUM;
- 		is_private = kvm_mem_is_private(kvm, gfn);
- 	}
-
----
-
-## [8] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 07/53] KVM: guest_memfd: Update kvm_gmem_populate()
- to use gmem attributes*
+## [7] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 06/42] KVM: guest_memfd: Update kvm_gmem_populate() to
+ use gmem attributes*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -1154,6 +1051,7 @@ specific to generic per-VM attributes.
 
 Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  arch/x86/kvm/mmu/mmu.c   |  2 +-
@@ -1163,10 +1061,10 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  4 files changed, 38 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu/mmu.c b/arch/x86/kvm/mmu/mmu.c
-index 2cc848bddf190..d3da387340a9d 100644
+index b53a0c4b4dfca..3f70859232b07 100644
 --- a/arch/x86/kvm/mmu/mmu.c
 +++ b/arch/x86/kvm/mmu/mmu.c
-@@ -8004,7 +8004,7 @@ static bool hugepage_has_attrs(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -8060,7 +8060,7 @@ static bool hugepage_has_attrs(struct kvm *kvm, struct kvm_memory_slot *slot,
  	const unsigned long end = start + KVM_PAGES_PER_HPAGE(level);
  
  	if (level == PG_LEVEL_2M)
@@ -1176,7 +1074,7 @@ index 2cc848bddf190..d3da387340a9d 100644
  	for (gfn = start; gfn < end; gfn += KVM_PAGES_PER_HPAGE(level - 1)) {
  		if (hugepage_test_mixed(slot, gfn, level - 1) ||
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 28a54298d27db..1deab76dc0a2c 100644
+index 7de85474c75bd..3039b291e4b09 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -2549,12 +2549,24 @@ static inline bool kvm_mem_is_private(struct kvm *kvm, gfn_t gfn)
@@ -1206,10 +1104,10 @@ index 28a54298d27db..1deab76dc0a2c 100644
  
  unsigned long kvm_gmem_get_memory_attributes(struct kvm *kvm, gfn_t gfn);
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index e56f89640d050..758ac24a0ff40 100644
+index c55879e033d96..78e5435967341 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -936,12 +936,31 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -930,12 +930,31 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_pfn);
  
  #ifdef CONFIG_HAVE_KVM_ARCH_GMEM_POPULATE
@@ -1241,7 +1139,7 @@ index e56f89640d050..758ac24a0ff40 100644
  	struct folio *folio;
  	kvm_pfn_t pfn;
  	int ret;
-@@ -956,9 +975,8 @@ static long __kvm_gmem_populate(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -950,9 +969,8 @@ static long __kvm_gmem_populate(struct kvm *kvm, struct kvm_memory_slot *slot,
  
  	folio_unlock(folio);
  
@@ -1289,9 +1187,9 @@ index 4139e903f756a..0a4024948711a 100644
 
 ---
 
-## [9] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 08/53] KVM: guest_memfd: Only prepare folios for
- private pages*
+## [8] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for private
+ pages*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -1311,16 +1209,18 @@ folios.
 Preparation will be undone on freeing (see kvm_gmem_free_folio()) and on
 conversion to shared.
 
+Signed-off-by: Michael Roth <michael.roth@amd.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  virt/kvm/guest_memfd.c | 9 ++++++---
  1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 758ac24a0ff40..506219e2359eb 100644
+index 78e5435967341..adf57a3a1f5dd 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -900,6 +900,7 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -894,6 +894,7 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  		     int *max_order)
  {
  	pgoff_t index = kvm_gmem_get_index(slot, gfn);
@@ -1328,7 +1228,7 @@ index 758ac24a0ff40..506219e2359eb 100644
  	struct folio *folio;
  	int r = 0;
  
-@@ -907,7 +908,8 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -901,7 +902,8 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  	if (!file)
  		return -EFAULT;
  
@@ -1338,7 +1238,7 @@ index 758ac24a0ff40..506219e2359eb 100644
  
  	folio = __kvm_gmem_get_pfn(file, slot, index, pfn, max_order);
  	if (IS_ERR(folio)) {
-@@ -920,7 +922,8 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -914,7 +916,8 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  		folio_mark_uptodate(folio);
  	}
  
@@ -1348,7 +1248,7 @@ index 758ac24a0ff40..506219e2359eb 100644
  
  	folio_unlock(folio);
  
-@@ -930,7 +933,7 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
+@@ -924,7 +927,7 @@ int kvm_gmem_get_pfn(struct kvm *kvm, struct kvm_memory_slot *slot,
  		folio_put(folio);
  
  out:
@@ -1360,8 +1260,8 @@ index 758ac24a0ff40..506219e2359eb 100644
 
 ---
 
-## [10] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 09/53] KVM: Move kvm_supported_mem_attributes() to
+## [9] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 08/42] KVM: Move kvm_supported_mem_attributes() to
  kvm_host.h*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -1373,6 +1273,7 @@ used later by guest_memfd.
 
 No functional change intended.
 
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  include/linux/kvm_host.h | 10 ++++++++++
@@ -1380,7 +1281,7 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  2 files changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 1deab76dc0a2c..f9ea95e33d050 100644
+index 3039b291e4b09..b67e7b308d280 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -2529,6 +2529,16 @@ static inline bool kvm_memslot_is_gmem_only(const struct kvm_memory_slot *slot)
@@ -1424,14 +1325,14 @@ index 0a4024948711a..ff20e63143642 100644
 
 ---
 
-## [11] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 10/53] KVM: guest_memfd: Add basic support for
+## [10] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 09/42] KVM: guest_memfd: Add base support for
  KVM_SET_MEMORY_ATTRIBUTES2*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
-Introduce basic support for KVM_SET_MEMORY_ATTRIBUTES2 in guest_memfd,
-which just updates attributes tracked by guest_memfd.
+Introduce base support for KVM_SET_MEMORY_ATTRIBUTES2 in guest_memfd, which
+just updates attributes tracked by guest_memfd.
 
 Validate input fields in general. Guard usage of KVM_SET_MEMORY_ATTRIBUTES2
 by making sure requested attributes are supported for this instance of kvm.
@@ -1449,11 +1350,12 @@ The process of setting memory attributes is set up such that the later half
 will not fail due to allocation. Any necessary checks are performed before
 the point of no return.
 
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 Co-developed-by: Vishal Annapurve <vannapurve@google.com>
 Signed-off-by: Vishal Annapurve <vannapurve@google.com>
 Co-developed-by: Sean Christoperson <seanjc@google.com>
 Signed-off-by: Sean Christoperson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
+Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  include/uapi/linux/kvm.h |  13 ++++++
  virt/kvm/Kconfig         |   1 +
@@ -1498,10 +1400,10 @@ index 3fea89c45cfb4..e371e079e2c50 100644
  
  config HAVE_KVM_ARCH_GMEM_PREPARE
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 506219e2359eb..9a26eca717047 100644
+index adf57a3a1f5dd..426917d22a2b6 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -552,11 +552,125 @@ unsigned long kvm_gmem_get_memory_attributes(struct kvm *kvm, gfn_t gfn)
+@@ -540,11 +540,125 @@ unsigned long kvm_gmem_get_memory_attributes(struct kvm *kvm, gfn_t gfn)
  }
  EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_memory_attributes);
  
@@ -1521,13 +1423,13 @@ index 506219e2359eb..9a26eca717047 100644
 +	void *entry;
 +
 +	/* Try extending range. entry is NULL on overflow/wrap-around. */
-+	mas_set_range(mas, end, end);
++	mas_set(mas, end);
 +	entry = mas_find(mas, end);
 +	if (entry && xa_to_value(entry) == attributes)
 +		last = mas->last;
 +
 +	if (start > 0) {
-+		mas_set_range(mas, start - 1, start - 1);
++		mas_set(mas, start - 1);
 +		entry = mas_find(mas, start - 1);
 +		if (entry && xa_to_value(entry) == attributes)
 +			start = mas->index;
@@ -1653,8 +1555,8 @@ index ff20e63143642..4d7bf52b7b717 100644
 
 ---
 
-## [12] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 11/53] KVM: guest_memfd: Ensure pages are not in use
+## [11] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 10/42] KVM: guest_memfd: Ensure pages are not in use
  before conversion*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -1675,13 +1577,14 @@ the error_offset back to userspace so that it can potentially retry the
 operation or handle the failure gracefully.
 
 Suggested-by: David Hildenbrand <david@kernel.org>
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 Co-developed-by: Vishal Annapurve <vannapurve@google.com>
 Signed-off-by: Vishal Annapurve <vannapurve@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
+Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  include/uapi/linux/kvm.h |  3 ++-
- virt/kvm/guest_memfd.c   | 65 ++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 62 insertions(+), 6 deletions(-)
+ virt/kvm/guest_memfd.c   | 68 ++++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 65 insertions(+), 6 deletions(-)
 
 diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
 index e6bbf68a83813..0b55258573d3d 100644
@@ -1698,10 +1601,10 @@ index e6bbf68a83813..0b55258573d3d 100644
  
  #define KVM_MEMORY_ATTRIBUTE_PRIVATE           (1ULL << 3)
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 9a26eca717047..e87a2b72ff802 100644
+index 426917d22a2b6..2767992955752 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -584,9 +584,42 @@ static int kvm_gmem_mas_preallocate(struct ma_state *mas, u64 attributes,
+@@ -572,9 +572,45 @@ static int kvm_gmem_mas_preallocate(struct ma_state *mas, u64 attributes,
  	return mas_preallocate(mas, xa_mk_value(attributes), GFP_KERNEL);
  }
  
@@ -1713,10 +1616,13 @@ index 9a26eca717047..e87a2b72ff802 100644
 +	pgoff_t last = start + nr_pages - 1;
 +	struct folio_batch fbatch;
 +	bool safe = true;
++	pgoff_t next;
 +	int i;
 +
 +	folio_batch_init(&fbatch);
-+	while (safe && filemap_get_folios(mapping, &start, last, &fbatch)) {
++
++	next = start;
++	while (safe && filemap_get_folios(mapping, &next, last, &fbatch)) {
 +
 +		for (i = 0; i < folio_batch_count(&fbatch); ++i) {
 +			struct folio *folio = fbatch.folios[i];
@@ -1724,7 +1630,7 @@ index 9a26eca717047..e87a2b72ff802 100644
 +			if (folio_ref_count(folio) !=
 +			    folio_nr_pages(folio) + filemap_get_folios_refcount) {
 +				safe = false;
-+				*err_index = folio->index;
++				*err_index = max(start, folio->index);
 +				break;
 +			}
 +		}
@@ -1745,7 +1651,7 @@ index 9a26eca717047..e87a2b72ff802 100644
  	struct address_space *mapping = inode->i_mapping;
  	struct gmem_inode *gi = GMEM_I(inode);
  	pgoff_t end = start + nr_pages;
-@@ -600,8 +633,21 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
+@@ -588,8 +624,21 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
  
  	mas_init(&mas, mt, start);
  	r = kvm_gmem_mas_preallocate(&mas, attrs, start, nr_pages);
@@ -1768,7 +1674,7 @@ index 9a26eca717047..e87a2b72ff802 100644
  
  	/*
  	 * From this point on guest_memfd has performed necessary
-@@ -621,9 +667,10 @@ static long kvm_gmem_set_attributes(struct file *file, void __user *argp)
+@@ -609,9 +658,10 @@ static long kvm_gmem_set_attributes(struct file *file, void __user *argp)
  	struct gmem_file *f = file->private_data;
  	struct inode *inode = file_inode(file);
  	struct kvm_memory_attributes2 attrs;
@@ -1780,7 +1686,7 @@ index 9a26eca717047..e87a2b72ff802 100644
  
  	if (copy_from_user(&attrs, argp, sizeof(attrs)))
  		return -EFAULT;
-@@ -647,8 +694,16 @@ static long kvm_gmem_set_attributes(struct file *file, void __user *argp)
+@@ -635,8 +685,16 @@ static long kvm_gmem_set_attributes(struct file *file, void __user *argp)
  
  	nr_pages = attrs.size >> PAGE_SHIFT;
  	index = attrs.offset >> PAGE_SHIFT;
@@ -1802,9 +1708,9 @@ index 9a26eca717047..e87a2b72ff802 100644
 
 ---
 
-## [13] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 12/53] KVM: guest_memfd: Call arch invalidate hooks
- on conversion*
+## [12] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 11/42] KVM: guest_memfd: Call arch invalidate hooks on
+ conversion*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -1821,16 +1727,17 @@ shared state.
 Invoke this helper after indicating to KVM's mmu code that an invalidation
 is in progress to stop in-flight page faults from succeeding.
 
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  virt/kvm/guest_memfd.c | 41 +++++++++++++++++++++++++++++++++++++++++
  1 file changed, 41 insertions(+)
 
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index e87a2b72ff802..d563d80d4accb 100644
+index 2767992955752..c9c5b9f074baf 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -615,6 +615,42 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
+@@ -606,6 +606,42 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
  	return safe;
  }
  
@@ -1873,7 +1780,7 @@ index e87a2b72ff802..d563d80d4accb 100644
  static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
  				     size_t nr_pages, uint64_t attrs,
  				     pgoff_t *err_index)
-@@ -655,7 +691,12 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
+@@ -646,7 +682,12 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
  	 */
  
  	kvm_gmem_invalidate_begin(inode, start, end);
@@ -1889,9 +1796,9 @@ index e87a2b72ff802..d563d80d4accb 100644
 
 ---
 
-## [14] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 13/53] KVM: guest_memfd: Return early if range
- already has requested attributes*
+## [13] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 12/42] KVM: guest_memfd: Return early if range already
+ has requested attributes*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -1901,16 +1808,17 @@ range has given attributes.
 Optimize setting memory attributes by returning early if all pages in the
 requested range already has the requested attributes.
 
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- virt/kvm/guest_memfd.c | 33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ virt/kvm/guest_memfd.c | 33 +++++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 10 deletions(-)
 
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index d563d80d4accb..d8bdb51c50cf0 100644
+index c9c5b9f074baf..4e1028843953d 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -92,6 +92,23 @@ static bool kvm_gmem_is_shared_mem(struct inode *inode, pgoff_t index)
+@@ -86,6 +86,23 @@ static bool kvm_gmem_is_shared_mem(struct inode *inode, pgoff_t index)
  	return !kvm_gmem_is_private_mem(inode, index);
  }
  
@@ -1934,19 +1842,24 @@ index d563d80d4accb..d8bdb51c50cf0 100644
  static int __kvm_gmem_prepare_folio(struct kvm *kvm, struct kvm_memory_slot *slot,
  				    pgoff_t index, struct folio *folio)
  {
-@@ -667,6 +684,11 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
+@@ -652,12 +669,15 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
+ 	pgoff_t end = start + nr_pages;
+ 	struct maple_tree *mt;
+ 	struct ma_state mas;
+-	int r;
++	int r = 0;
+ 
+ 	mt = &gi->attributes;
  
  	filemap_invalidate_lock(mapping);
  
-+	if (kvm_gmem_range_has_attributes(mt, start, nr_pages, attrs)) {
-+		r = 0;
++	if (kvm_gmem_range_has_attributes(mt, start, nr_pages, attrs))
 +		goto out;
-+	}
 +
  	mas_init(&mas, mt, start);
  	r = kvm_gmem_mas_preallocate(&mas, attrs, start, nr_pages);
  	if (r) {
-@@ -1152,20 +1174,13 @@ EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_pfn);
+@@ -1149,20 +1169,13 @@ EXPORT_SYMBOL_FOR_KVM_INTERNAL(kvm_gmem_get_pfn);
  static bool kvm_gmem_range_is_private(struct gmem_inode *gi, pgoff_t index,
  				      size_t nr_pages, struct kvm *kvm, gfn_t gfn)
  {
@@ -1972,8 +1885,8 @@ index d563d80d4accb..d8bdb51c50cf0 100644
 
 ---
 
-## [15] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 14/53] KVM: guest_memfd: Advertise
+## [14] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 13/42] KVM: guest_memfd: Advertise
  KVM_SET_MEMORY_ATTRIBUTES2 ioctl*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -1997,15 +1910,16 @@ and add the necessary UAPI definitions and capability checks.
 
 Suggested-by: Sean Christopherson <seanjc@google.com>
 Suggested-by: Michael Roth <michael.roth@amd.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- Documentation/virt/kvm/api.rst | 72 +++++++++++++++++++++++++++++++++++++++++-
+ Documentation/virt/kvm/api.rst | 78 +++++++++++++++++++++++++++++++++++++++++-
  include/uapi/linux/kvm.h       |  2 ++
  virt/kvm/kvm_main.c            |  5 +++
- 3 files changed, 78 insertions(+), 1 deletion(-)
+ 3 files changed, 84 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/virt/kvm/api.rst b/Documentation/virt/kvm/api.rst
-index 52bbbb553ce10..6ce10c8ddb634 100644
+index 52bbbb553ce10..55c2701d9ed49 100644
 --- a/Documentation/virt/kvm/api.rst
 +++ b/Documentation/virt/kvm/api.rst
 @@ -117,7 +117,7 @@ description:
@@ -2026,7 +1940,7 @@ index 52bbbb553ce10..6ce10c8ddb634 100644
  4.141 KVM_SET_MEMORY_ATTRIBUTES
  -------------------------------
  
-@@ -6553,6 +6555,74 @@ KVM_S390_KEYOP_SSKE
+@@ -6553,6 +6555,80 @@ KVM_S390_KEYOP_SSKE
    Sets the storage key for the guest address ``guest_addr`` to the key
    specified in ``key``, returning the previous value in ``key``.
  
@@ -2086,6 +2000,12 @@ index 52bbbb553ce10..6ce10c8ddb634 100644
 +KVM_SET_MEMORY_ATTRIBUTES2 on the guest_memfd again with
 +KVM_MEMORY_ATTRIBUTE_PRIVATE unset.
 +
++KVM does not directly manipulate the memory contents of pages during
++attribute updates. However, the process of setting these attributes,
++which includes operations such as unmapping pages from the host or
++stage-2 page tables, may result in side effects on memory contents
++that vary across different trusted firmware implementations.
++
 +If this ioctl returns -EAGAIN, the offset of the page with unexpected
 +refcounts will be returned in `error_offset`. This can occur if there
 +are transient refcounts on the pages, taken by other parts of the
@@ -2140,9 +2060,9 @@ index 4d7bf52b7b717..cec02d68d7039 100644
 
 ---
 
-## [16] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 15/53] KVM: guest_memfd: Handle lru_add fbatch
- refcounts during conversion safety check*
+## [15] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 14/42] KVM: guest_memfd: Handle lru_add fbatch refcounts
+ during conversion safety check*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -2163,6 +2083,7 @@ guest_memfd folios are unevictable, so they can only reside in the lru_add
 fbatch. If the folio's refcount is still unsafe after draining, then the
 conversion is truly deemed unsafe.
 
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  mm/swap.c              |  2 ++
@@ -2190,7 +2111,7 @@ index 5cc44f0de9877..3134d9d3d7c30 100644
  atomic_t lru_disable_count = ATOMIC_INIT(0);
  
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index d8bdb51c50cf0..18dec87dd4baa 100644
+index 4e1028843953d..352cb8b837468 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
 @@ -8,6 +8,7 @@
@@ -2201,16 +2122,17 @@ index d8bdb51c50cf0..18dec87dd4baa 100644
  
  #include "kvm_mm.h"
  
-@@ -608,18 +609,27 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
+@@ -596,6 +597,7 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
  	const int filemap_get_folios_refcount = 1;
  	pgoff_t last = start + nr_pages - 1;
  	struct folio_batch fbatch;
 +	bool lru_drained = false;
  	bool safe = true;
+ 	pgoff_t next;
  	int i;
- 
- 	folio_batch_init(&fbatch);
- 	while (safe && filemap_get_folios(mapping, &start, last, &fbatch)) {
+@@ -605,12 +607,20 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
+ 	next = start;
+ 	while (safe && filemap_get_folios(mapping, &next, last, &fbatch)) {
  
 -		for (i = 0; i < folio_batch_count(&fbatch); ++i) {
 +		for (i = 0; i < folio_batch_count(&fbatch);) {
@@ -2230,14 +2152,14 @@ index d8bdb51c50cf0..18dec87dd4baa 100644
 +				lru_add_drain_all();
 +				lru_drained = true;
 +			} else {
- 				*err_index = folio->index;
+ 				*err_index = max(start, folio->index);
  				break;
  			}
 
 ---
 
-## [17] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 16/53] KVM: guest_memfd: Use actual size for
+## [16] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 15/42] KVM: guest_memfd: Use actual size for
  invalidation in kvm_gmem_release()*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -2256,10 +2178,10 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 18dec87dd4baa..a8a5e37c982a4 100644
+index 352cb8b837468..38b24f79ec223 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -376,6 +376,7 @@ static int kvm_gmem_release(struct inode *inode, struct file *file)
+@@ -370,6 +370,7 @@ static int kvm_gmem_release(struct inode *inode, struct file *file)
  	struct kvm_memory_slot *slot;
  	struct kvm *kvm = f->kvm;
  	unsigned long index;
@@ -2267,7 +2189,7 @@ index 18dec87dd4baa..a8a5e37c982a4 100644
  
  	/*
  	 * Prevent concurrent attempts to *unbind* a memslot.  This is the last
-@@ -402,9 +403,10 @@ static int kvm_gmem_release(struct inode *inode, struct file *file)
+@@ -396,9 +397,10 @@ static int kvm_gmem_release(struct inode *inode, struct file *file)
  	 * Zap all SPTEs pointed at by this file.  Do not free the backing
  	 * memory, as its lifetime is associated with the inode, not the file.
  	 */
@@ -2282,9 +2204,9 @@ index 18dec87dd4baa..a8a5e37c982a4 100644
 
 ---
 
-## [18] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 17/53] KVM: guest_memfd: Determine invalidation
- filter from memory attributes*
+## [17] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 16/42] KVM: guest_memfd: Determine invalidation filter
+ from memory attributes*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -2308,16 +2230,17 @@ Update kvm_gmem_invalidate_begin and kvm_gmem_release to pass the range
 parameters to the filter helper to ensure invalidation accurately
 targets the memory types present in the affected range.
 
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  virt/kvm/guest_memfd.c | 27 ++++++++++++++++++++-------
  1 file changed, 20 insertions(+), 7 deletions(-)
 
 diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index a8a5e37c982a4..85e8b3a981307 100644
+index 38b24f79ec223..2a719faebed8a 100644
 --- a/virt/kvm/guest_memfd.c
 +++ b/virt/kvm/guest_memfd.c
-@@ -199,12 +199,24 @@ static struct folio *kvm_gmem_get_folio(struct inode *inode, pgoff_t index)
+@@ -193,12 +193,24 @@ static struct folio *kvm_gmem_get_folio(struct inode *inode, pgoff_t index)
  	return folio;
  }
  
@@ -2346,7 +2269,7 @@ index a8a5e37c982a4..85e8b3a981307 100644
  }
  
  static void __kvm_gmem_invalidate_begin(struct gmem_file *f, pgoff_t start,
-@@ -250,7 +262,7 @@ static void kvm_gmem_invalidate_begin(struct inode *inode, pgoff_t start,
+@@ -244,7 +256,7 @@ static void kvm_gmem_invalidate_begin(struct inode *inode, pgoff_t start,
  	enum kvm_gfn_range_filter attr_filter;
  	struct gmem_file *f;
  
@@ -2355,7 +2278,7 @@ index a8a5e37c982a4..85e8b3a981307 100644
  
  	kvm_gmem_for_each_file(f, inode)
  		__kvm_gmem_invalidate_begin(f, start, end, attr_filter);
-@@ -373,6 +385,7 @@ static long kvm_gmem_fallocate(struct file *file, int mode, loff_t offset,
+@@ -367,6 +379,7 @@ static long kvm_gmem_fallocate(struct file *file, int mode, loff_t offset,
  static int kvm_gmem_release(struct inode *inode, struct file *file)
  {
  	struct gmem_file *f = file->private_data;
@@ -2363,7 +2286,7 @@ index a8a5e37c982a4..85e8b3a981307 100644
  	struct kvm_memory_slot *slot;
  	struct kvm *kvm = f->kvm;
  	unsigned long index;
-@@ -404,8 +417,8 @@ static int kvm_gmem_release(struct inode *inode, struct file *file)
+@@ -398,8 +411,8 @@ static int kvm_gmem_release(struct inode *inode, struct file *file)
  	 * memory, as its lifetime is associated with the inode, not the file.
  	 */
  	end = i_size_read(inode) >> PAGE_SHIFT;
@@ -2377,8 +2300,8 @@ index a8a5e37c982a4..85e8b3a981307 100644
 
 ---
 
-## [19] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 18/53] KVM: Move KVM_VM_MEMORY_ATTRIBUTES config
+## [18] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 17/42] KVM: Move KVM_VM_MEMORY_ATTRIBUTES config
  definition to x86*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -2398,6 +2321,7 @@ Leave the code itself in common KVM so that it's trivial to undo this
 change if new per-VM attributes do come along.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  arch/x86/kvm/Kconfig | 4 ++++
@@ -2437,9 +2361,9 @@ index e371e079e2c50..663de6421eda2 100644
 
 ---
 
-## [20] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 19/53] KVM: Let userspace disable per-VM mem
- attributes, enable per-gmem attributes*
+## [19] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 18/42] KVM: Let userspace disable per-VM mem attributes,
+ enable per-gmem attributes*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -2518,8 +2442,8 @@ index cec02d68d7039..ba195bb239aaa 100644
 
 ---
 
-## [21] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 20/53] KVM: guest_memfd: Enable INIT_SHARED on
+## [20] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 19/42] KVM: guest_memfd: Enable INIT_SHARED on
  guest_memfd for x86 Coco VMs*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -2531,16 +2455,17 @@ are disabled, i.e. when it's actually possible for a guest_memfd instance
 to contain shared memory.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  arch/x86/kvm/x86.c | 11 +++++------
  1 file changed, 5 insertions(+), 6 deletions(-)
 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 1560de1e95be0..6609957ecfea3 100644
+index cb4f7432a073d..e898ffd21b608 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -14172,14 +14172,13 @@ bool kvm_arch_no_poll(struct kvm_vcpu *vcpu)
+@@ -14158,14 +14158,13 @@ bool kvm_arch_no_poll(struct kvm_vcpu *vcpu)
  }
  
  #ifdef CONFIG_KVM_GUEST_MEMFD
@@ -2563,482 +2488,8 @@ index 1560de1e95be0..6609957ecfea3 100644
 
 ---
 
-## [22] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 21/53] KVM: guest_memfd: Introduce default handlers
- for content modes*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Currently, when setting memory attributes, KVM provides no guarantees about
-the memory contents.
-
-Introduce default handlers for applying memory content modes, which
-different architectures should override.
-
-These handlers will be used later to apply memory content modes during set
-memory attributes requests.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- include/linux/kvm_host.h | 12 +++++++++
- virt/kvm/guest_memfd.c   | 66 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 78 insertions(+)
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index f9ea95e33d050..458bad0083c37 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -741,6 +741,18 @@ static inline u64 kvm_gmem_get_supported_flags(struct kvm *kvm)
- 
- 	return flags;
- }
-+
-+u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private);
-+int kvm_gmem_apply_content_mode_zero(struct inode *inode, pgoff_t start,
-+				     pgoff_t end);
-+int kvm_arch_gmem_apply_content_mode_zero(struct kvm *kvm, struct inode *inode,
-+					  pgoff_t start, pgoff_t end);
-+int kvm_arch_gmem_apply_content_mode_preserve(struct kvm *kvm,
-+					      struct inode *inode,
-+					      pgoff_t start, pgoff_t end);
-+int kvm_arch_gmem_apply_content_mode_unspecified(struct kvm *kvm,
-+						 struct inode *inode,
-+						 pgoff_t start, pgoff_t end);
- #endif
- 
- #ifndef kvm_arch_has_readonly_mem
-diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 85e8b3a981307..b0e4bb554cdf3 100644
---- a/virt/kvm/guest_memfd.c
-+++ b/virt/kvm/guest_memfd.c
-@@ -693,6 +693,72 @@ static void kvm_gmem_invalidate(struct inode *inode, pgoff_t start, pgoff_t end)
- static void kvm_gmem_invalidate(struct inode *inode, pgoff_t start, pgoff_t end) {}
- #endif
- 
-+u64 __weak kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private)
-+{
-+	/* Architectures must override with supported modes. */
-+	return 0;
-+}
-+
-+int kvm_gmem_apply_content_mode_zero(struct inode *inode, pgoff_t start,
-+				     pgoff_t end)
-+{
-+	struct address_space *mapping = inode->i_mapping;
-+	struct folio_batch fbatch;
-+	int ret = 0;
-+	int i;
-+
-+	folio_batch_init(&fbatch);
-+	while (!ret && filemap_get_folios(mapping, &start, end - 1, &fbatch)) {
-+		for (i = 0; !ret && i < folio_batch_count(&fbatch); ++i) {
-+			struct folio *folio = fbatch.folios[i];
-+
-+			folio_lock(folio);
-+
-+			if (folio_test_hwpoison(folio)) {
-+				ret = -EHWPOISON;
-+			} else {
-+				/*
-+				 * Hard-coding zeroed range since
-+				 * guest_memfd only supports PAGE_SIZE
-+				 * folios and start and end have been
-+				 * checked to be PAGE_SIZE aligned.
-+				 */
-+				WARN_ON_ONCE(folio_test_large(folio));
-+				folio_zero_segment(folio, 0, PAGE_SIZE);
-+			}
-+
-+			folio_unlock(folio);
-+		}
-+
-+		folio_batch_release(&fbatch);
-+		cond_resched();
-+	}
-+
-+	return ret;
-+}
-+
-+int __weak kvm_arch_gmem_apply_content_mode_unspecified(struct kvm *kvm,
-+							struct inode *inode,
-+							pgoff_t start,
-+							pgoff_t end)
-+{
-+	return 0;
-+}
-+
-+int __weak kvm_arch_gmem_apply_content_mode_zero(struct kvm *kvm,
-+						 struct inode *inode,
-+						 pgoff_t start, pgoff_t end)
-+{
-+	return kvm_gmem_apply_content_mode_zero(inode, start, end);
-+}
-+
-+int __weak kvm_arch_gmem_apply_content_mode_preserve(struct kvm *kvm,
-+						     struct inode *inode,
-+						     pgoff_t start, pgoff_t end)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
- 				     size_t nr_pages, uint64_t attrs,
- 				     pgoff_t *err_index)
-
----
-
-## [23] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 22/53] KVM: guest_memfd: Apply content modes while
- setting memory attributes*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Provide defined memory content modes so that KVM can make guarantees about
-memory content after setting memory attributes, according to userspace
-requests.
-
-Suggested-by: Sean Christoperson <seanjc@google.com>
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- Documentation/virt/kvm/api.rst | 61 ++++++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/kvm.h       |  4 +++
- virt/kvm/guest_memfd.c         | 56 ++++++++++++++++++++++++++++++++++++--
- 3 files changed, 119 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/virt/kvm/api.rst b/Documentation/virt/kvm/api.rst
-index 6ce10c8ddb634..61b9974ba52e9 100644
---- a/Documentation/virt/kvm/api.rst
-+++ b/Documentation/virt/kvm/api.rst
-@@ -6573,6 +6573,8 @@ Errors:
-   EAGAIN     Some page within requested range had unexpected refcounts. The
-              offset of the page will be returned in `error_offset`.
-   ENOMEM     Ran out of memory trying to track private/shared state
-+  EOPNOTSUPP There is no way for KVM to guarantee in-memory contents as
-+             requested.
-   ========== ===============================================================
- 
- KVM_SET_MEMORY_ATTRIBUTES2 is an extension to
-@@ -6621,6 +6623,65 @@ on the shared pages, such as refcounts taken by get_user_pages(), and
- try the ioctl again. A possible source of these long term refcounts is
- if the guest_memfd memory was pinned in IOMMU page tables.
- 
-+By default, KVM makes no guarantees about the in-memory values after
-+memory is convert to/from shared/private.  Optionally, userspace may
-+instruct KVM to ensure the contents of memory are zeroed or preserved,
-+e.g. to enable in-place sharing of data, or as an optimization to
-+avoid having to re-zero memory when userspace could have relied on the
-+trusted entity to guarantee the memory will be zeroed as part of the
-+entire conversion process.
-+
-+The content modes available are as follows:
-+
-+``KVM_SET_MEMORY_ATTRIBUTES2_ZERO``
-+
-+  On conversion, KVM guarantees all entities that have "allowed"
-+  access to the memory will read zeros.  E.g. on private to shared
-+  conversion, both trusted and untrusted code will read zeros.
-+
-+  Zeroing is currently only supported for private-to-shared
-+  conversions, as KVM in general is untrusted and thus cannot
-+  guarantee the guest (or any trusted entity) will read zeros after
-+  conversion.  Note, some CoCo implementations do zero memory contents
-+  such that the guest reads zeros after conversion, and the guest may
-+  choose to rely on that behavior.  However, that's a contract between
-+  the trusted CoCo entity and the guest, not between KVM and the
-+  guest.
-+
-+``KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE``
-+
-+  On conversion, KVM guarantees memory contents will be preserved with
-+  respect to the last written unencrypted value.  As a concrete
-+  example, if the host writes ``0xbeef`` to shared memory and converts
-+  the memory to private, the guest will also read ``0xbeef``, even if
-+  the in-memory data is encrypted as part of the conversion.  And vice
-+  versa, if the guest writes ``0xbeef`` to private memory and then
-+  converts the memory to shared, the host (and guest) will read
-+  ``0xbeef`` (if the memory is accessible).
-+
-+Note: These content modes apply to the entire requested range, not
-+just the parts of the range that underwent conversion. For example, if
-+this was the initial state:
-+
-+  * [0x0000, 0x1000): shared
-+  * [0x1000, 0x2000): private
-+  * [0x2000, 0x3000): shared
-+
-+and range [0x0000, 0x3000) was set to shared, the content mode would
-+apply to all memory in [0x0000, 0x3000), not just the range that
-+underwent conversion [0x1000, 0x2000).
-+
-+Note: These content modes apply only to allocated memory. No
-+guarantees are made on offset ranges that do not have memory allocated
-+(yet). For example, if this was the initial state:
-+
-+  * [0x0000, 0x1000): shared
-+  * [0x1000, 0x2000): not allocated
-+  * [0x2000, 0x3000): shared
-+
-+and range [0x0000, 0x3000) was set to shared, the content mode would
-+apply to only to offset ranges [0x0000, 0x1000) and [0x2000, 0x3000).
-+
- See also: :ref: `KVM_SET_MEMORY_ATTRIBUTES`.
- 
- .. _kvm_run:
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index f437fd0f1350c..c7cc6c22c2023 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -1652,6 +1652,10 @@ struct kvm_memory_attributes {
- /* Available with KVM_CAP_GUEST_MEMFD_MEMORY_ATTRIBUTES */
- #define KVM_SET_MEMORY_ATTRIBUTES2              _IOWR(KVMIO,  0xd2, struct kvm_memory_attributes2)
- 
-+#define KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED	0
-+#define KVM_SET_MEMORY_ATTRIBUTES2_ZERO		(1ULL << 0)
-+#define KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE	(1ULL << 1)
-+
- struct kvm_memory_attributes2 {
- 	union {
- 		__u64 address;
-diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index b0e4bb554cdf3..5c1db67e6fd35 100644
---- a/virt/kvm/guest_memfd.c
-+++ b/virt/kvm/guest_memfd.c
-@@ -699,6 +699,19 @@ u64 __weak kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_privat
- 	return 0;
- }
- 
-+static bool kvm_gmem_content_mode_is_supported(struct kvm *kvm,
-+					       u64 content_mode,
-+					       bool to_private)
-+{
-+	if (content_mode == KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED)
-+		return true;
-+
-+	if (content_mode == KVM_SET_MEMORY_ATTRIBUTES2_ZERO && to_private)
-+		return false;
-+
-+	return kvm_arch_gmem_supported_content_modes(kvm, to_private) & content_mode;
-+}
-+
- int kvm_gmem_apply_content_mode_zero(struct inode *inode, pgoff_t start,
- 				     pgoff_t end)
- {
-@@ -759,8 +772,26 @@ int __weak kvm_arch_gmem_apply_content_mode_preserve(struct kvm *kvm,
- 	return -EOPNOTSUPP;
- }
- 
-+static int kvm_gmem_apply_content_mode(struct kvm *kvm, uint64_t content_mode,
-+				       struct inode *inode, pgoff_t start,
-+				       pgoff_t end)
-+{
-+	switch (content_mode) {
-+	case KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED:
-+		return kvm_arch_gmem_apply_content_mode_unspecified(kvm, inode, start, end);
-+	case KVM_SET_MEMORY_ATTRIBUTES2_ZERO:
-+		return kvm_arch_gmem_apply_content_mode_zero(kvm, inode, start, end);
-+	case KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE:
-+		return kvm_arch_gmem_apply_content_mode_preserve(kvm, inode, start, end);
-+	default:
-+		WARN_ONCE(1, "Unexpected policy requested.");
-+		return -EOPNOTSUPP;
-+	}
-+}
-+
- static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
- 				     size_t nr_pages, uint64_t attrs,
-+				     struct kvm *kvm, uint64_t content_mode,
- 				     pgoff_t *err_index)
- {
- 	bool to_private = attrs & KVM_MEMORY_ATTRIBUTE_PRIVATE;
-@@ -775,7 +806,21 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
- 
- 	filemap_invalidate_lock(mapping);
- 
-+	if (!kvm_gmem_content_mode_is_supported(kvm, content_mode,
-+						to_private)) {
-+		r = -EOPNOTSUPP;
-+		*err_index = start;
-+		goto out;
-+	}
-+
- 	if (kvm_gmem_range_has_attributes(mt, start, nr_pages, attrs)) {
-+		/*
-+		 * Even if no update is required to attributes, the
-+		 * requested content mode is applied.
-+		 */
-+		WARN_ON(kvm_gmem_apply_content_mode(kvm, content_mode,
-+						    inode, start, end));
-+
- 		r = 0;
- 		goto out;
- 	}
-@@ -808,6 +853,9 @@ static int __kvm_gmem_set_attributes(struct inode *inode, pgoff_t start,
- 	if (!to_private)
- 		kvm_gmem_invalidate(inode, start, end);
- 
-+	WARN_ON(kvm_gmem_apply_content_mode(kvm, content_mode, inode,
-+					    start, end));
-+
- 	mas_store_prealloc(&mas, xa_mk_value(attrs));
- 
- 	kvm_gmem_invalidate_end(inode, start, end);
-@@ -829,7 +877,11 @@ static long kvm_gmem_set_attributes(struct file *file, void __user *argp)
- 	if (copy_from_user(&attrs, argp, sizeof(attrs)))
- 		return -EFAULT;
- 
--	if (attrs.flags)
-+	if (attrs.flags & ~(KVM_SET_MEMORY_ATTRIBUTES2_ZERO |
-+			    KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE))
-+		return -EINVAL;
-+	if ((attrs.flags & KVM_SET_MEMORY_ATTRIBUTES2_ZERO) &&
-+	    (attrs.flags & KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE))
- 		return -EINVAL;
- 	for (i = 0; i < ARRAY_SIZE(attrs.reserved); i++) {
- 		if (attrs.reserved[i])
-@@ -849,7 +901,7 @@ static long kvm_gmem_set_attributes(struct file *file, void __user *argp)
- 	nr_pages = attrs.size >> PAGE_SHIFT;
- 	index = attrs.offset >> PAGE_SHIFT;
- 	r = __kvm_gmem_set_attributes(inode, index, nr_pages, attrs.attributes,
--				      &err_index);
-+				      f->kvm, attrs.flags, &err_index);
- 	if (r) {
- 		attrs.error_offset = ((uint64_t)err_index) << PAGE_SHIFT;
-
----
-
-## [24] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 23/53] KVM: x86: Support SW_PROTECTED_VM in applying
- content modes*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Override the architecture-specific guest_memfd content mode functions for
-x86 to provide support for KVM_X86_SW_PROTECTED_VM.
-
-For software-protected VMs, specify KVM_SET_MEMORY_ATTRIBUTES2_ZERO and
-KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE as supported content modes. Implement
-the logic for these modes as follows:
-
-+ ZERO: Zero out the memory using the generic guest_memfd helper.
-+ PRESERVE: Maintain the existing memory content without modification.
-+ UNSPECIFIED: KVM_X86_SW_PROTECTED_VM is guest_memfd's testing
-  vehicle. Scramble the memory range by filling it with random bytes so
-  test behavior will differ from that of PRESERVE.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- arch/x86/kvm/x86.c | 93 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 93 insertions(+)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6609957ecfea3..e8abff71001eb 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -14194,6 +14194,99 @@ void kvm_arch_gmem_invalidate(kvm_pfn_t start, kvm_pfn_t end)
- 	kvm_x86_call(gmem_invalidate)(start, end);
- }
- #endif
-+
-+u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private)
-+{
-+	if (!kvm) {
-+		return KVM_SET_MEMORY_ATTRIBUTES2_ZERO |
-+		       KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE;
-+	}
-+
-+	switch (kvm->arch.vm_type) {
-+	case KVM_X86_SW_PROTECTED_VM:
-+		return KVM_SET_MEMORY_ATTRIBUTES2_ZERO |
-+		       KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+int kvm_arch_gmem_apply_content_mode_zero(struct kvm *kvm, struct inode *inode,
-+					  pgoff_t start, pgoff_t end)
-+{
-+	switch (kvm->arch.vm_type) {
-+	case KVM_X86_SW_PROTECTED_VM:
-+		return kvm_gmem_apply_content_mode_zero(inode, start, end);
-+	default:
-+		return 0;
-+	}
-+}
-+
-+int kvm_arch_gmem_apply_content_mode_preserve(struct kvm *kvm,
-+					      struct inode *inode,
-+					      pgoff_t start, pgoff_t end)
-+{
-+	switch (kvm->arch.vm_type) {
-+	case KVM_X86_SW_PROTECTED_VM:
-+		/* Do nothing to preserve content. */
-+		return 0;
-+	default:
-+		/* Not a valid content mode for other types, so do nothing. */
-+		return 0;
-+	}
-+}
-+
-+static int __scramble_range(struct inode *inode, pgoff_t start, pgoff_t end)
-+{
-+	struct address_space *mapping = inode->i_mapping;
-+	struct folio_batch fbatch;
-+	struct folio *f;
-+	char *kaddr;
-+	int ret = 0;
-+	int i;
-+
-+	folio_batch_init(&fbatch);
-+	while (!ret && filemap_get_folios(mapping, &start, end - 1, &fbatch)) {
-+		for (i = 0; !ret && i < folio_batch_count(&fbatch); ++i) {
-+			f = fbatch.folios[i];
-+
-+			folio_lock(f);
-+
-+			if (folio_test_hwpoison(f)) {
-+				ret = -EHWPOISON;
-+			} else {
-+				/*
-+				 * Hard-coding range to scramble since
-+				 * guest_memfd only supports PAGE_SIZE
-+				 * folios now.
-+				 */
-+				kaddr = kmap_local_folio(f, 0);
-+				get_random_bytes(kaddr, PAGE_SIZE);
-+				kunmap_local(kaddr);
-+			}
-+
-+			folio_unlock(f);
-+		}
-+
-+		folio_batch_release(&fbatch);
-+		cond_resched();
-+	}
-+
-+	return ret;
-+}
-+
-+int kvm_arch_gmem_apply_content_mode_unspecified(struct kvm *kvm,
-+						 struct inode *inode,
-+						 pgoff_t start, pgoff_t end)
-+{
-+	switch (kvm->arch.vm_type) {
-+	case KVM_X86_SW_PROTECTED_VM:
-+		return __scramble_range(inode, start, end);
-+	default:
-+		return 0;
-+	}
-+}
-+
- #endif
- 
- int kvm_spec_ctrl_test_value(u64 value)
-
----
-
-## [25] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 24/53] KVM: SEV: Make 'uaddr' parameter optional for
+## [21] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 20/42] KVM: SEV: Make 'uaddr' parameter optional for
  KVM_SEV_SNP_LAUNCH_UPDATE*
 
 From: Michael Roth <michael.roth@amd.com>
@@ -3063,30 +2514,26 @@ Signed-off-by: Michael Roth <michael.roth@amd.com>
 [Dropped ifdef CONFIG_KVM_VM_MEMORY_ATTRIBUTES]
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- Documentation/virt/kvm/x86/amd-memory-encryption.rst | 19 +++++++++++++++----
+ Documentation/virt/kvm/x86/amd-memory-encryption.rst | 15 +++++++++++----
  arch/x86/kvm/svm/sev.c                               | 18 +++++++++++++-----
  virt/kvm/kvm_main.c                                  |  1 +
- 3 files changed, 29 insertions(+), 9 deletions(-)
+ 3 files changed, 25 insertions(+), 9 deletions(-)
 
 diff --git a/Documentation/virt/kvm/x86/amd-memory-encryption.rst b/Documentation/virt/kvm/x86/amd-memory-encryption.rst
-index b2395dd4769de..3b9f36a55a95b 100644
+index b2395dd4769de..43085f65b2d85 100644
 --- a/Documentation/virt/kvm/x86/amd-memory-encryption.rst
 +++ b/Documentation/virt/kvm/x86/amd-memory-encryption.rst
-@@ -503,7 +503,12 @@ secrets.
+@@ -503,7 +503,8 @@ secrets.
  
  It is required that the GPA ranges initialized by this command have had the
  KVM_MEMORY_ATTRIBUTE_PRIVATE attribute set in advance. See the documentation
 -for KVM_SET_MEMORY_ATTRIBUTES for more details on this aspect.
 +for KVM_SET_MEMORY_ATTRIBUTES/KVM_SET_MEMORY_ATTRIBUTES2 for more details on
-+this aspect. If running with kvm.vm_memory_attributes=0 (to allow for
-+guest_memfd to handle memory attributes and allow for in-place conversion of
-+pages between shared/private), the 'PRESERVED' flag/content mode (which is
-+only available via the KVM_SET_MEMORY_ATTRIBUTES2 interface) must be used
-+when setting the range to private prior to issuing this ioctl.
++this aspect.
  
  Upon success, this command is not guaranteed to have processed the entire
  range requested. Instead, the ``gfn_start``, ``uaddr``, and ``len`` fields of
-@@ -511,9 +516,15 @@ range requested. Instead, the ``gfn_start``, ``uaddr``, and ``len`` fields of
+@@ -511,9 +512,15 @@ range requested. Instead, the ``gfn_start``, ``uaddr``, and ``len`` fields of
  remaining range that has yet to be processed. The caller should continue
  calling this command until those fields indicate the entire range has been
  processed, e.g. ``len`` is 0, ``gfn_start`` is equal to the last GFN in the
@@ -3098,7 +2545,7 @@ index b2395dd4769de..3b9f36a55a95b 100644
 +
 +In the case where ``type`` is KVM_SEV_SNP_PAGE_TYPE_ZERO, ``uaddr`` will be
 +ignored completely. Otherwise, ``uaddr`` is required if
-+kvm.vm_memory_attributes=0 and optional if kvm.vm_memory_attributes=1, since
++kvm.vm_memory_attributes=1 and optional if kvm.vm_memory_attributes=0, since
 +in the latter case guest memory can be initialized directly from userspace
 +prior to converting it to private and passing the GPA range on to this
 +interface.
@@ -3106,7 +2553,7 @@ index b2395dd4769de..3b9f36a55a95b 100644
  Parameters (in): struct  kvm_sev_snp_launch_update
  
 diff --git a/arch/x86/kvm/svm/sev.c b/arch/x86/kvm/svm/sev.c
-index c2126b3c30724..bf10d24907a00 100644
+index 1a361f08c7a3d..e1dbc827c2807 100644
 --- a/arch/x86/kvm/svm/sev.c
 +++ b/arch/x86/kvm/svm/sev.c
 @@ -2343,7 +2343,15 @@ static int sev_gmem_post_populate(struct kvm *kvm, gfn_t gfn, kvm_pfn_t pfn,
@@ -3135,7 +2582,7 @@ index c2126b3c30724..bf10d24907a00 100644
  		void *src_vaddr = kmap_local_page(src_page);
  		void *dst_vaddr = kmap_local_pfn(pfn);
  
-@@ -2422,8 +2430,8 @@ static int snp_launch_update(struct kvm *kvm, struct kvm_sev_cmd *argp)
+@@ -2423,8 +2431,8 @@ static int snp_launch_update(struct kvm *kvm, struct kvm_sev_cmd *argp)
  	if (copy_from_user(&params, u64_to_user_ptr(argp->data), sizeof(params)))
  		return -EFAULT;
  
@@ -3146,7 +2593,7 @@ index c2126b3c30724..bf10d24907a00 100644
  
  	if (!params.len || !PAGE_ALIGNED(params.len) || params.flags ||
  	    (params.type != KVM_SEV_SNP_PAGE_TYPE_NORMAL &&
-@@ -2479,7 +2487,7 @@ static int snp_launch_update(struct kvm *kvm, struct kvm_sev_cmd *argp)
+@@ -2481,7 +2489,7 @@ static int snp_launch_update(struct kvm *kvm, struct kvm_sev_cmd *argp)
  
  	params.gfn_start += count;
  	params.len -= count * PAGE_SIZE;
@@ -3170,8 +2617,8 @@ index ba195bb239aaa..3bf212fd99193 100644
 
 ---
 
-## [26] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 25/53] KVM: TDX: Make source page optional for
+## [22] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 21/42] KVM: TDX: Make source page optional for
  KVM_TDX_INIT_MEM_REGION*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -3186,9 +2633,9 @@ source page reference for the TDH.MEM.PAGE.ADD operation.
 
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- Documentation/virt/kvm/x86/intel-tdx.rst | 4 ++++
- arch/x86/kvm/vmx/tdx.c                   | 8 ++++++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
+ Documentation/virt/kvm/x86/intel-tdx.rst |  4 ++++
+ arch/x86/kvm/vmx/tdx.c                   | 11 ++++++++---
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/Documentation/virt/kvm/x86/intel-tdx.rst b/Documentation/virt/kvm/x86/intel-tdx.rst
 index 6a222e9d09541..fbc0f179dc750 100644
@@ -3206,7 +2653,7 @@ index 6a222e9d09541..fbc0f179dc750 100644
  [gpa, gpa + nr_pages] needs to be private.  Userspace can use
  KVM_SET_MEMORY_ATTRIBUTES to set the attribute.
 diff --git a/arch/x86/kvm/vmx/tdx.c b/arch/x86/kvm/vmx/tdx.c
-index 04ce321ebdf39..10373e606242a 100644
+index 00dcfcbc47f68..63c6ba30f05b2 100644
 --- a/arch/x86/kvm/vmx/tdx.c
 +++ b/arch/x86/kvm/vmx/tdx.c
 @@ -3116,8 +3116,12 @@ static int tdx_gmem_post_populate(struct kvm *kvm, gfn_t gfn, kvm_pfn_t pfn,
@@ -3224,318 +2671,21 @@ index 04ce321ebdf39..10373e606242a 100644
  
  	kvm_tdx->page_add_src = src_page;
  	ret = kvm_tdp_mmu_map_private_pfn(arg->vcpu, gfn, pfn);
+@@ -3196,7 +3200,8 @@ static int tdx_vcpu_init_mem_region(struct kvm_vcpu *vcpu, struct kvm_tdx_cmd *c
+ 			break;
+ 		}
+ 
+-		region.source_addr += PAGE_SIZE;
++		if (region.source_addr)
++			region.source_addr += PAGE_SIZE;
+ 		region.gpa += PAGE_SIZE;
+ 		region.nr_pages--;
 
 ---
 
-## [27] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 26/53] KVM: x86: Support SNP and TDX applying
- content modes*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Define supported content modes for TDX and SNP.
-
-For now, content preservation is not generally supported for conversions.
-
-Allow conversion only from shared to private before the VM is finalized to
-support this VM set up flow from userspace:
-
-1. Set up guest_memfd as shared.
-2. Write directly to guest_memfd.
-3. Set memory attributes to private with the PRESERVE flag
-4. Call KVM_TDX_INIT_MEM_REGION/KVM_SEV_SNP_LAUNCH_UPDATE to load and
-   encrypt memory
-
-An alternative would be to the work done by the kernel in step 3 into 4,
-but the process of conversion is complicated (needs to check refcounts,
-handle failures, etc) and plumbing the errors out through the
-platform-specific ioctl is complex and pollutes the platform-specific
-ioctl.
-
-Allow conversion with content preservation only to_private since preserving
-content on a to-shared conversion after population cannot be supported.
-
-Suggested-by: Sean Christopherson <seanjc@google.com>
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
-Co-developed-by: Michael Roth <michael.roth@amd.com>
-Signed-off-by: Michael Roth <michael.roth@amd.com>
----
- Documentation/virt/kvm/api.rst |  3 +++
- arch/x86/kvm/x86.c             | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+)
-
-diff --git a/Documentation/virt/kvm/api.rst b/Documentation/virt/kvm/api.rst
-index 61b9974ba52e9..aaa4a82f0b75d 100644
---- a/Documentation/virt/kvm/api.rst
-+++ b/Documentation/virt/kvm/api.rst
-@@ -6659,6 +6659,9 @@ The content modes available are as follows:
-   converts the memory to shared, the host (and guest) will read
-   ``0xbeef`` (if the memory is accessible).
- 
-+  For TDX and SNP, content preservation is only supported before the
-+  VM is finalized, and only on conversion to private.
-+
- Note: These content modes apply to the entire requested range, not
- just the parts of the range that underwent conversion. For example, if
- this was the initial state:
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index e8abff71001eb..296ed3b8ace6c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -14206,6 +14206,32 @@ u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private)
- 	case KVM_X86_SW_PROTECTED_VM:
- 		return KVM_SET_MEMORY_ATTRIBUTES2_ZERO |
- 		       KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE;
-+	case KVM_X86_SNP_VM:
-+	case KVM_X86_TDX_VM: {
-+		u64 supported = KVM_SET_MEMORY_ATTRIBUTES2_ZERO;
-+
-+		/*
-+		 * Preservation is only supported for VMs with
-+		 * protected state up until the guest is launched and
-+		 * vCPUs become capable of generating KVM MMU faults,
-+		 * since those faults can be destructive to the
-+		 * initial memory contents from the guest point of
-+		 * view, i.e. plaintext data will become random data,
-+		 * or zeroed, after a shared->private conversion.
-+		 *
-+		 * Use pre_fault_allowed to guard PRESERVE support,
-+		 * since that is set to true when VMs are finalized.
-+		 *
-+		 * Along the same lines, only support PRESERVE for
-+		 * to_private conversions, since when converting to
-+		 * shared, memory contents for pages that had already
-+		 * been faulted could be zeroed.
-+		 */
-+		if (to_private && !kvm->arch.pre_fault_allowed)
-+			supported |= KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE;
-+
-+		return supported;
-+	}
- 	default:
- 		return 0;
- 	}
-@@ -14216,6 +14242,16 @@ int kvm_arch_gmem_apply_content_mode_zero(struct kvm *kvm, struct inode *inode,
- {
- 	switch (kvm->arch.vm_type) {
- 	case KVM_X86_SW_PROTECTED_VM:
-+	case KVM_X86_SNP_VM:
-+	case KVM_X86_TDX_VM:
-+		/*
-+		 * TDX firmware will zero on unmapping from the
-+		 * Secure-EPTs, but suppose a shared page with
-+		 * contents was converted to private, and then
-+		 * converted back without ever being mapped into
-+		 * Secure-EPTs: guest_memfd can't rely on TDX firmware
-+		 * for zeroing then.
-+		 */
- 		return kvm_gmem_apply_content_mode_zero(inode, start, end);
- 	default:
- 		return 0;
-@@ -14228,6 +14264,8 @@ int kvm_arch_gmem_apply_content_mode_preserve(struct kvm *kvm,
- {
- 	switch (kvm->arch.vm_type) {
- 	case KVM_X86_SW_PROTECTED_VM:
-+	case KVM_X86_SNP_VM:
-+	case KVM_X86_TDX_VM:
- 		/* Do nothing to preserve content. */
- 		return 0;
- 	default:
-
----
-
-## [28] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 27/53] KVM: x86: Bug CoCo VM on page fault before
- finalizing*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-In-place conversion of guest_memfd memory to private is allowed with the
-PRESERVE flag to enable populating guest memory only before CoCo VMs are
-finalized.
-
-Allowing CoCo VMs to fault memory could mess up memory contents. Hence, as
-a second layer check, bug CoCo VMs if they try to fault in memory from
-guest_memfd before the VMs are finalized.
-
-Suggested-by: Sean Christopherson <seanjc@google.com>
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- arch/x86/kvm/mmu/mmu.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/x86/kvm/mmu/mmu.c b/arch/x86/kvm/mmu/mmu.c
-index d3da387340a9d..8c5a3d2a7470b 100644
---- a/arch/x86/kvm/mmu/mmu.c
-+++ b/arch/x86/kvm/mmu/mmu.c
-@@ -4599,6 +4599,13 @@ static int kvm_mmu_faultin_pfn_gmem(struct kvm_vcpu *vcpu,
- 		return -EFAULT;
- 	}
- 
-+	/* Cannot fault from guest_memfd before CoCo VM is finalized. */
-+	if (KVM_BUG_ON(vcpu->kvm->arch.has_protected_state &&
-+			       !vcpu->kvm->arch.pre_fault_allowed,
-+		       vcpu->kvm)) {
-+		return -EFAULT;
-+	}
-+
- 	r = kvm_gmem_get_pfn(vcpu->kvm, fault->slot, fault->gfn, &fault->pfn,
- 			     &fault->refcounted_page, &max_order);
- 	if (r) {
-
----
-
-## [29] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 28/53] KVM: Add CAP to enumerate supported
- SET_MEMORY_ATTRIBUTES2 flags*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Add CAP to enumerate supported SET_MEMORY_ATTRIBUTES2 flags, so userspace
-can find out which flags are supported when sending the
-KVM_SET_MEMORY_ATTRIBUTES2 ioctl to a guest_memfd.
-
-Add a parameter for_cap to support enumeration of supported flags
-irrespective of attribute being set.
-
-These flags are only supported by guest_memfd, hence, if
-vm_memory_attributes is enabled, return 0 - no flags are supported when
-KVM_SET_MEMORY_ATTRIBUTES2 is sent to a VM fd.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- Documentation/virt/kvm/api.rst |  3 +++
- arch/x86/kvm/x86.c             |  5 +++--
- include/linux/kvm_host.h       | 11 ++++++++++-
- include/uapi/linux/kvm.h       |  1 +
- virt/kvm/guest_memfd.c         |  6 ++++--
- virt/kvm/kvm_main.c            |  5 +++++
- 6 files changed, 26 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/virt/kvm/api.rst b/Documentation/virt/kvm/api.rst
-index aaa4a82f0b75d..38938243c2dfd 100644
---- a/Documentation/virt/kvm/api.rst
-+++ b/Documentation/virt/kvm/api.rst
-@@ -6685,6 +6685,9 @@ guarantees are made on offset ranges that do not have memory allocated
- and range [0x0000, 0x3000) was set to shared, the content mode would
- apply to only to offset ranges [0x0000, 0x1000) and [0x2000, 0x3000).
- 
-+The supported content modes can be queried using
-+``KVM_CAP_MEMORY_ATTRIBUTES2_FLAGS``.
-+
- See also: :ref: `KVM_SET_MEMORY_ATTRIBUTES`.
- 
- .. _kvm_run:
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 296ed3b8ace6c..92709735613d5 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -14195,7 +14195,8 @@ void kvm_arch_gmem_invalidate(kvm_pfn_t start, kvm_pfn_t end)
- }
- #endif
- 
--u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private)
-+u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private,
-+					  bool for_cap)
- {
- 	if (!kvm) {
- 		return KVM_SET_MEMORY_ATTRIBUTES2_ZERO |
-@@ -14227,7 +14228,7 @@ u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private)
- 		 * shared, memory contents for pages that had already
- 		 * been faulted could be zeroed.
- 		 */
--		if (to_private && !kvm->arch.pre_fault_allowed)
-+		if (for_cap || (to_private && !kvm->arch.pre_fault_allowed))
- 			supported |= KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE;
- 
- 		return supported;
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 458bad0083c37..13d126dde32f1 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -742,7 +742,8 @@ static inline u64 kvm_gmem_get_supported_flags(struct kvm *kvm)
- 	return flags;
- }
- 
--u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private);
-+u64 kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private,
-+					  bool for_cap);
- int kvm_gmem_apply_content_mode_zero(struct inode *inode, pgoff_t start,
- 				     pgoff_t end);
- int kvm_arch_gmem_apply_content_mode_zero(struct kvm *kvm, struct inode *inode,
-@@ -2551,6 +2552,14 @@ static inline u64 kvm_supported_mem_attributes(struct kvm *kvm)
- 	return 0;
- }
- 
-+static inline u64 kvm_supported_set_mem_attributes2_flags(struct kvm *kvm)
-+{
-+	if (!IS_ENABLED(CONFIG_KVM_GUEST_MEMFD))
-+		return 0;
-+
-+	return kvm_arch_gmem_supported_content_modes(kvm, false, true);
-+}
-+
- typedef unsigned long (kvm_get_memory_attributes_t)(struct kvm *kvm, gfn_t gfn);
- DECLARE_STATIC_CALL(__kvm_get_memory_attributes, kvm_get_memory_attributes_t);
- 
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index c7cc6c22c2023..c0d465a5577da 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -997,6 +997,7 @@ struct kvm_enable_cap {
- #define KVM_CAP_S390_KEYOP 247
- #define KVM_CAP_S390_VSIE_ESAMODE 248
- #define KVM_CAP_GUEST_MEMFD_MEMORY_ATTRIBUTES 249
-+#define KVM_CAP_MEMORY_ATTRIBUTES2_FLAGS 250
- 
- struct kvm_irq_routing_irqchip {
- 	__u32 irqchip;
-diff --git a/virt/kvm/guest_memfd.c b/virt/kvm/guest_memfd.c
-index 5c1db67e6fd35..071bf636ba5c0 100644
---- a/virt/kvm/guest_memfd.c
-+++ b/virt/kvm/guest_memfd.c
-@@ -693,7 +693,8 @@ static void kvm_gmem_invalidate(struct inode *inode, pgoff_t start, pgoff_t end)
- static void kvm_gmem_invalidate(struct inode *inode, pgoff_t start, pgoff_t end) {}
- #endif
- 
--u64 __weak kvm_arch_gmem_supported_content_modes(struct kvm *kvm, bool to_private)
-+u64 __weak kvm_arch_gmem_supported_content_modes(struct kvm *kvm,
-+						 bool to_private, bool for_cap)
- {
- 	/* Architectures must override with supported modes. */
- 	return 0;
-@@ -709,7 +710,8 @@ static bool kvm_gmem_content_mode_is_supported(struct kvm *kvm,
- 	if (content_mode == KVM_SET_MEMORY_ATTRIBUTES2_ZERO && to_private)
- 		return false;
- 
--	return kvm_arch_gmem_supported_content_modes(kvm, to_private) & content_mode;
-+	return kvm_arch_gmem_supported_content_modes(kvm, to_private, false) &
-+	       content_mode;
- }
- 
- int kvm_gmem_apply_content_mode_zero(struct inode *inode, pgoff_t start,
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 3bf212fd99193..9fa6ecebab939 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -4979,6 +4979,11 @@ static int kvm_vm_ioctl_check_extension_generic(struct kvm *kvm, long arg)
- 			return 0;
- 
- 		return kvm_supported_mem_attributes(kvm);
-+	case KVM_CAP_MEMORY_ATTRIBUTES2_FLAGS:
-+		if (vm_memory_attributes)
-+			return 0;
-+
-+		return kvm_supported_set_mem_attributes2_flags(kvm);
- #endif
- 	default:
- 		break;
-
----
-
-## [30] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 29/53] KVM: selftests: Create gmem fd before
- "regular" fd when adding memslot*
+## [23] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 22/42] KVM: selftests: Create gmem fd before "regular"
+ fd when adding memslot*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -3545,6 +2695,7 @@ dup'ing the gmem fd as the normal fd when guest_memfd supports mmap(),
 i.e. to make guest_memfd the _only_ backing source for the memslot.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  tools/testing/selftests/kvm/lib/kvm_util.c | 45 +++++++++++++++---------------
@@ -3616,9 +2767,9 @@ index 2a76eca7029d3..df73b23a4c66a 100644
 
 ---
 
-## [31] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 30/53] KVM: selftests: Rename guest_memfd{,_offset}
- to gmem_{fd,offset}*
+## [24] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 23/42] KVM: selftests: Rename guest_memfd{,_offset} to
+ gmem_{fd,offset}*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -3629,6 +2780,7 @@ descriptor and its offset to use a "gmem_" prefix instead of
 No functional change intended.
 
 Signed-off-by: Sean Christopherson <seanjc@google.com>
+Reviewed-by: Fuad Tabba <tabba@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
  tools/testing/selftests/kvm/include/kvm_util.h |  6 +++---
@@ -3741,8 +2893,8 @@ index df73b23a4c66a..11da9b7546d03 100644
 
 ---
 
-## [32] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 31/53] KVM: selftests: Add support for mmap() on
+## [25] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 24/42] KVM: selftests: Add support for mmap() on
  guest_memfd in core library*
 
 From: Sean Christopherson <seanjc@google.com>
@@ -3766,10 +2918,10 @@ Signed-off-by: Sean Christopherson <seanjc@google.com>
 [For guest_memfds, mmap() using gmem_offset instead of 0 all the time.]
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- tools/testing/selftests/kvm/include/kvm_util.h        |  7 ++++++-
- tools/testing/selftests/kvm/lib/kvm_util.c            | 19 +++++++++++--------
- .../selftests/kvm/x86/private_mem_conversions_test.c  |  2 +-
- 3 files changed, 18 insertions(+), 10 deletions(-)
+ tools/testing/selftests/kvm/include/kvm_util.h     |  7 +++++-
+ tools/testing/selftests/kvm/lib/kvm_util.c         | 27 ++++++++++++----------
+ .../kvm/x86/private_mem_conversions_test.c         |  2 +-
+ 3 files changed, 22 insertions(+), 14 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/include/kvm_util.h b/tools/testing/selftests/kvm/include/kvm_util.h
 index f19383376ee8e..fb54694e6568b 100644
@@ -3797,7 +2949,7 @@ index f19383376ee8e..fb54694e6568b 100644
  #define vcpu_arch_put_guest(mem, val) do { (mem) = (val); } while (0)
  #endif
 diff --git a/tools/testing/selftests/kvm/lib/kvm_util.c b/tools/testing/selftests/kvm/lib/kvm_util.c
-index 11da9b7546d03..ff301e7c22b2f 100644
+index 11da9b7546d03..4eaf553fbab11 100644
 --- a/tools/testing/selftests/kvm/lib/kvm_util.c
 +++ b/tools/testing/selftests/kvm/lib/kvm_util.c
 @@ -979,12 +979,13 @@ void vm_set_user_memory_region2(struct kvm_vm *vm, u32 slot, u32 flags,
@@ -3846,6 +2998,21 @@ index 11da9b7546d03..ff301e7c22b2f 100644
  
  	TEST_ASSERT(!is_backing_src_hugetlb(src_type) ||
  		    region->mmap_start == align_ptr_up(region->mmap_start, backing_src_pagesz),
+@@ -1130,10 +1133,10 @@ void vm_mem_add(struct kvm_vm *vm, enum vm_mem_backing_src_type src_type,
+ 
+ 	/* If shared memory, create an alias. */
+ 	if (region->fd >= 0) {
+-		region->mmap_alias = kvm_mmap(region->mmap_size,
+-					      PROT_READ | PROT_WRITE,
+-					      vm_mem_backing_src_alias(src_type)->flag,
+-					      region->fd);
++		region->mmap_alias = __kvm_mmap(region->mmap_size,
++						PROT_READ | PROT_WRITE,
++						vm_mem_backing_src_alias(src_type)->flag,
++						region->fd, mmap_offset);
+ 
+ 		/* Align host alias address */
+ 		region->host_alias = align_ptr_up(region->mmap_alias, alignment);
 @@ -1144,7 +1147,7 @@ void vm_userspace_mem_region_add(struct kvm_vm *vm,
  				 enum vm_mem_backing_src_type src_type,
  				 gpa_t gpa, u32 slot, u64 npages, u32 flags)
@@ -3871,9 +3038,9 @@ index 1d2f5d4fd45d7..861baff201e78 100644
 
 ---
 
-## [33] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 32/53] KVM: selftests: Add selftests global for
- guest memory attributes capability*
+## [26] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 25/42] KVM: selftests: Add selftests global for guest
+ memory attributes capability*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -3907,7 +3074,7 @@ index d9b433b834f1b..c280c3233f502 100644
  u32 guest_random_u32(struct guest_random_state *state);
  
 diff --git a/tools/testing/selftests/kvm/lib/kvm_util.c b/tools/testing/selftests/kvm/lib/kvm_util.c
-index ff301e7c22b2f..5e34593ad79c4 100644
+index 4eaf553fbab11..daa0c1e835a71 100644
 --- a/tools/testing/selftests/kvm/lib/kvm_util.c
 +++ b/tools/testing/selftests/kvm/lib/kvm_util.c
 @@ -24,6 +24,8 @@ u32 guest_random_seed;
@@ -3938,9 +3105,9 @@ index ff301e7c22b2f..5e34593ad79c4 100644
 
 ---
 
-## [34] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 33/53] KVM: selftests: Add helpers for calling
- ioctls on guest_memfd*
+## [27] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 26/42] KVM: selftests: Add helpers for calling ioctls on
+ guest_memfd*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -3965,11 +3132,11 @@ gmem_set_memory_attributes() helpers.
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- tools/testing/selftests/kvm/include/kvm_util.h | 98 +++++++++++++++++++++++---
- 1 file changed, 90 insertions(+), 8 deletions(-)
+ tools/testing/selftests/kvm/include/kvm_util.h | 94 +++++++++++++++++++++++---
+ 1 file changed, 86 insertions(+), 8 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/include/kvm_util.h b/tools/testing/selftests/kvm/include/kvm_util.h
-index fb54694e6568b..62d917a2d2b19 100644
+index fb54694e6568b..d4c285c6fbe44 100644
 --- a/tools/testing/selftests/kvm/include/kvm_util.h
 +++ b/tools/testing/selftests/kvm/include/kvm_util.h
 @@ -392,6 +392,16 @@ static __always_inline void static_assert_is_vcpu(struct kvm_vcpu *vcpu) { }
@@ -4026,25 +3193,22 @@ index fb54694e6568b..62d917a2d2b19 100644
  static inline void vm_mem_set_private(struct kvm_vm *vm, gpa_t gpa,
  				      u64 size)
  {
-@@ -451,6 +463,76 @@ static inline void vm_mem_set_shared(struct kvm_vm *vm, gpa_t gpa,
+@@ -451,6 +463,72 @@ static inline void vm_mem_set_shared(struct kvm_vm *vm, gpa_t gpa,
  	vm_set_memory_attributes(vm, gpa, size, 0);
  }
  
-+static inline int __gmem_set_memory_attributes(int fd, loff_t offset,
++static inline int __gmem_set_memory_attributes(int fd, u64 offset,
 +					       size_t size, u64 attributes,
-+					       loff_t *error_offset,
-+					       u64 flags)
++					       u64 *error_offset)
 +{
 +	struct kvm_memory_attributes2 attr = {
 +		.attributes = attributes,
 +		.offset = offset,
 +		.size = size,
-+		.flags = flags,
-+		.error_offset = error_offset ? *error_offset : 0,
++		.flags = 0,
++		.error_offset = 0,
 +	};
 +	int r;
-+
-+	TEST_ASSERT_SUPPORTED_ATTRIBUTES(attributes);
 +
 +	r = __gmem_ioctl(fd, KVM_SET_MEMORY_ATTRIBUTES2, &attr);
 +
@@ -4055,30 +3219,29 @@ index fb54694e6568b..62d917a2d2b19 100644
 +	return r;
 +}
 +
-+static inline int __gmem_set_private(int fd, loff_t offset, size_t size,
-+				     loff_t *error_offset, u64 flags)
++static inline int __gmem_set_private(int fd, u64 offset, size_t size,
++				     u64 *error_offset)
 +{
 +	return __gmem_set_memory_attributes(fd, offset, size,
 +					    KVM_MEMORY_ATTRIBUTE_PRIVATE,
-+					    error_offset, flags);
++					    error_offset);
 +}
 +
-+static inline int __gmem_set_shared(int fd, loff_t offset, size_t size,
-+				    loff_t *error_offset, u64 flags)
++static inline int __gmem_set_shared(int fd, u64 offset, size_t size,
++				    u64 *error_offset)
 +{
 +	return __gmem_set_memory_attributes(fd, offset, size, 0,
-+					    error_offset, flags);
++					    error_offset);
 +}
 +
-+static inline void gmem_set_memory_attributes(int fd, loff_t offset,
-+					      size_t size, u64 attributes,
-+					      u64 flags)
++static inline void gmem_set_memory_attributes(int fd, u64 offset,
++					      size_t size, u64 attributes)
 +{
 +	struct kvm_memory_attributes2 attr = {
 +		.attributes = attributes,
 +		.offset = offset,
 +		.size = size,
-+		.flags = flags,
++		.flags = 0,
 +	};
 +
 +	TEST_ASSERT_SUPPORTED_ATTRIBUTES(attributes);
@@ -4089,15 +3252,15 @@ index fb54694e6568b..62d917a2d2b19 100644
 +	gmem_ioctl(fd, KVM_SET_MEMORY_ATTRIBUTES2, &attr);
 +}
 +
-+static inline void gmem_set_private(int fd, loff_t offset, size_t size, u64 flags)
++static inline void gmem_set_private(int fd, u64 offset, size_t size)
 +{
 +	gmem_set_memory_attributes(fd, offset, size,
-+				   KVM_MEMORY_ATTRIBUTE_PRIVATE, flags);
++				   KVM_MEMORY_ATTRIBUTE_PRIVATE);
 +}
 +
-+static inline void gmem_set_shared(int fd, loff_t offset, size_t size, u64 flags)
++static inline void gmem_set_shared(int fd, u64 offset, size_t size)
 +{
-+	gmem_set_memory_attributes(fd, offset, size, 0, flags);
++	gmem_set_memory_attributes(fd, offset, size, 0);
 +}
 +
  void vm_guest_mem_fallocate(struct kvm_vm *vm, gpa_t gpa, u64 size,
@@ -4105,9 +3268,9 @@ index fb54694e6568b..62d917a2d2b19 100644
 
 ---
 
-## [35] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 34/53] KVM: selftests: Test basic single-page
- conversion flow*
+## [28] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 27/42] KVM: selftests: Test basic single-page conversion
+ flow*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -4128,8 +3291,8 @@ Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 ---
  tools/testing/selftests/kvm/Makefile.kvm           |   1 +
- .../kvm/x86/guest_memfd_conversions_test.c         | 205 +++++++++++++++++++++
- 2 files changed, 206 insertions(+)
+ .../kvm/x86/guest_memfd_conversions_test.c         | 199 +++++++++++++++++++++
+ 2 files changed, 200 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/Makefile.kvm b/tools/testing/selftests/kvm/Makefile.kvm
 index 9118a5a51b89f..6232881be500a 100644
@@ -4145,10 +3308,10 @@ index 9118a5a51b89f..6232881be500a 100644
  TEST_GEN_PROGS_x86 += dirty_log_perf_test
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 new file mode 100644
-index 0000000000000..1299935689e5b
+index 0000000000000..8e09e241723e5
 --- /dev/null
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,199 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Copyright (c) 2024, Google LLC.
@@ -4198,13 +3361,9 @@ index 0000000000000..1299935689e5b
 +	 */
 +	const gpa_t gpa = SZ_4G;
 +	const u32 slot = 1;
-+	u64 supported_flags;
 +	struct kvm_vm *vm;
 +
 +	vm = __vm_create_shape_with_one_vcpu(shape, &t->vcpu, nr_pages, guest_do_rmw);
-+
-+	supported_flags = vm_check_cap(vm, KVM_CAP_MEMORY_ATTRIBUTES2_FLAGS);
-+	TEST_REQUIRE(supported_flags & KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
 +
 +	vm_mem_add(vm, VM_MEM_SRC_SHMEM, gpa, slot, nr_pages,
 +		   KVM_MEM_GUEST_MEMFD, -1, 0, gmem_flags);
@@ -4269,7 +3428,7 @@ index 0000000000000..1299935689e5b
 +	}
 +}
 +
-+static void run_guest_do_rmw(struct kvm_vcpu *vcpu, loff_t pgoff,
++static void run_guest_do_rmw(struct kvm_vcpu *vcpu, u64 pgoff,
 +			     char expected_val, char write_val)
 +{
 +	struct ucall uc;
@@ -4296,14 +3455,14 @@ index 0000000000000..1299935689e5b
 +	}
 +}
 +
-+static void host_do_rmw(char *mem, loff_t pgoff, char expected_val,
++static void host_do_rmw(char *mem, u64 pgoff, char expected_val,
 +			char write_val)
 +{
 +	TEST_ASSERT_EQ(READ_ONCE(mem[pgoff * page_size]), expected_val);
 +	WRITE_ONCE(mem[pgoff * page_size], write_val);
 +}
 +
-+static void test_private(test_data_t *t, loff_t pgoff, char starting_val,
++static void test_private(test_data_t *t, u64 pgoff, char starting_val,
 +			 char write_val)
 +{
 +	TEST_EXPECT_SIGBUS(WRITE_ONCE(t->mem[pgoff * page_size], write_val));
@@ -4311,15 +3470,14 @@ index 0000000000000..1299935689e5b
 +	TEST_EXPECT_SIGBUS(READ_ONCE(t->mem[pgoff * page_size]));
 +}
 +
-+static void test_convert_to_private(test_data_t *t, loff_t pgoff,
++static void test_convert_to_private(test_data_t *t, u64 pgoff,
 +				    char starting_val, char write_val)
 +{
-+	gmem_set_private(t->gmem_fd, pgoff * page_size, page_size,
-+			 KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
++	gmem_set_private(t->gmem_fd, pgoff * page_size, page_size);
 +	test_private(t, pgoff, starting_val, write_val);
 +}
 +
-+static void test_shared(test_data_t *t, loff_t pgoff, char starting_val,
++static void test_shared(test_data_t *t, u64 pgoff, char starting_val,
 +			char host_write_val, char write_val)
 +{
 +	host_do_rmw(t->mem, pgoff, starting_val, host_write_val);
@@ -4327,12 +3485,11 @@ index 0000000000000..1299935689e5b
 +	TEST_ASSERT_EQ(READ_ONCE(t->mem[pgoff * page_size]), write_val);
 +}
 +
-+static void test_convert_to_shared(test_data_t *t, loff_t pgoff,
++static void test_convert_to_shared(test_data_t *t, u64 pgoff,
 +				   char starting_val, char host_write_val,
 +				   char write_val)
 +{
-+	gmem_set_shared(t->gmem_fd, pgoff * page_size, page_size,
-+			KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
++	gmem_set_shared(t->gmem_fd, pgoff * page_size, page_size);
 +	test_shared(t, pgoff, starting_val, host_write_val, write_val);
 +}
 +
@@ -4357,8 +3514,8 @@ index 0000000000000..1299935689e5b
 
 ---
 
-## [36] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 35/53] KVM: selftests: Test conversion flow when
+## [29] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 28/42] KVM: selftests: Test conversion flow when
  INIT_SHARED*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -4374,10 +3531,10 @@ Signed-off-by: Sean Christopherson <seanjc@google.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 1299935689e5b..40ac1b3769af1 100644
+index 8e09e241723e5..5b070d3374eae 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -99,6 +99,12 @@ static void __gmem_conversions_##test(test_data_t *t, int nr_pages)		\
+@@ -95,6 +95,12 @@ static void __gmem_conversions_##test(test_data_t *t, int nr_pages)		\
  #define GMEM_CONVERSION_TEST_INIT_PRIVATE(test)					\
  	__GMEM_CONVERSION_TEST_INIT_PRIVATE(test, 1)
  
@@ -4390,7 +3547,7 @@ index 1299935689e5b..40ac1b3769af1 100644
  struct guest_check_data {
  	void *mem;
  	char expected_val;
-@@ -192,6 +198,12 @@ GMEM_CONVERSION_TEST_INIT_PRIVATE(init_private)
+@@ -186,6 +192,12 @@ GMEM_CONVERSION_TEST_INIT_PRIVATE(init_private)
  	test_convert_to_private(t, 0, 'C', 'E');
  }
  
@@ -4406,8 +3563,8 @@ index 1299935689e5b..40ac1b3769af1 100644
 
 ---
 
-## [37] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 36/53] KVM: selftests: Test conversion precision in
+## [30] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 29/42] KVM: selftests: Test conversion precision in
  guest_memfd*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -4434,14 +3591,14 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 ---
- .../kvm/x86/guest_memfd_conversions_test.c         | 70 ++++++++++++++++++++++
- 1 file changed, 70 insertions(+)
+ .../kvm/x86/guest_memfd_conversions_test.c         | 66 ++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 40ac1b3769af1..25f463bc9da52 100644
+index 5b070d3374eae..8e17d5c08aeb8 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -65,8 +65,13 @@ static void gmem_conversions_do_setup(test_data_t *t, int nr_pages,
+@@ -61,8 +61,13 @@ static void gmem_conversions_do_setup(test_data_t *t, int nr_pages,
  
  static void gmem_conversions_do_teardown(test_data_t *t)
  {
@@ -4455,7 +3612,7 @@ index 40ac1b3769af1..25f463bc9da52 100644
  }
  
  FIXTURE_TEARDOWN(gmem_conversions)
-@@ -105,6 +110,29 @@ static void __gmem_conversions_##test(test_data_t *t, int nr_pages)		\
+@@ -101,6 +106,29 @@ static void __gmem_conversions_##test(test_data_t *t, int nr_pages)		\
  #define GMEM_CONVERSION_TEST_INIT_SHARED(test)					\
  	__GMEM_CONVERSION_TEST_INIT_SHARED(test, 1)
  
@@ -4485,50 +3642,46 @@ index 40ac1b3769af1..25f463bc9da52 100644
  struct guest_check_data {
  	void *mem;
  	char expected_val;
-@@ -205,6 +233,48 @@ GMEM_CONVERSION_TEST_INIT_SHARED(init_shared)
+@@ -199,6 +227,44 @@ GMEM_CONVERSION_TEST_INIT_SHARED(init_shared)
  	test_convert_to_shared(t, 0, 'C', 'D', 'E');
  }
  
-+/*
-+ * Test indexing of pages within guest_memfd, using test data that is a multiple
-+ * of page index.
-+ */
 +GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(indexing, 4)
 +{
 +	int i;
 +
-+	/* Get a char that varies with both i and v. */
-+#define f(x, v) ((x << 4) + (v))
-+#define r(v) (f(i, v))
-+#define c(v) (f(test_page, v))
++	/* Get a char that varies with both i and n. */
++#define combine(x, n) ((x << 4) + (n))
++#define i_(n) (combine(i, n))
++#define t_(n) (combine(test_page, n))
 +
 +	/*
 +	 * Start with the highest index, to catch any errors when, perhaps, the
 +	 * first page is returned even for the last index.
 +	 */
 +	for (i = nr_pages - 1; i >= 0; --i)
-+		test_shared(t, i, 0, r(0), r(2));
++		test_shared(t, i, 0, i_(0), i_(2));
 +
-+	test_convert_to_private(t, test_page, c(2), c(3));
++	test_convert_to_private(t, test_page, t_(2), t_(3));
 +
 +	for (i = 0; i < nr_pages; ++i) {
 +		if (i == test_page)
-+			test_private(t, i, r(3), r(4));
++			test_private(t, test_page, t_(3), t_(4));
 +		else
-+			test_shared(t, i, r(2), r(3), r(4));
++			test_shared(t, i, i_(2), i_(3), i_(4));
 +	}
 +
-+	test_convert_to_shared(t, test_page, c(4), c(5), c(6));
++	test_convert_to_shared(t, test_page, t_(4), t_(5), t_(6));
 +
 +	for (i = 0; i < nr_pages; ++i) {
-+		char expected = i == test_page ? r(6) : r(4);
++		char expected = i == test_page ? t_(6) : i_(4);
 +
-+		test_shared(t, i, expected, r(7), r(8));
++		test_shared(t, i, expected, i_(7), i_(8));
 +	}
 +
-+#undef c
-+#undef r
-+#undef f
++#undef t_
++#undef i_
++#undef combine
 +}
 +
  int main(int argc, char *argv[])
@@ -4537,9 +3690,8 @@ index 40ac1b3769af1..25f463bc9da52 100644
 
 ---
 
-## [38] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 37/53] KVM: selftests: Test conversion before
- allocation*
+## [31] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 30/42] KVM: selftests: Test conversion before allocation*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -4562,11 +3714,11 @@ Signed-off-by: Sean Christopherson <seanjc@google.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 25f463bc9da52..92b18373a17f1 100644
+index 8e17d5c08aeb8..b43ac196330f1 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -275,6 +275,20 @@ GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(indexing, 4)
- #undef f
+@@ -265,6 +265,20 @@ GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(indexing, 4)
+ #undef combine
  }
  
 +/*
@@ -4589,9 +3741,9 @@ index 25f463bc9da52..92b18373a17f1 100644
 
 ---
 
-## [39] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 38/53] KVM: selftests: Convert with allocated folios
- in different layouts*
+## [32] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 31/42] KVM: selftests: Convert with allocated folios in
+ different layouts*
 
 From: Ackerley Tng <ackerleytng@google.com>
 
@@ -4606,14 +3758,14 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 ---
- .../kvm/x86/guest_memfd_conversions_test.c         | 31 ++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ .../kvm/x86/guest_memfd_conversions_test.c         | 30 ++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 92b18373a17f1..2312592c4076b 100644
+index b43ac196330f1..0b024fb7227f0 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -289,6 +289,37 @@ GMEM_CONVERSION_TEST_INIT_PRIVATE(before_allocation_private)
+@@ -279,6 +279,36 @@ GMEM_CONVERSION_TEST_INIT_PRIVATE(before_allocation_private)
  	test_convert_to_shared(t, 0, 0, 'A', 'B');
  }
  
@@ -4636,8 +3788,7 @@ index 92b18373a17f1..2312592c4076b 100644
 +	if (test_page != second_page_to_fault)
 +		host_do_rmw(t->mem, second_page_to_fault, 0, 'A');
 +
-+	gmem_set_private(t->gmem_fd, 0, nr_pages * page_size,
-+			 KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
++	gmem_set_private(t->gmem_fd, 0, nr_pages * page_size);
 +	for (i = 0; i < nr_pages; ++i) {
 +		char expected = (i == test_page || i == second_page_to_fault) ? 'A' : 0;
 +
@@ -4654,8 +3805,8 @@ index 92b18373a17f1..2312592c4076b 100644
 
 ---
 
-## [40] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 39/53] KVM: selftests: Test that truncation does not
+## [33] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 32/42] KVM: selftests: Test that truncation does not
  change shared/private status*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -4677,7 +3828,7 @@ Signed-off-by: Sean Christopherson <seanjc@google.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 2312592c4076b..8dfbf3630cec2 100644
+index 0b024fb7227f0..f03af2c46426f 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 @@ -10,6 +10,7 @@
@@ -4688,7 +3839,7 @@ index 2312592c4076b..8dfbf3630cec2 100644
  #include "kselftest_harness.h"
  #include "test_util.h"
  #include "ucall_common.h"
-@@ -320,6 +321,19 @@ GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(unallocated_folios, 8)
+@@ -309,6 +310,19 @@ GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(unallocated_folios, 8)
  		test_convert_to_shared(t, i, 'B', 'C', 'D');
  }
  
@@ -4711,9 +3862,9 @@ index 2312592c4076b..8dfbf3630cec2 100644
 
 ---
 
-## [41] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 40/53] KVM: selftests: Test that shared/private
- status is consistent across processes*
+## [34] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 33/42] KVM: selftests: Test that shared/private status
+ is consistent across processes*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -4736,10 +3887,10 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  1 file changed, 74 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 8dfbf3630cec2..21918b83d3792 100644
+index f03af2c46426f..04e457409f75e 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -334,6 +334,80 @@ GMEM_CONVERSION_TEST_INIT_SHARED(truncate)
+@@ -323,6 +323,80 @@ GMEM_CONVERSION_TEST_INIT_SHARED(truncate)
  	test_private(t, 0, 0, 'A');
  }
  
@@ -4823,8 +3974,8 @@ index 8dfbf3630cec2..21918b83d3792 100644
 
 ---
 
-## [42] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 41/53] KVM: selftests: Test conversion with elevated
+## [35] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 34/42] KVM: selftests: Test conversion with elevated
  page refcount*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -4850,14 +4001,14 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 ---
- .../kvm/x86/guest_memfd_conversions_test.c         | 80 ++++++++++++++++++++++
- 1 file changed, 80 insertions(+)
+ .../kvm/x86/guest_memfd_conversions_test.c         | 79 ++++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 21918b83d3792..13bbc361eaeda 100644
+index 04e457409f75e..a4a9b4dd592dc 100644
 --- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -408,6 +408,86 @@ GMEM_CONVERSION_TEST_INIT_SHARED(forked_accesses)
+@@ -397,6 +397,85 @@ GMEM_CONVERSION_TEST_INIT_SHARED(forked_accesses)
  	kvm_munmap(test_state, sizeof(*test_state));
  }
  
@@ -4884,18 +4035,18 @@ index 21918b83d3792..13bbc361eaeda 100644
 +	pin_pipe[0] = -1;
 +}
 +
-+static void test_convert_to_private_fails(test_data_t *t, loff_t pgoff,
++static void test_convert_to_private_fails(test_data_t *t, u64 pgoff,
 +					  size_t nr_pages,
-+					  loff_t expected_error_offset)
++					  u64 expected_error_offset)
 +{
-+	loff_t offset = pgoff * page_size;
-+	loff_t error_offset = 0;
++	/* +1 to make it anything but expected_error_offset. */
++	u64 error_offset = expected_error_offset + 1;
++	u64 offset = pgoff * page_size;
 +	int ret;
 +
 +	do {
 +		ret = __gmem_set_private(t->gmem_fd, offset,
-+					 nr_pages * page_size, &error_offset,
-+					 KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
++					 nr_pages * page_size, &error_offset);
 +	} while (ret == -1 && errno == EINTR);
 +	TEST_ASSERT(ret == -1 && errno == EAGAIN,
 +		    "Wanted EAGAIN on page %lu, got %d (ret = %d)", pgoff,
@@ -4931,8 +4082,7 @@ index 21918b83d3792..13bbc361eaeda 100644
 +
 +	unpin_pages();
 +
-+	gmem_set_private(t->gmem_fd, 0, nr_pages * page_size,
-+			 KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
++	gmem_set_private(t->gmem_fd, 0, nr_pages * page_size);
 +
 +	for (i = 0; i < nr_pages; i++) {
 +		char expected = i == test_page ? 'B' : 'C';
@@ -4947,192 +4097,8 @@ index 21918b83d3792..13bbc361eaeda 100644
 
 ---
 
-## [43] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 42/53] KVM: selftests: Test that conversion to
- private does not support ZERO*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Test that conversion to private specifying the
-KVM_SET_MEMORY_ATTRIBUTES2_ZERO flag returns -1 and sets errno to
-EOPNOTSUPP.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- .../selftests/kvm/x86/guest_memfd_conversions_test.c      | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 13bbc361eaeda..922261ebaff96 100644
---- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-+++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -488,6 +488,21 @@ GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(elevated_refcount, 4)
- 	}
- }
- 
-+GMEM_CONVERSION_TEST_INIT_SHARED(convert_to_private_does_not_support_zero)
-+{
-+	const loff_t start_offset = 0;
-+	loff_t error_offset = 0;
-+	int ret;
-+
-+	ret = __gmem_set_private(t->gmem_fd, start_offset, nr_pages * page_size,
-+				 &error_offset,
-+				 KVM_SET_MEMORY_ATTRIBUTES2_ZERO);
-+
-+	TEST_ASSERT_EQ(ret, -1);
-+	TEST_ASSERT_EQ(errno, EOPNOTSUPP);
-+	TEST_ASSERT_EQ(error_offset, start_offset);
-+}
-+
- int main(int argc, char *argv[])
- {
- 	TEST_REQUIRE(kvm_check_cap(KVM_CAP_VM_TYPES) & BIT(KVM_X86_SW_PROTECTED_VM));
-
----
-
-## [44] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 43/53] KVM: selftests: Support checking that data
- not equal expected*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-Expand run_guest_do_rmw() to support checking that data at given pgoff is
-not equal to expected_val. This will be used in a later patch that tests
-that memory contents are scrambled.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- .../selftests/kvm/x86/guest_memfd_conversions_test.c    | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
-
-diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 922261ebaff96..57adb6d84a053 100644
---- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-+++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -137,6 +137,7 @@ static void __gmem_conversions_multipage_##test(test_data_t *t, int nr_pages,	\
- struct guest_check_data {
- 	void *mem;
- 	char expected_val;
-+	bool assert_not_equal;
- 	char write_val;
- };
- static struct guest_check_data guest_data;
-@@ -146,7 +147,13 @@ static void guest_do_rmw(void)
- 	for (;;) {
- 		char *mem = READ_ONCE(guest_data.mem);
- 
--		GUEST_ASSERT_EQ(READ_ONCE(*mem), READ_ONCE(guest_data.expected_val));
-+		if (READ_ONCE(guest_data.assert_not_equal)) {
-+			GUEST_ASSERT_NE(READ_ONCE(*mem),
-+					READ_ONCE(guest_data.expected_val));
-+		} else {
-+			GUEST_ASSERT_EQ(READ_ONCE(*mem),
-+					READ_ONCE(guest_data.expected_val));
-+		}
- 		WRITE_ONCE(*mem, READ_ONCE(guest_data.write_val));
- 
- 		GUEST_SYNC(0);
-@@ -154,13 +161,15 @@ static void guest_do_rmw(void)
- }
- 
- static void run_guest_do_rmw(struct kvm_vcpu *vcpu, loff_t pgoff,
--			     char expected_val, char write_val)
-+			     char expected_val, char write_val,
-+			     bool assert_not_equal)
- {
- 	struct ucall uc;
- 	int r;
- 
- 	guest_data.mem = (void *)GUEST_MEMFD_SHARING_TEST_GVA + pgoff * page_size;
- 	guest_data.expected_val = expected_val;
-+	guest_data.assert_not_equal = assert_not_equal;
- 	guest_data.write_val = write_val;
- 	sync_global_to_guest(vcpu->vm, guest_data);
- 
-@@ -191,7 +200,7 @@ static void test_private(test_data_t *t, loff_t pgoff, char starting_val,
- 			 char write_val)
- {
- 	TEST_EXPECT_SIGBUS(WRITE_ONCE(t->mem[pgoff * page_size], write_val));
--	run_guest_do_rmw(t->vcpu, pgoff, starting_val, write_val);
-+	run_guest_do_rmw(t->vcpu, pgoff, starting_val, write_val, false);
- 	TEST_EXPECT_SIGBUS(READ_ONCE(t->mem[pgoff * page_size]));
- }
- 
-@@ -207,7 +216,7 @@ static void test_shared(test_data_t *t, loff_t pgoff, char starting_val,
- 			char host_write_val, char write_val)
- {
- 	host_do_rmw(t->mem, pgoff, starting_val, host_write_val);
--	run_guest_do_rmw(t->vcpu, pgoff, host_write_val, write_val);
-+	run_guest_do_rmw(t->vcpu, pgoff, host_write_val, write_val, false);
- 	TEST_ASSERT_EQ(READ_ONCE(t->mem[pgoff * page_size]), write_val);
- }
-
----
-
-## [45] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 44/53] KVM: selftests: Test that not specifying a
- conversion flag scrambles memory contents*
-
-From: Ackerley Tng <ackerleytng@google.com>
-
-When using KVM_SET_MEMORY_ATTRIBUTES2, not specifying flags for the ioctl
-implies no guarantees on memory contents.
-
-For KVM_X86_SW_PROTECTED_VM, this mode is implemented by scrambling
-contents of converted memory ranges. Add a test to check that the
-unspecified conversion mode was handled in KVM by checking the expected
-behavior, that existing memory contents are scrambled.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- .../kvm/x86/guest_memfd_conversions_test.c         | 28 ++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
-
-diff --git a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-index 57adb6d84a053..f4705dc700879 100644
---- a/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-+++ b/tools/testing/selftests/kvm/x86/guest_memfd_conversions_test.c
-@@ -512,6 +512,34 @@ GMEM_CONVERSION_TEST_INIT_SHARED(convert_to_private_does_not_support_zero)
- 	TEST_ASSERT_EQ(error_offset, start_offset);
- }
- 
-+GMEM_CONVERSION_TEST_INIT_SHARED(convert_mode_unspecified_scrambles)
-+{
-+	loff_t error_offset = 0;
-+	int ret;
-+
-+	test_shared(t, 0, 0, 'A', 'B');
-+	ret = __gmem_set_private(t->gmem_fd, 0, nr_pages * page_size,
-+				 &error_offset, 0);
-+	TEST_ASSERT_EQ(ret, 0);
-+	TEST_ASSERT_EQ(error_offset, 0);
-+
-+	/*
-+	 * Since the content mode 0 scrambles data in memory, there is
-+	 * a small chance that this test will falsely fail when the
-+	 * scrambled value matches the initial value.
-+	 */
-+	run_guest_do_rmw(t->vcpu, 0, 'B', 'C', true);
-+
-+	ret = __gmem_set_shared(t->gmem_fd, 0, nr_pages * page_size,
-+				&error_offset, 0);
-+	TEST_ASSERT_EQ(ret, 0);
-+	TEST_ASSERT_EQ(error_offset, 0);
-+
-+	/* Same small chance of falsely failing test applies here. */
-+	TEST_ASSERT(READ_ONCE(t->mem[0]) != 'C',
-+		    "Conversion without specifying mode should scramble memory.");
-+}
-+
- int main(int argc, char *argv[])
- {
- 	TEST_REQUIRE(kvm_check_cap(KVM_CAP_VM_TYPES) & BIT(KVM_X86_SW_PROTECTED_VM));
-
----
-
-## [46] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 45/53] KVM: selftests: Reset shared memory after
+## [36] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 35/42] KVM: selftests: Reset shared memory after
  hole-punching*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -5194,8 +4160,8 @@ index 861baff201e78..289ad10063fca 100644
 
 ---
 
-## [47] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 46/53] KVM: selftests: Provide function to look up
+## [37] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 36/42] KVM: selftests: Provide function to look up
  guest_memfd details from gpa*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -5216,11 +4182,11 @@ Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 ---
  tools/testing/selftests/kvm/include/kvm_util.h |  3 +++
- tools/testing/selftests/kvm/lib/kvm_util.c     | 34 ++++++++++++++++----------
- 2 files changed, 24 insertions(+), 13 deletions(-)
+ tools/testing/selftests/kvm/lib/kvm_util.c     | 37 ++++++++++++++++----------
+ 2 files changed, 26 insertions(+), 14 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/include/kvm_util.h b/tools/testing/selftests/kvm/include/kvm_util.h
-index 62d917a2d2b19..7de88cbdfd2b8 100644
+index d4c285c6fbe44..e9b4ae9596e05 100644
 --- a/tools/testing/selftests/kvm/include/kvm_util.h
 +++ b/tools/testing/selftests/kvm/include/kvm_util.h
 @@ -428,6 +428,9 @@ static inline void vm_enable_cap(struct kvm_vm *vm, u32 cap, u64 arg0)
@@ -5234,19 +4200,21 @@ index 62d917a2d2b19..7de88cbdfd2b8 100644
   * KVM_SET_MEMORY_ATTRIBUTES{,2} overwrites _all_ attributes.  These
   * flows need significant enhancements to support multiple attributes.
 diff --git a/tools/testing/selftests/kvm/lib/kvm_util.c b/tools/testing/selftests/kvm/lib/kvm_util.c
-index 5e34593ad79c4..12e031a8fc20d 100644
+index daa0c1e835a71..f8f0cd62f2f17 100644
 --- a/tools/testing/selftests/kvm/lib/kvm_util.c
 +++ b/tools/testing/selftests/kvm/lib/kvm_util.c
-@@ -1283,27 +1283,19 @@ void vm_guest_mem_fallocate(struct kvm_vm *vm, u64 base, u64 size,
+@@ -1283,27 +1283,20 @@ void vm_guest_mem_fallocate(struct kvm_vm *vm, u64 base, u64 size,
  			    bool punch_hole)
  {
  	const int mode = FALLOC_FL_KEEP_SIZE | (punch_hole ? FALLOC_FL_PUNCH_HOLE : 0);
 -	struct userspace_mem_region *region;
  	u64 end = base + size;
- 	gpa_t gpa, len;
+-	gpa_t gpa, len;
  	off_t fd_offset;
 -	int ret;
 +	int fd, ret;
++	size_t len;
++	gpa_t gpa;
  
  	for (gpa = base; gpa < end; gpa += len) {
 -		u64 offset;
@@ -5270,7 +4238,7 @@ index 5e34593ad79c4..12e031a8fc20d 100644
  	}
  }
  
-@@ -1640,6 +1632,22 @@ void *addr_gpa2alias(struct kvm_vm *vm, gpa_t gpa)
+@@ -1640,6 +1633,22 @@ void *addr_gpa2alias(struct kvm_vm *vm, gpa_t gpa)
  	return (void *) ((uintptr_t) region->host_alias + offset);
  }
  
@@ -5296,9 +4264,9 @@ index 5e34593ad79c4..12e031a8fc20d 100644
 
 ---
 
-## [48] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 47/53] KVM: selftests: Provide common function to
- set memory attributes*
+## [38] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 37/42] KVM: selftests: Provide common function to set
+ memory attributes*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -5311,20 +4279,15 @@ Refactor existing vm_mem_set_{shared,private} functions to use the new
 function. Opportunistically update the size parameter to use size_t instead
 of u64.
 
-Update existing caller of vm_mem_set_private().
-
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 Co-developed-by: Ackerley Tng <ackerleytng@google.com>
 Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 ---
- tools/testing/selftests/kvm/include/kvm_util.h     | 47 ++++++++++++++++------
- tools/testing/selftests/kvm/lib/x86/sev.c          |  2 +-
- .../testing/selftests/kvm/pre_fault_memory_test.c  |  2 +-
- .../selftests/kvm/x86/private_mem_kvm_exits_test.c |  4 +-
- 4 files changed, 39 insertions(+), 16 deletions(-)
+ tools/testing/selftests/kvm/include/kvm_util.h | 46 +++++++++++++++++++-------
+ 1 file changed, 34 insertions(+), 12 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/include/kvm_util.h b/tools/testing/selftests/kvm/include/kvm_util.h
-index 7de88cbdfd2b8..c9dba44ce6bf9 100644
+index e9b4ae9596e05..a86418cdf5f4f 100644
 --- a/tools/testing/selftests/kvm/include/kvm_util.h
 +++ b/tools/testing/selftests/kvm/include/kvm_util.h
 @@ -454,18 +454,6 @@ static inline void vm_set_memory_attributes(struct kvm_vm *vm, gpa_t gpa,
@@ -5343,15 +4306,15 @@ index 7de88cbdfd2b8..c9dba44ce6bf9 100644
 -	vm_set_memory_attributes(vm, gpa, size, 0);
 -}
 -
- static inline int __gmem_set_memory_attributes(int fd, loff_t offset,
+ static inline int __gmem_set_memory_attributes(int fd, u64 offset,
  					       size_t size, u64 attributes,
- 					       loff_t *error_offset,
-@@ -536,6 +524,41 @@ static inline void gmem_set_shared(int fd, loff_t offset, size_t size, u64 flags
- 	gmem_set_memory_attributes(fd, offset, size, 0, flags);
+ 					       u64 *error_offset)
+@@ -532,6 +520,40 @@ static inline void gmem_set_shared(int fd, u64 offset, size_t size)
+ 	gmem_set_memory_attributes(fd, offset, size, 0);
  }
  
 +static inline void vm_mem_set_memory_attributes(struct kvm_vm *vm, gpa_t gpa,
-+						size_t size, u64 attrs, u64 flags)
++						size_t size, u64 attrs)
 +{
 +	if (kvm_has_gmem_attributes) {
 +		gpa_t end = gpa + size;
@@ -5364,83 +4327,34 @@ index 7de88cbdfd2b8..c9dba44ce6bf9 100644
 +			fd = kvm_gpa_to_guest_memfd(vm, addr, &fd_offset, &len);
 +			len = min(end - addr, len);
 +
-+			gmem_set_memory_attributes(fd, fd_offset, len, attrs, flags);
++			gmem_set_memory_attributes(fd, fd_offset, len, attrs);
 +		}
 +	} else {
-+		TEST_ASSERT(!flags, "Flags are not supported.");
 +		vm_set_memory_attributes(vm, gpa, size, attrs);
 +	}
 +}
 +
 +static inline void vm_mem_set_private(struct kvm_vm *vm, gpa_t gpa,
-+				      size_t size, u64 flags)
++				      size_t size)
 +{
 +	vm_mem_set_memory_attributes(vm, gpa, size,
-+				     KVM_MEMORY_ATTRIBUTE_PRIVATE, flags);
++				     KVM_MEMORY_ATTRIBUTE_PRIVATE);
 +}
 +
 +static inline void vm_mem_set_shared(struct kvm_vm *vm, gpa_t gpa,
-+				     size_t size, u64 flags)
++				     size_t size)
 +{
-+	vm_mem_set_memory_attributes(vm, gpa, size, 0, flags);
++	vm_mem_set_memory_attributes(vm, gpa, size, 0);
 +}
 +
  void vm_guest_mem_fallocate(struct kvm_vm *vm, gpa_t gpa, u64 size,
  			    bool punch_hole);
- 
-diff --git a/tools/testing/selftests/kvm/lib/x86/sev.c b/tools/testing/selftests/kvm/lib/x86/sev.c
-index 93f9169034617..d0205b3299e0b 100644
---- a/tools/testing/selftests/kvm/lib/x86/sev.c
-+++ b/tools/testing/selftests/kvm/lib/x86/sev.c
-@@ -33,7 +33,7 @@ static void encrypt_region(struct kvm_vm *vm, struct userspace_mem_region *regio
- 		const u64 offset = (i - lowest_page_in_region) * vm->page_size;
- 
- 		if (private)
--			vm_mem_set_private(vm, gpa_base + offset, size);
-+			vm_mem_set_private(vm, gpa_base + offset, size, 0);
- 
- 		if (is_sev_snp_vm(vm))
- 			snp_launch_update_data(vm, gpa_base + offset,
-diff --git a/tools/testing/selftests/kvm/pre_fault_memory_test.c b/tools/testing/selftests/kvm/pre_fault_memory_test.c
-index fcb57fd034e67..9d16a277696ce 100644
---- a/tools/testing/selftests/kvm/pre_fault_memory_test.c
-+++ b/tools/testing/selftests/kvm/pre_fault_memory_test.c
-@@ -184,7 +184,7 @@ static void __test_pre_fault_memory(unsigned long vm_type, bool private)
- 	virt_map(vm, gva, gpa, TEST_NPAGES);
- 
- 	if (private)
--		vm_mem_set_private(vm, gpa, TEST_SIZE);
-+		vm_mem_set_private(vm, gpa, TEST_SIZE, 0);
- 
- 	pre_fault_memory(vcpu, gpa, 0, SZ_2M, 0, private);
- 	pre_fault_memory(vcpu, gpa, SZ_2M, PAGE_SIZE * 2, PAGE_SIZE, private);
-diff --git a/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c b/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c
-index 10db9fe6d9063..9309d67841482 100644
---- a/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c
-+++ b/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c
-@@ -63,7 +63,7 @@ static void test_private_access_memslot_deleted(void)
- 	virt_map(vm, EXITS_TEST_GVA, EXITS_TEST_GPA, EXITS_TEST_NPAGES);
- 
- 	/* Request to access page privately */
--	vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE);
-+	vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE, 0);
- 
- 	pthread_create(&vm_thread, NULL,
- 		       (void *(*)(void *))run_vcpu_get_exit_reason,
-@@ -99,7 +99,7 @@ static void test_private_access_memslot_not_private(void)
- 	virt_map(vm, EXITS_TEST_GVA, EXITS_TEST_GPA, EXITS_TEST_NPAGES);
- 
- 	/* Request to access page privately */
--	vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE);
-+	vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE, 0);
- 
- 	exit_reason = run_vcpu_get_exit_reason(vcpu);
 
 ---
 
-## [49] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 48/53] KVM: selftests: Check fd/flags provided to
- mmap() when setting up memslot*
+## [39] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 38/42] KVM: selftests: Check fd/flags provided to mmap()
+ when setting up memslot*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -5460,7 +4374,7 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/tools/testing/selftests/kvm/lib/kvm_util.c b/tools/testing/selftests/kvm/lib/kvm_util.c
-index 12e031a8fc20d..29b3f4e9fb4a7 100644
+index f8f0cd62f2f17..21c7e52a2bdac 100644
 --- a/tools/testing/selftests/kvm/lib/kvm_util.c
 +++ b/tools/testing/selftests/kvm/lib/kvm_util.c
 @@ -1088,6 +1088,9 @@ void vm_mem_add(struct kvm_vm *vm, enum vm_mem_backing_src_type src_type,
@@ -5476,8 +4390,8 @@ index 12e031a8fc20d..29b3f4e9fb4a7 100644
 
 ---
 
-## [50] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 49/53] KVM: selftests: Make TEST_EXPECT_SIGBUS
+## [40] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 39/42] KVM: selftests: Make TEST_EXPECT_SIGBUS
  thread-safe*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -5522,7 +4436,7 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  3 files changed, 30 insertions(+), 27 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/include/test_util.h b/tools/testing/selftests/kvm/include/test_util.h
-index c280c3233f502..6907b99fe564b 100644
+index c280c3233f502..c9ba4e010f0b8 100644
 --- a/tools/testing/selftests/kvm/include/test_util.h
 +++ b/tools/testing/selftests/kvm/include/test_util.h
 @@ -82,21 +82,23 @@ do {									\
@@ -5550,10 +4464,10 @@ index c280c3233f502..6907b99fe564b 100644
 +
 +#define TEST_EXPECT_SIGBUS(action)					\
 +do {									\
-+	struct sigaction sa = {};					\
++	struct sigaction __sa = {};					\
 +									\
-+	TEST_ASSERT_EQ(sigaction(SIGBUS, NULL, &sa), 0);		\
-+	TEST_ASSERT_EQ(sa.sa_handler, &catchall_signal_handler);	\
++	TEST_ASSERT_EQ(sigaction(SIGBUS, NULL, &__sa), 0);		\
++	TEST_ASSERT_EQ(__sa.sa_handler, &catchall_signal_handler);	\
 +									\
 +	expecting_sigbus = true;					\
 +	if (sigsetjmp(expect_sigbus_jmpbuf, 1) == 0) {			\
@@ -5565,10 +4479,10 @@ index c280c3233f502..6907b99fe564b 100644
  
  size_t parse_size(const char *size);
 diff --git a/tools/testing/selftests/kvm/lib/kvm_util.c b/tools/testing/selftests/kvm/lib/kvm_util.c
-index 29b3f4e9fb4a7..216d6e037153c 100644
+index 21c7e52a2bdac..a7725fff58b46 100644
 --- a/tools/testing/selftests/kvm/lib/kvm_util.c
 +++ b/tools/testing/selftests/kvm/lib/kvm_util.c
-@@ -2269,13 +2269,20 @@ __weak void kvm_selftest_arch_init(void)
+@@ -2270,13 +2270,20 @@ __weak void kvm_selftest_arch_init(void)
  {
  }
  
@@ -5593,7 +4507,7 @@ index 29b3f4e9fb4a7..216d6e037153c 100644
  	KVM_CASE_SIGNUM(SIGSEGV);
  	KVM_CASE_SIGNUM(SIGILL);
  	KVM_CASE_SIGNUM(SIGFPE);
-@@ -2287,12 +2294,13 @@ static void report_unexpected_signal(int signum)
+@@ -2288,12 +2295,13 @@ static void report_unexpected_signal(int signum)
  void __attribute((constructor)) kvm_selftest_init(void)
  {
  	struct sigaction sig_sa = {
@@ -5629,8 +4543,8 @@ index bab1bd2b775b6..30eb701e4becd 100644
 
 ---
 
-## [51] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 50/53] KVM: selftests: Update
+## [41] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 40/42] KVM: selftests: Update
  private_mem_conversions_test to mmap() guest_memfd*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -5662,14 +4576,14 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
 Co-developed-by: Sean Christopherson <seanjc@google.com>
 Signed-off-by: Sean Christopherson <seanjc@google.com>
 ---
- .../kvm/x86/private_mem_conversions_test.c         | 46 ++++++++++++++++++----
- 1 file changed, 38 insertions(+), 8 deletions(-)
+ .../kvm/x86/private_mem_conversions_test.c         | 44 ++++++++++++++++++----
+ 1 file changed, 36 insertions(+), 8 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/x86/private_mem_conversions_test.c b/tools/testing/selftests/kvm/x86/private_mem_conversions_test.c
-index 289ad10063fca..14a25609a8a35 100644
+index 289ad10063fca..4308c67952310 100644
 --- a/tools/testing/selftests/kvm/x86/private_mem_conversions_test.c
 +++ b/tools/testing/selftests/kvm/x86/private_mem_conversions_test.c
-@@ -306,9 +306,14 @@ static void handle_exit_hypercall(struct kvm_vcpu *vcpu)
+@@ -306,9 +306,12 @@ static void handle_exit_hypercall(struct kvm_vcpu *vcpu)
  	if (do_fallocate)
  		vm_guest_mem_fallocate(vm, gpa, size, map_shared);
  
@@ -5678,16 +4592,14 @@ index 289ad10063fca..14a25609a8a35 100644
 -					 map_shared ? 0 : KVM_MEMORY_ATTRIBUTE_PRIVATE);
 +	if (set_attributes) {
 +		u64 attrs = map_shared ? 0 : KVM_MEMORY_ATTRIBUTE_PRIVATE;
-+		u64 flags = kvm_has_gmem_attributes ?
-+			    KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE : 0;
 +
-+		vm_mem_set_memory_attributes(vm, gpa, size, attrs, flags);
++		vm_mem_set_memory_attributes(vm, gpa, size, attrs);
 +	}
 +
  	run->hypercall.ret = 0;
  }
  
-@@ -352,8 +357,20 @@ static void *__test_mem_conversions(void *__vcpu)
+@@ -352,8 +355,20 @@ static void *__test_mem_conversions(void *__vcpu)
  				size_t nr_bytes = min_t(size_t, vm->page_size, size - i);
  				u8 *hva = addr_gpa2hva(vm, gpa + i);
  
@@ -5710,7 +4622,7 @@ index 289ad10063fca..14a25609a8a35 100644
  
  				/* For shared, write the new pattern to guest memory. */
  				if (uc.args[0] == SYNC_SHARED)
-@@ -382,6 +399,7 @@ static void test_mem_conversions(enum vm_mem_backing_src_type src_type, u32 nr_v
+@@ -382,6 +397,7 @@ static void test_mem_conversions(enum vm_mem_backing_src_type src_type, u32 nr_v
  	const size_t slot_size = memfd_size / nr_memslots;
  	struct kvm_vcpu *vcpus[KVM_MAX_VCPUS];
  	pthread_t threads[KVM_MAX_VCPUS];
@@ -5718,7 +4630,7 @@ index 289ad10063fca..14a25609a8a35 100644
  	struct kvm_vm *vm;
  	int memfd, i;
  
-@@ -397,12 +415,17 @@ static void test_mem_conversions(enum vm_mem_backing_src_type src_type, u32 nr_v
+@@ -397,12 +413,17 @@ static void test_mem_conversions(enum vm_mem_backing_src_type src_type, u32 nr_v
  
  	vm_enable_cap(vm, KVM_CAP_EXIT_HYPERCALL, (1 << KVM_HC_MAP_GPA_RANGE));
  
@@ -5738,7 +4650,7 @@ index 289ad10063fca..14a25609a8a35 100644
  
  	for (i = 0; i < nr_vcpus; i++) {
  		gpa_t gpa =  BASE_DATA_GPA + i * per_cpu_size;
-@@ -452,17 +475,24 @@ static void usage(const char *cmd)
+@@ -452,17 +473,24 @@ static void usage(const char *cmd)
  
  int main(int argc, char *argv[])
  {
@@ -5767,8 +4679,8 @@ index 289ad10063fca..14a25609a8a35 100644
 
 ---
 
-## [52] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 51/53] KVM: selftests: Add script to exercise
+## [42] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 41/42] KVM: selftests: Add script to exercise
  private_mem_conversions_test*
 
 From: Ackerley Tng <ackerleytng@google.com>
@@ -5985,43 +4897,9 @@ index 0000000000000..7179a4fcdd498
 
 ---
 
-## [53] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 52/53] KVM: selftests: Update pre-fault test to work
- with per-guest_memfd attributes*
-
-From: Sean Christopherson <seanjc@google.com>
-
-Skip setting memory to private in the pre-fault memory test when using
-per-gmem memory attributes, as memory is initialized to private by default
-for guest_memfd, and using vm_mem_set_private() on a guest_memfd instance
-requires creating guest_memfd with GUEST_MEMFD_FLAG_MMAP (which is totally
-doable, but would need to be conditional and is ultimately unnecessary).
-
-Signed-off-by: Sean Christopherson <seanjc@google.com>
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- tools/testing/selftests/kvm/pre_fault_memory_test.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/testing/selftests/kvm/pre_fault_memory_test.c b/tools/testing/selftests/kvm/pre_fault_memory_test.c
-index 9d16a277696ce..742bbbca9deea 100644
---- a/tools/testing/selftests/kvm/pre_fault_memory_test.c
-+++ b/tools/testing/selftests/kvm/pre_fault_memory_test.c
-@@ -183,7 +183,7 @@ static void __test_pre_fault_memory(unsigned long vm_type, bool private)
- 				    TEST_NPAGES, private ? KVM_MEM_GUEST_MEMFD : 0);
- 	virt_map(vm, gva, gpa, TEST_NPAGES);
- 
--	if (private)
-+	if (!kvm_has_gmem_attributes && private)
- 		vm_mem_set_private(vm, gpa, TEST_SIZE, 0);
- 
- 	pre_fault_memory(vcpu, gpa, 0, SZ_2M, 0, private);
-
----
-
-## [54] Ackerley Tng via B4 Relay — 2026-04-28
-*Subject: [PATCH RFC v5 53/53] KVM: selftests: Update private memory exits
- test to work with per-gmem attributes*
+## [43] Ackerley Tng via B4 Relay — 2026-05-22
+*Subject: [PATCH v7 42/42] KVM: selftests: Update private memory exits test
+ to work with per-gmem attributes*
 
 From: Sean Christopherson <seanjc@google.com>
 
@@ -6047,7 +4925,7 @@ Signed-off-by: Ackerley Tng <ackerleytng@google.com>
  1 file changed, 30 insertions(+), 6 deletions(-)
 
 diff --git a/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c b/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c
-index 9309d67841482..0bf115faeb827 100644
+index 10db9fe6d9063..70ed16066c63e 100644
 --- a/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c
 +++ b/tools/testing/selftests/kvm/x86/private_mem_kvm_exits_test.c
 @@ -62,8 +62,9 @@ static void test_private_access_memslot_deleted(void)
@@ -6055,10 +4933,10 @@ index 9309d67841482..0bf115faeb827 100644
  	virt_map(vm, EXITS_TEST_GVA, EXITS_TEST_GPA, EXITS_TEST_NPAGES);
  
 -	/* Request to access page privately */
--	vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE, 0);
+-	vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE);
 +	/* Request to access page privately. */
 +	if (!kvm_has_gmem_attributes)
-+		vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE, 0);
++		vm_mem_set_private(vm, EXITS_TEST_GPA, EXITS_TEST_SIZE);
  
  	pthread_create(&vm_thread, NULL,
  		       (void *(*)(void *))run_vcpu_get_exit_reason,
@@ -6106,1032 +4984,5 @@ index 9309d67841482..0bf115faeb827 100644
 +
  	vm = vm_create_shape_with_one_vcpu(protected_vm_shape, &vcpu,
  					   guest_repeatedly_read);
-
----
-
-## [55] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 0/6] guest_memfd in-place conversion selftests for SNP*
-
-With these POC patches, I was able to test the set memory
-attributes/conversion ioctls with SNP.
-
-The content policies work, and PRESERVE can be used before the SNP VM
-is finalized. SNP_LAUNCH_UPDATE can accept 0 for source address and
-the SNP VM runs fine. :)
-
-Ackerley Tng (6):
-  KVM: selftests: Initialize guest_memfd with INIT_SHARED
-  KVM: selftests: Use guest_memfd memory contents in-place for SNP
-    launch update
-  KVM: selftests: Make guest_code_xsave more friendly
-  KVM: selftests: Allow specifying CoCo-privateness while mapping a page
-  KVM: selftests: Test conversions for SNP
-  KVM: selftests: Test content modes ZERO and PRESERVE for SNP
-
- .../selftests/kvm/include/x86/processor.h     |   2 +
- tools/testing/selftests/kvm/lib/kvm_util.c    |  12 +-
- .../testing/selftests/kvm/lib/x86/processor.c |  13 +-
- tools/testing/selftests/kvm/lib/x86/sev.c     |   9 +-
- .../selftests/kvm/x86/sev_smoke_test.c        | 255 +++++++++++++++++-
- 5 files changed, 271 insertions(+), 20 deletions(-)
-
---
-2.54.0.545.g6539524ca2-goog
-
----
-
-## [56] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 1/6] KVM: selftests: Initialize guest_memfd with INIT_SHARED*
-
-Initialize guest_memfd with INIT_SHARED for VM types that require
-guest_memfd.
-
-Memory in the first memslot is used by the selftest framework to load
-code, page tables, interrupt descriptor tables, and basically everything
-the selftest needs to run. The selftest framework sets all of these up
-assuming that the memory in the memslot can be written to from the
-host. Align with that behavior by initializing guest_memfd as shared so
-that all the writes from the host are permitted.
-
-guest_memfd memory can later be marked private if necessary by CoCo
-platform-specific initialization functions.
-
-Suggested-by: Sagi Shahar <sagis@google.com>
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- tools/testing/selftests/kvm/lib/kvm_util.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/tools/testing/selftests/kvm/lib/kvm_util.c b/tools/testing/selftests/kvm/lib/kvm_util.c
-index 216d6e037153c..3811aef8c98cd 100644
---- a/tools/testing/selftests/kvm/lib/kvm_util.c
-+++ b/tools/testing/selftests/kvm/lib/kvm_util.c
-@@ -483,8 +483,10 @@ struct kvm_vm *__vm_create(struct vm_shape shape, u32 nr_runnable_vcpus,
- {
- 	u64 nr_pages = vm_nr_pages_required(shape.mode, nr_runnable_vcpus,
- 						 nr_extra_pages);
-+	enum vm_mem_backing_src_type src_type;
- 	struct userspace_mem_region *slot0;
- 	struct kvm_vm *vm;
-+	u64 gmem_flags;
- 	int i, flags;
- 
- 	kvm_set_files_rlimit(nr_runnable_vcpus);
-@@ -502,7 +504,15 @@ struct kvm_vm *__vm_create(struct vm_shape shape, u32 nr_runnable_vcpus,
- 	if (is_guest_memfd_required(shape))
- 		flags |= KVM_MEM_GUEST_MEMFD;
- 
--	vm_userspace_mem_region_add(vm, VM_MEM_SRC_ANONYMOUS, 0, 0, nr_pages, flags);
-+	gmem_flags = 0;
-+	src_type = VM_MEM_SRC_ANONYMOUS;
-+	if (is_guest_memfd_required(shape) && kvm_has_gmem_attributes) {
-+		src_type = VM_MEM_SRC_SHMEM;
-+		gmem_flags = GUEST_MEMFD_FLAG_MMAP | GUEST_MEMFD_FLAG_INIT_SHARED;
-+	}
-+
-+	vm_mem_add(vm, src_type, 0, 0, nr_pages, flags, -1, 0, gmem_flags);
-+
- 	for (i = 0; i < NR_MEM_REGIONS; i++)
- 		vm->memslots[i] = 0;
-
----
-
-## [57] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 2/6] KVM: selftests: Use guest_memfd memory contents
- in-place for SNP launch update*
-
-Update the SEV-SNP launch update flow to utilize guest_memfd in-place
-conversion.
-
-Include the KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE flag when setting memory
-attributes to private. This is permitted before the SNP VM is finalized.
-
-In snp_launch_update_data, pass 0 as the host virtual address. This
-instructs the kernel to perform the launch update using the guest_memfd
-backing the guest physical address rather than a userspace-provided
-buffer.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- tools/testing/selftests/kvm/lib/x86/sev.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/tools/testing/selftests/kvm/lib/x86/sev.c b/tools/testing/selftests/kvm/lib/x86/sev.c
-index d0205b3299e0b..72b2935871fe4 100644
---- a/tools/testing/selftests/kvm/lib/x86/sev.c
-+++ b/tools/testing/selftests/kvm/lib/x86/sev.c
-@@ -32,13 +32,14 @@ static void encrypt_region(struct kvm_vm *vm, struct userspace_mem_region *regio
- 		const u64 size = (j - i + 1) * vm->page_size;
- 		const u64 offset = (i - lowest_page_in_region) * vm->page_size;
- 
--		if (private)
--			vm_mem_set_private(vm, gpa_base + offset, size, 0);
-+		if (private) {
-+			vm_mem_set_private(vm, gpa_base + offset, size,
-+					   KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE);
-+		}
- 
- 		if (is_sev_snp_vm(vm))
- 			snp_launch_update_data(vm, gpa_base + offset,
--					       (u64)addr_gpa2hva(vm, gpa_base + offset),
--					       size, page_type);
-+					       0, size, page_type);
- 		else
- 			sev_launch_update_data(vm, gpa_base + offset, size);
-
----
-
-## [58] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 3/6] KVM: selftests: Make guest_code_xsave more friendly*
-
-The original implementation of guest_code_xsave makes a jmp to
-guest_sev_es_code in inline assembly. When code that uses guest_sev_es_code
-is removed, guest_sev_es_code will be optimized out, leading to a linking
-error since guest_code_xsave still tries to jmp to guest_sev_es_code.
-
-Rewrite guest_code_xsave() to instead make a call, in C, to
-guest_sev_es_code(), so that usage of guest_sev_es_code() is made known to
-the compiler.
-
-This rewriting also gives a name to the xsave inline assembly, improving
-readability.
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- .../selftests/kvm/x86/sev_smoke_test.c        | 24 +++++++++++++------
- 1 file changed, 17 insertions(+), 7 deletions(-)
-
-diff --git a/tools/testing/selftests/kvm/x86/sev_smoke_test.c b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-index 1a49ee3915864..8b859adf4cf6f 100644
---- a/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-+++ b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-@@ -80,13 +80,23 @@ static void guest_sev_code(void)
- 	GUEST_DONE();
- }
- 
--/* Stash state passed via VMSA before any compiled code runs.  */
--extern void guest_code_xsave(void);
--asm("guest_code_xsave:\n"
--    "mov $" __stringify(XFEATURE_MASK_X87_AVX) ", %eax\n"
--    "xor %edx, %edx\n"
--    "xsave (%rdi)\n"
--    "jmp guest_sev_es_code");
-+static void xsave_all_registers(void *addr)
-+{
-+	__asm__ __volatile__(
-+		"mov $" __stringify(XFEATURE_MASK_X87_AVX) ", %eax\n"
-+		"xor %edx, %edx\n"
-+		"xsave (%0)"
-+		:
-+		: "r"(addr)
-+		: "eax", "edx", "memory"
-+	 );
-+}
-+
-+static void guest_code_xsave(void *vmsa_gva)
-+{
-+	xsave_all_registers(vmsa_gva);
-+	guest_sev_es_code();
-+}
- 
- static void compare_xsave(u8 *from_host, u8 *from_guest)
- {
-
----
-
-## [59] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 4/6] KVM: selftests: Allow specifying CoCo-privateness
- while mapping a page*
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- tools/testing/selftests/kvm/include/x86/processor.h |  2 ++
- tools/testing/selftests/kvm/lib/x86/processor.c     | 13 ++++++++++---
- 2 files changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/tools/testing/selftests/kvm/include/x86/processor.h b/tools/testing/selftests/kvm/include/x86/processor.h
-index 77f576ee7789d..683f21452db58 100644
---- a/tools/testing/selftests/kvm/include/x86/processor.h
-+++ b/tools/testing/selftests/kvm/include/x86/processor.h
-@@ -1507,6 +1507,8 @@ enum pg_level {
- void tdp_mmu_init(struct kvm_vm *vm, int pgtable_levels,
- 		  struct pte_masks *pte_masks);
- 
-+void ___virt_pg_map(struct kvm_vm *vm, struct kvm_mmu *mmu, gva_t gva,
-+		    gpa_t gpa,  int level, bool private);
- void __virt_pg_map(struct kvm_vm *vm, struct kvm_mmu *mmu, gva_t gva,
- 		   gpa_t gpa,  int level);
- void virt_map_level(struct kvm_vm *vm, gva_t gva, gpa_t gpa,
-diff --git a/tools/testing/selftests/kvm/lib/x86/processor.c b/tools/testing/selftests/kvm/lib/x86/processor.c
-index b51467d70f6e7..02781194f51a2 100644
---- a/tools/testing/selftests/kvm/lib/x86/processor.c
-+++ b/tools/testing/selftests/kvm/lib/x86/processor.c
-@@ -256,8 +256,8 @@ static u64 *virt_create_upper_pte(struct kvm_vm *vm,
- 	return pte;
- }
- 
--void __virt_pg_map(struct kvm_vm *vm, struct kvm_mmu *mmu, gva_t gva,
--		   gpa_t gpa, int level)
-+void ___virt_pg_map(struct kvm_vm *vm, struct kvm_mmu *mmu, gva_t gva,
-+		    gpa_t gpa, int level, bool private)
- {
- 	const u64 pg_size = PG_LEVEL_SIZE(level);
- 	u64 *pte = &mmu->pgd;
-@@ -309,12 +309,19 @@ void __virt_pg_map(struct kvm_vm *vm, struct kvm_mmu *mmu, gva_t gva,
- 	 * Neither SEV nor TDX supports shared page tables, so only the final
- 	 * leaf PTE needs manually set the C/S-bit.
- 	 */
--	if (vm_is_gpa_protected(vm, gpa))
-+	if (private)
- 		*pte |= PTE_C_BIT_MASK(mmu);
- 	else
- 		*pte |= PTE_S_BIT_MASK(mmu);
- }
- 
-+void __virt_pg_map(struct kvm_vm *vm, struct kvm_mmu *mmu, gva_t gva,
-+		   gpa_t gpa, int level)
-+{
-+	___virt_pg_map(vm, mmu, gva, gpa, level,
-+		       vm_is_gpa_protected(vm, gpa));
-+}
-+
- void virt_arch_pg_map(struct kvm_vm *vm, gva_t gva, gpa_t gpa)
- {
- 	__virt_pg_map(vm, &vm->mmu, gva, gpa, PG_LEVEL_4K);
-
----
-
-## [60] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 5/6] KVM: selftests: Test conversions for SNP*
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- .../selftests/kvm/x86/sev_smoke_test.c        | 190 +++++++++++++++++-
- 1 file changed, 185 insertions(+), 5 deletions(-)
-
-diff --git a/tools/testing/selftests/kvm/x86/sev_smoke_test.c b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-index 8b859adf4cf6f..86f17e59e9392 100644
---- a/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-+++ b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-@@ -253,17 +253,197 @@ static void test_sev_smoke(void *guest, u32 type, u64 policy)
- 	}
- }
- 
-+#define GHCB_MSR_REG_GPA_REQ		0x012
-+#define GHCB_MSR_REG_GPA_REQ_VAL(v)                \
-+	/* GHCBData[63:12] */                      \
-+	(((u64)((v) & GENMASK_ULL(51, 0)) << 12) | \
-+	 /* GHCBData[11:0] */			   \
-+	 GHCB_MSR_REG_GPA_REQ)
-+
-+#define GHCB_MSR_REG_GPA_RESP		0x013
-+#define GHCB_MSR_REG_GPA_RESP_VAL(v)			\
-+	/* GHCBData[63:12] */				\
-+	(((u64)(v) & GENMASK_ULL(63, 12)) >> 12)
-+
-+#define GHCB_DATA_LOW			12
-+#define GHCB_MSR_INFO_MASK		(BIT_ULL(GHCB_DATA_LOW) - 1)
-+#define GHCB_RESP_CODE(v) ((v) & GHCB_MSR_INFO_MASK)
-+
-+/*
-+ * SNP Page State Change Operation
-+ *
-+ * GHCBData[55:52] - Page operation:
-+ *   0x0001	Page assignment, Private
-+ *   0x0002	Page assignment, Shared
-+ */
-+enum psc_op {
-+	SNP_PAGE_STATE_PRIVATE = 1,
-+	SNP_PAGE_STATE_SHARED,
-+};
-+
-+#define GHCB_MSR_PSC_REQ		0x014
-+#define GHCB_MSR_PSC_REQ_GFN(gfn, op)			\
-+	/* GHCBData[55:52] */				\
-+	(((u64)((op) & 0xf) << 52) |			\
-+	/* GHCBData[51:12] */				\
-+	((u64)((gfn) & GENMASK_ULL(39, 0)) << 12) |	\
-+	/* GHCBData[11:0] */				\
-+	GHCB_MSR_PSC_REQ)
-+
-+#define GHCB_MSR_PSC_RESP		0x015
-+#define GHCB_MSR_PSC_RESP_VAL(val)			\
-+	/* GHCBData[63:32] */				\
-+	(((u64)(val) & GENMASK_ULL(63, 32)) >> 32)
-+
-+static u64 ghcb_gpa;
-+static void snp_register_ghcb(void)
-+{
-+	u64 ghcb_pfn = ghcb_gpa >> PAGE_SHIFT;
-+	u64 val;
-+
-+	GUEST_ASSERT(ghcb_gpa);
-+
-+	wrmsr(MSR_AMD64_SEV_ES_GHCB, GHCB_MSR_REG_GPA_REQ_VAL(ghcb_gpa >> PAGE_SHIFT));
-+	vmgexit();
-+
-+	val = rdmsr(MSR_AMD64_SEV_ES_GHCB);
-+	GUEST_ASSERT_EQ(GHCB_RESP_CODE(val), GHCB_MSR_REG_GPA_RESP);
-+	GUEST_ASSERT_EQ(GHCB_MSR_REG_GPA_RESP_VAL(val), ghcb_pfn);
-+}
-+
-+static void snp_page_state_change(u64 gpa, enum psc_op op)
-+{
-+	u64 val;
-+
-+	wrmsr(MSR_AMD64_SEV_ES_GHCB, GHCB_MSR_PSC_REQ_GFN(gpa >> PAGE_SHIFT, op));
-+	vmgexit();
-+
-+	val = rdmsr(MSR_AMD64_SEV_ES_GHCB);
-+	GUEST_ASSERT_EQ(GHCB_RESP_CODE(val), GHCB_MSR_PSC_RESP);
-+	GUEST_ASSERT_EQ(GHCB_MSR_PSC_RESP_VAL(val), 0);
-+}
-+
-+#define RMP_PG_SIZE_4K			0
-+static inline void pvalidate(void *vaddr, bool validate)
-+{
-+	bool no_rmpupdate;
-+	int rc;
-+
-+	/* "pvalidate" mnemonic support in binutils 2.36 and newer */
-+	asm volatile(".byte 0xF2, 0x0F, 0x01, 0xFF\n\t"
-+		     : "=@ccc"(no_rmpupdate), "=a"(rc)
-+		     : "a"(vaddr), "c"(RMP_PG_SIZE_4K), "d"(validate)
-+		     : "memory", "cc");
-+
-+	GUEST_ASSERT(!no_rmpupdate);
-+	GUEST_ASSERT_EQ(rc, 0);
-+}
-+
-+#define CONVERSION_TEST_VALUE_SHARED_1 0xab
-+#define CONVERSION_TEST_VALUE_SHARED_2 0xcd
-+#define CONVERSION_TEST_VALUE_PRIVATE 0xef
-+#define CONVERSION_TEST_VALUE_SHARED_3 0xbc
-+static void guest_code_conversion(u8 *test_shared_gva, u8 *test_private_gva, u64 test_gpa)
-+{
-+	snp_register_ghcb();
-+
-+	GUEST_ASSERT_EQ(READ_ONCE(*test_shared_gva), CONVERSION_TEST_VALUE_SHARED_1);
-+	WRITE_ONCE(*test_shared_gva, CONVERSION_TEST_VALUE_SHARED_2);
-+
-+	snp_page_state_change(test_gpa, SNP_PAGE_STATE_PRIVATE);
-+	pvalidate(test_private_gva, true);
-+
-+	WRITE_ONCE(*test_private_gva, CONVERSION_TEST_VALUE_PRIVATE);
-+	GUEST_ASSERT_EQ(READ_ONCE(*test_private_gva), CONVERSION_TEST_VALUE_PRIVATE);
-+
-+	pvalidate(test_private_gva, false);
-+	snp_page_state_change(test_gpa, SNP_PAGE_STATE_SHARED);
-+
-+	WRITE_ONCE(*test_shared_gva, CONVERSION_TEST_VALUE_SHARED_3);
-+
-+	wrmsr(MSR_AMD64_SEV_ES_GHCB, GHCB_MSR_TERM_REQ);
-+	vmgexit();
-+}
-+
-+static void test_conversion(u64 policy)
-+{
-+	gva_t test_private_gva;
-+	gva_t test_shared_gva;
-+	struct kvm_vcpu *vcpu;
-+	gva_t ghcb_gva;
-+	gpa_t test_gpa;
-+	struct kvm_vm *vm;
-+	void *ghcb_hva;
-+	void *test_hva;
-+
-+	vm = vm_sev_create_with_one_vcpu(KVM_X86_SNP_VM, guest_code_conversion, &vcpu);
-+
-+	ghcb_gva = vm_alloc_shared(vm, PAGE_SIZE, KVM_UTIL_MIN_VADDR,
-+				   MEM_REGION_TEST_DATA);
-+	ghcb_hva = addr_gva2hva(vm, ghcb_gva);
-+	ghcb_gpa = addr_gva2gpa(vm, ghcb_gva);
-+	sync_global_to_guest(vm, ghcb_gpa);
-+
-+	test_shared_gva = vm_alloc_shared(vm, PAGE_SIZE, KVM_UTIL_MIN_VADDR,
-+					  MEM_REGION_TEST_DATA);
-+	test_hva = addr_gva2hva(vm, test_shared_gva);
-+	test_gpa = addr_gva2gpa(vm, test_shared_gva);
-+
-+	test_private_gva = vm_unused_gva_gap(vm, PAGE_SIZE, KVM_UTIL_MIN_VADDR);
-+	___virt_pg_map(vm, &vm->mmu, test_private_gva, test_gpa, PG_SIZE_4K, true);
-+
-+	vcpu_args_set(vcpu, 3, test_shared_gva, test_private_gva, test_gpa);
-+
-+	vm_sev_launch(vm, policy, NULL);
-+
-+	WRITE_ONCE(*(u8 *)test_hva, CONVERSION_TEST_VALUE_SHARED_1);
-+
-+	fprintf(stderr, "ghcb_hva=%p ghcb_gpa=%lx ghcb_gva=%lx\n", ghcb_hva, ghcb_gpa, ghcb_gva);
-+	fprintf(stderr, "test_hva=%p test_gpa=%lx test_private_gva=%lx test_shared_gva=%lx\n", test_hva, test_gpa, test_private_gva, test_shared_gva);
-+
-+	vcpu_run(vcpu);
-+
-+	TEST_ASSERT_KVM_EXIT_REASON(vcpu, KVM_EXIT_HYPERCALL);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.nr, KVM_HC_MAP_GPA_RANGE);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.args[0], test_gpa);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.args[1], 1);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.args[2], KVM_MAP_GPA_RANGE_ENCRYPTED | KVM_MAP_GPA_RANGE_PAGE_SZ_4K);
-+
-+	vm_mem_set_private(vm, test_gpa, PAGE_SIZE, KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED);
-+
-+	vcpu_run(vcpu);
-+
-+	TEST_ASSERT_KVM_EXIT_REASON(vcpu, KVM_EXIT_HYPERCALL);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.nr, KVM_HC_MAP_GPA_RANGE);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.args[0], test_gpa);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.args[1], 1);
-+	TEST_ASSERT_EQ(vcpu->run->hypercall.args[2], KVM_MAP_GPA_RANGE_DECRYPTED | KVM_MAP_GPA_RANGE_PAGE_SZ_4K);
-+
-+	vm_mem_set_shared(vm, test_gpa, PAGE_SIZE, KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED);
-+
-+	vcpu_run(vcpu);
-+
-+	TEST_ASSERT_KVM_EXIT_REASON(vcpu, KVM_EXIT_SYSTEM_EVENT);
-+	TEST_ASSERT_EQ(vcpu->run->system_event.type, KVM_SYSTEM_EVENT_SEV_TERM);
-+	TEST_ASSERT_EQ(vcpu->run->system_event.ndata, 1);
-+	TEST_ASSERT_EQ(vcpu->run->system_event.data[0], GHCB_MSR_TERM_REQ);
-+
-+	TEST_ASSERT_EQ(*(u8 *)test_hva, CONVERSION_TEST_VALUE_SHARED_3);
-+}
-+
- int main(int argc, char *argv[])
- {
- 	TEST_REQUIRE(kvm_cpu_has(X86_FEATURE_SEV));
- 
--	test_sev_smoke(guest_sev_code, KVM_X86_SEV_VM, 0);
-+	// test_sev_smoke(guest_sev_code, KVM_X86_SEV_VM, 0);
- 
--	if (kvm_cpu_has(X86_FEATURE_SEV_ES))
--		test_sev_smoke(guest_sev_es_code, KVM_X86_SEV_ES_VM, SEV_POLICY_ES);
-+	// if (kvm_cpu_has(X86_FEATURE_SEV_ES))
-+	// 	test_sev_smoke(guest_sev_es_code, KVM_X86_SEV_ES_VM, SEV_POLICY_ES);
- 
--	if (kvm_cpu_has(X86_FEATURE_SEV_SNP))
--		test_sev_smoke(guest_snp_code, KVM_X86_SNP_VM, snp_default_policy());
-+	if (kvm_cpu_has(X86_FEATURE_SEV_SNP)) {
-+		test_conversion(snp_default_policy());
-+		// test_sev_smoke(guest_snp_code, KVM_X86_SNP_VM, snp_default_policy());
-+	}
- 
- 	return 0;
- }
-
----
-
-## [61] Ackerley Tng — 2026-04-28
-*Subject: [POC PATCH 6/6] KVM: selftests: Test content modes ZERO and PRESERVE
- for SNP*
-
-Signed-off-by: Ackerley Tng <ackerleytng@google.com>
----
- .../selftests/kvm/x86/sev_smoke_test.c        | 47 +++++++++++++++++--
- 1 file changed, 44 insertions(+), 3 deletions(-)
-
-diff --git a/tools/testing/selftests/kvm/x86/sev_smoke_test.c b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-index 86f17e59e9392..7a91a113c4fb7 100644
---- a/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-+++ b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
-@@ -365,7 +365,26 @@ static void guest_code_conversion(u8 *test_shared_gva, u8 *test_private_gva, u64
- 	vmgexit();
- }
- 
--static void test_conversion(u64 policy)
-+static void vm_set_memory_attributes_expect_error(struct kvm_vm *vm, u64 gpa,
-+						  size_t size, u64 attributes,
-+						  u64 flags, int expected_errno)
-+{
-+	loff_t error_offset = -1;
-+	size_t len_ignored;
-+	loff_t offset;
-+	int gmem_fd;
-+	int ret;
-+
-+	gmem_fd = kvm_gpa_to_guest_memfd(vm, gpa, &offset, &len_ignored);
-+	ret = __gmem_set_memory_attributes(gmem_fd, offset, size, attributes,
-+					   &error_offset, flags);
-+
-+	TEST_ASSERT_EQ(ret, -1);
-+	TEST_ASSERT_EQ(offset, error_offset);
-+	TEST_ASSERT_EQ(errno, expected_errno);
-+}
-+
-+static void test_conversion(u64 policy, u64 content_mode)
- {
- 	gva_t test_private_gva;
- 	gva_t test_shared_gva;
-@@ -409,6 +428,21 @@ static void test_conversion(u64 policy)
- 	TEST_ASSERT_EQ(vcpu->run->hypercall.args[1], 1);
- 	TEST_ASSERT_EQ(vcpu->run->hypercall.args[2], KVM_MAP_GPA_RANGE_ENCRYPTED | KVM_MAP_GPA_RANGE_PAGE_SZ_4K);
- 
-+	/* ZERO when setting memory attributes to private is always not supported. */
-+	vm_set_memory_attributes_expect_error(vm, test_gpa, PAGE_SIZE,
-+					      KVM_MEMORY_ATTRIBUTE_PRIVATE,
-+					      KVM_SET_MEMORY_ATTRIBUTES2_ZERO,
-+					      EOPNOTSUPP);
-+
-+	/* PRESERVE is not supported for SNP. */
-+	vm_set_memory_attributes_expect_error(vm, test_gpa, PAGE_SIZE, 0,
-+					      KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE,
-+					      EOPNOTSUPP);
-+	vm_set_memory_attributes_expect_error(vm, test_gpa, PAGE_SIZE,
-+					      KVM_MEMORY_ATTRIBUTE_PRIVATE,
-+					      KVM_SET_MEMORY_ATTRIBUTES2_PRESERVE,
-+					      EOPNOTSUPP);
-+
- 	vm_mem_set_private(vm, test_gpa, PAGE_SIZE, KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED);
- 
- 	vcpu_run(vcpu);
-@@ -419,7 +453,12 @@ static void test_conversion(u64 policy)
- 	TEST_ASSERT_EQ(vcpu->run->hypercall.args[1], 1);
- 	TEST_ASSERT_EQ(vcpu->run->hypercall.args[2], KVM_MAP_GPA_RANGE_DECRYPTED | KVM_MAP_GPA_RANGE_PAGE_SZ_4K);
- 
--	vm_mem_set_shared(vm, test_gpa, PAGE_SIZE, KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED);
-+	vm_mem_set_shared(vm, test_gpa, PAGE_SIZE, content_mode);
-+
-+	if (content_mode == KVM_SET_MEMORY_ATTRIBUTES2_ZERO)
-+		TEST_ASSERT_EQ(READ_ONCE(*(u8 *)test_hva), 0);
-+	else
-+		fprintf(stderr, "test_hva contents = %x\n", READ_ONCE(*(u8 *)test_hva));
- 
- 	vcpu_run(vcpu);
- 
-@@ -441,7 +480,9 @@ int main(int argc, char *argv[])
- 	// 	test_sev_smoke(guest_sev_es_code, KVM_X86_SEV_ES_VM, SEV_POLICY_ES);
- 
- 	if (kvm_cpu_has(X86_FEATURE_SEV_SNP)) {
--		test_conversion(snp_default_policy());
-+		test_conversion(snp_default_policy(), KVM_SET_MEMORY_ATTRIBUTES2_MODE_UNSPECIFIED);
-+		test_conversion(snp_default_policy(), KVM_SET_MEMORY_ATTRIBUTES2_ZERO);
-+
- 		// test_sev_smoke(guest_snp_code, KVM_X86_SNP_VM, snp_default_policy());
- 	}
-
----
-
-## [62] Ackerley Tng — 2026-04-28
-*Subject: Re: [PATCH RFC v5 24/53] KVM: SEV: Make 'uaddr' parameter optional
- for KVM_SEV_SNP_LAUNCH_UPDATE*
-
-Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
-writes:
-
-> From: Michael Roth <michael.roth@amd.com>
->
-
-Thanks Michael!
-
->
-> [...snip...]
-
-I dropped the #ifdef CONFIG_KVM_VM_MEMORY_ATTRIBUTES from [1] since
-vm_memory_attributes is #define-d as false when if
-CONFIG_KVM_VM_MEMORY_ATTRIBUTES is not defined.
-
-> +	if (vm_memory_attributes &&
-> +	    sev_populate_args->type != KVM_SEV_SNP_PAGE_TYPE_ZERO && !src_page)
-
-[1] https://github.com/AMDESE/linux/commit/7e7c29afdf3763822ced0b7007fc0f93b8fb993d
-
->
-> [...snip...]
-
----
-
-## [63] Sean Christopherson — 2026-04-29
-*Subject: Re: [PATCH RFC v5 00/53] guest_memfd: In-place conversion support*
-
-On Tue, Apr 28, 2026, Ackerley Tng wrote:
-> This is RFC v5 of guest_memfd in-place conversion support.
-
-...
-
-> TODOs
-> 
-
-Why exactly is this still RFC?  The TODOs here don't strike me as things that
-would make this RFC.  Blockers for merge, yes/maybe/probably, but at a glance,
-it feels like we've moved beyond RFC for the code itself.
-
----
-
-## [64] Michael Roth — 2026-04-29
-*Subject: Re: [PATCH RFC v5 00/53] guest_memfd: In-place conversion support*
-
-On Tue, Apr 28, 2026 at 04:24:55PM -0700, Ackerley Tng via B4 Relay wrote:
-> [Some people who received this message don't often get email from devnull+ackerleytng.google.com@kernel.org. Learn why this is important at https://aka.ms/LearnAboutSenderIdentification ]
-> 
-
-I made a super-long-winded reply to that thread, but to summarize:
-
-PRESERVE flag has different enumeration/behavior/enforcement for pre-launch
-vs. post-launch, and similar considerations might come into play for
-other flags, so to make it easier to enumerate what flags are available
-for pre-launch/post-launch, maybe we could have 2 capabilities instead
-of 1:
-
-  KVM_CAP_MEMORY_ATTRIBUTES2_PRE_LAUNCH_FLAGS
-  KVM_CAP_MEMORY_ATTRIBUTES2_FLAGS
-
-where SNP/TDX would only advertise PRESERVE for PRE_LAUNCH, and pKVM I
-guess would enumerate it for both (or maybe just POST_LAUNCH?)
-
-That lets us keep the flags definitions more straightforward but still
-allows userspace to easily enumerate what exactly should be available at
-pre vs. post launch time, and give us some flexibility to detail
-variations in behavior between the 2 phases without documenting
-edge-cases in terms of VM types.
-
-> + Resolve issue where guest_memfd_conversions_test, which uses the
->   kselftest framework, doesn't perform teardown on assertion
-
-Looking at the example you have there:
-
-  + Note: These content modes apply to the entire requested range, not
-  + just the parts of the range that underwent conversion. For example, if
-  + this was the initial state:
-  + 
-  +   * [0x0000, 0x1000): shared
-  +   * [0x1000, 0x2000): private
-  +   * [0x2000, 0x3000): shared
-  + and range [0x0000, 0x3000) was set to shared, the content mode would
-  + apply to all memory in [0x0000, 0x3000), not just the range that
-  + underwent conversion [0x1000, 0x2000).
-
-Userspace would be aware of whether the range contains pages that were
-already set to private, so if it really wants to set the just the
-[0x1000, 0x2000) range to shared with appropriate content mode, it is
-fully able to do so by just issuing the ioctl for that specific range.
-If it attempts to issue it for the entire range, it only seems like it
-would defy normal expectations and cause confusion to skip ranges, and
-I'm not sure it gains us anything useful in exchange for that potential
-confusion.
-
->     + Possibly related: should setting attributes be allowed if some
->       sub-range requested already has the requested attribute?
-
-As it is now, userspace has that capability (to use finer-grained ranges
-if it doesn't want to re-issue unecessary/unwanted conversions), similar
-to above. And KVM internally will just issue kvm_arch_gmem_prepare()
-calls so that architecture-specific handling can deal with this case
-(e.g. SNP's sev_gmem_prepare() already checks if the corresponding
-attribute is set in the RMP table and just skips it otherwise). So I
-don't think we really gain anything but added complexity if we try to
-make gmem more selective about it.
-
--Mike
-
-> + Structure of how various content modes are checked for support or
->   applied? I used overridable weak functions for architectures that haven't
-
----
-
-## [65] Ackerley Tng — 2026-04-30
-*Subject: Re: [PATCH RFC v5 00/53] guest_memfd: In-place conversion support*
-
-Michael Roth <michael.roth@amd.com> writes:
-
->
-> [...snip...]
-
-Oops Michael I only read this after the meeting today.
-
-Sean, today at guest_memfd biweekly we also discussed this topic. I
-brought up this topic because IMO the interface is starting to get
-a little awkward, I'm struggling to put the awkwardness into words.
-
-Here are some awkward points:
-
-For PRESERVE, even though it is defined (now) as that what the host
-writes will be readable in the guest, it only works for both to-private
-and to-shared conversions for KVM_X86_SW_PROTECTED_VMs and pKVM. That's
-because guest_memfd doesn't actually invoke encryption during the
-conversion. For TDX and SNP, the encryption can only be done before the
-VM is finalized, through vendor-specific ioctls that go through
-kvm_gmem_populate() to load memory into the guest.
-
-For ZERO, it is defined in api.rst that ZERO is not supported for
-to-private conversions, and the rationale there was that when ZEROing,
-guest_memfd/KVM can zero, but it's really the contract between the guest
-and the vendor trusted firmware whether the guest sees zeros later.
-
-Another awkward point is that ZERO was meant to enable an optimization
-for TDX since the firmware zeroes memory, but it actually only zeroes
-memory when the page is unmapped from Secure EPTs. guest_memfd (for now)
-doesn't track whether the page was unmapped from Secure EPTs as part of
-the conversion, so guest_memfd can't assume it was mapped before the
-conversion request. To uphold the ZERO contract with userspace,
-guest_memfd applies zeroing for TDX anyway.
-
-Summarizing from guest_memfd biweekly today:
-
-David suggested enumerating the combinations, something like
-`SHARED_ZERO` and friends (since to-private and ZERO is not supported)
-and Michael then brought up the other axis of pre/post launch. IIRC
-there might be another axis since pKVM would need to determine
-dynamically if a to_shared conversion can be permitted for the range
-being converted, based on whether the guest had requested a to_shared
-conversion.
-
-I think this might just result in too many flags, and could paint us
-into a corner if more options get supported later.
-
-
-I spent even more time thinking about this today. I get that we want a
-consistent contract to userspace, can we scope the contract differently?
-
-What if we scope as "what KVM guarantees the content will look like
-after guest_memfd updates attributes"? This is a smaller contract, since
-it doesn't promise anything about what the guest sees. Running this
-through a few examples:
-
-+ Pre-finalize, SNP, to-private, PRESERVE: guest_memfd guarantees that
-  after setting memory attributes, the contents of the pages will not
-  change. The contents are then ready for populate. What populate does
-  to the memory is another contract between SNP and the guest that is
-  out of scope of guest_memfd's contract.
-
-+ Post-finalize, SNP, to-private, PRESERVE: guest_memfd guarantees that
-  after setting memory attributes, the contents of the pages will not
-  change. SNP's contract with the guest does not, though. After the page
-  gets faulted in, the guest sees scrambled data. This may be a
-  meaningless operation now, but it leaves the door open so perhaps we
-  could have an SNP-specific ioctl in future where step 1 is to set
-  memory attributes within guest_memfd to private and step 2 is to
-  encrypt in place.
-
-+ pKVM, to-private, PRESERVE: guest_memfd guarantees that after setting
-  memory attributes, the contents of the pages don't change. Separately,
-  pKVM doesn't do encryption, so the pKVM guest reads the same contents
-  the host wrote. The distinction here from the current state is that
-  guest_memfd didn't guarantee that the pKVM guest will see the same
-  content the host wrote since that's a separate contract between the
-  pKVM guest and pKVM.
-
-+ Post-finalize, TDX, to-shared, ZERO: guest_memfd guarantees that
-  contents of the pages will be zeroed in the process of updating
-  guest_memfd attributes. Host userspace reads zeros after faulting it
-  in, which is because guest_memfd did zero the pages after conversion
-  to shared. A future optimization is possible, where guest_memfd only
-  zeroes the pages that were unmapped from Secure EPTs, since (this
-  version of) TDX zeros memory when unmapping from Secure EPTs.
-
-+ Post-finalize, TDX, to-shared, PRESERVE: -EOPNOTSUPP. guest_memfd is
-  unable to guarantee that the process of setting memory attributes will
-  not change memory contents. The process of setting memory attributes
-  requires unmapping from Secure EPTs, which will zero the memory. (In
-  future, if we want to relax this, we could permit this if nothing in
-  the requested range was mapped in Secure EPTs)
-
-+ Post-finalize, SNP, to-shared, PRESERVE: guest_memfd guarantees that
-  after setting memory attributes, the contents of the pages will not
-  change. For SNP, unmapping doesn't change memory contents? The guest
-  reads garbage, and that's a separate contract between SNP and the
-  guest. In the guest_memfd contract, guest_memfd PRESERVEs the memory
-  contents in the process of setting memory attributes, and can fulfil
-  that.
-
-+ Post-finalize, TDX, to-private, ZERO: guest_memfd zeroes the shared
-  memory before updating the attributes to be private, because it
-  promised to. If this memory gets faulted in to Secure EPTs, TDX
-  firmware zeros it again, because that's TDX's contract with the
-  guest. I can't see any benefit to userspace in using this combination,
-  but the guest_memfd contract and implementation are simple.
-
-TLDR:
-
-+ PRESERVE == guarantee that the process of setting memory attributes
-  doesn't change memory contents.
-    + implementation == do nothing in most cases, except -EOPNOTSUPP for
-      to-shared on TDX, since unmapping is a required part of setting
-      memory attributes to private, and a TDX side effect of unmapping
-      is zeroing memory,
-+ ZERO == guarantee that the process of setting memory attributes zeroes
-  memory contents.
-    + implementation == memset(zero) in most cases. For TDX, a future
-      optimization exists, where memset() can be skipped for pages that
-      were mapped in Secure EPTs before conversion
-+ UNSPECIFIED == no guarantees
-    + implementation == guest_memfd does nothing explicitly about memory
-      contents. The implementation is pretty much the same as PRESERVE
-      except guest_memfd won't take into account vendor-specific side
-      effects of the process of conversion. Except for the test vehicle
-      KVM_X86_SW_PROTECTED_VMS, where memory is scrambled.
-
->>
->> [...snip...]
-
-Great that we're aligned here :) No complaints from guest_memfd biweekly
-today as well :)
-
->>
->> [...snip...]
-
----
-
-## [66] Ackerley Tng — 2026-05-01
-*Subject: Re: [PATCH RFC v5 00/53] guest_memfd: In-place conversion support*
-
-Ackerley Tng <ackerleytng@google.com> writes:
-
->
-> [...snip...]
-
--EOPNOTSUPP will only be for TDX, not SNP.
-
-> + ZERO == guarantee that the process of setting memory attributes zeroes
->   memory contents.
-
-Found another use case internally for pre-finalize, SNP, to-shared,
-PRESERVE, which works with the above smaller scope.
-
-During SNP_LAUNCH_UPDATE, when inserting a CPUID page, the firmware will
-check that the CPUID values would not lead to an insecure guest
-state. SNP_LAUNCH_UPDATE will fail with an error and the page remains
-shared in the RMP table.
-
-Here's the proposed flow in the userspace VMM:
-
-1. Load CPUID in shared guest_memfd memory
-2. SET_MEMORY_ATTRIBUTES(PRIVATE, PRESERVE)
-3. SNP_LAUNCH_UPDATE => get error since CPUID was insecure
-4. SET_MEMORY_ATTRIBUTES(SHARED, PRESERVE)
-5. Read shared guest_memfd memory, error if VMM disagrees
-6. SET_MEMORY_ATTRIBUTES(PRIVATE, PRESERVE)
-7. SNP_LAUNCH_UPDATE => successful, since CPUID is now corrected
-
-Does that seem ok?
-
->>>
->>> [...snip...]
-
----
-
-## [67] Liam R. Howlett — 2026-05-07
-*Subject: Re: [PATCH RFC v5 01/53] KVM: guest_memfd: Introduce per-gmem
- attributes, use to guard user mappings*
-
-On 26/04/28 04:24PM, Ackerley Tng via B4 Relay wrote:
-> From: Sean Christopherson <seanjc@google.com>
-> 
-
-Can you please elaborate how you see inaccurate information and which
-information is inaccurate?
-
-Your comment is incorrect and misleading as append will not be used in
-rcu mode.  Note that you have not set this tree up in rcu mode.
-
-> +	lockdep_assert(mt_lock_is_held(mt));
-> +
-
----
-
-## [68] Liam R. Howlett — 2026-05-07
-*Subject: Re: [PATCH RFC v5 10/53] KVM: guest_memfd: Add basic support for
- KVM_SET_MEMORY_ATTRIBUTES2*
-
-On 26/04/28 04:25PM, Ackerley Tng via B4 Relay wrote:
-> From: Ackerley Tng <ackerleytng@google.com>
-> 
-
-Please read the documentation as I believe you have a bug here.  What
-happens if there is another range stored higher than end + 1?
-
-Do you have testing of these functions somewhere?
-
-> +	if (entry && xa_to_value(entry) == attributes)
-> +		last = mas->last;
-
----
-
-## [69] Ackerley Tng — 2026-05-07
-*Subject: Re: [PATCH RFC v5 10/53] KVM: guest_memfd: Add basic support for KVM_SET_MEMORY_ATTRIBUTES2*
-
-"Liam R. Howlett" <liam@infradead.org> writes:
-
-> On 26/04/28 04:25PM, Ackerley Tng via B4 Relay wrote:
->>
-
-Thank you for your reviews!
-
->
-> Please read the documentation as I believe you have a bug here.  What
-
-The invariant in this maple tree is that contiguous ranges with the same
-attribute are stored as a single range.
-
-The goal of this first part is to get the entry at the index just after
-the requested range, and see what the attribute there is. If that
-attribute is what we're about to set, extend the requested range for
-storing to the end of that range.
-
-If there is another range higher than end + 1, with the invariant
-maintained, that attribute has to be different than the attribute stored
-at end. Hence, we only want to extend this requested range up till end.
-
-> Do you have testing of these functions somewhere?
->
-
-GMEM_CONVERSION_MULTIPAGE_TEST_INIT_SHARED(indexing, 4) tests setting
-attributes in ranges. If test_page is 2,
-
-1. [0, 4) starts off shared (4 is the number of pages in the guest_memfd)
-2. [2, 3) is converted to private
-    => so the ranges should now be [0, 2), [2, 3), [3, 4)
-3. [2, 3) is converted back to shared
-    => so the ranges should now be [0, 4)
-
-I verified this by inserting some trace_printk()s and inspecting manually.
-
->> +	if (entry && xa_to_value(entry) == attributes)
->> +		last = mas->last;
-
----
-
-## [70] Ackerley Tng — 2026-05-07
-*Subject: Re: [PATCH RFC v5 01/53] KVM: guest_memfd: Introduce per-gmem
- attributes, use to guard user mappings*
-
-"Liam R. Howlett" <liam@infradead.org> writes:
-
->
-> [...snip...]
-
-My bad. Thanks for clarifying about usage of rcu mode.
-
->> +	lockdep_assert(mt_lock_is_held(mt));
->> +
-
-In the next revision I'll remove this lockdep and use RCU mode, and
-kvm_gmem_get_memory_attributes() should get a stable result.
-
-The other lookups using mt_for_each() in kvm_gmem_range_has_attributes()
-and kvm_gmem_get_invalidate_filter() retain the lockdep since those
-operate over multiple ranges. Those are called from paths that require
-holding the lock to exclude other operations anyway, so the lockdep
-requirement does not cost anything more.
-
->> +	return WARN_ON_ONCE(!entry) ? 0 : xa_to_value(entry);
->> +}
-
----
-
-## [71] Liam R. Howlett — 2026-05-10
-*Subject: Re: [PATCH RFC v5 10/53] KVM: guest_memfd: Add basic support for KVM_SET_MEMORY_ATTRIBUTES2*
-
-On 7 May 2026 12:56:11 GMT-04:00, Ackerley Tng <ackerleytng@google.com> wrote:
->"Liam R. Howlett" <liam@infradead.org> writes:
->
-
-mas_find() will look for an entry at the given address for the first search, and if it is not found it will continue to search upwards.  Since you limit the search to end, it will work as you want and there isn't a bug as I was thinking in my sleep deprived state.
-
-Since you are searching for exactly one address (end), it might serve you better to walk there.  Maybe walking is a better API for what you are doing here?
-
-
->> Do you have testing of these functions somewhere?
->>
-
-Thanks.  I find the exclusive ranges a bit odd to think about in the maple tree context, but this test case makes sense.  This is especially odd to look at a single index entry, at least for me.
-
-I generally have a set of test cases and append any bug reproduces to that list so they are unlikely to reoccur.  My testing is certainly different from what you'll be doing, but this method has done well with the quality of code improving over time, and limited (if any) regressions.
-
-I actually insist that any fix has a test before I accept them.  There are two reasons for this: 1. Avoiding the regression. 2. People really understand the bug if they can create a reproducer.
-
-I hope this helps.
-
-
->>> +	if (entry && xa_to_value(entry) == attributes)
->>> +		last = mas->last;
-
----
-
-## [72] Ackerley Tng — 2026-05-12
-*Subject: Re: [PATCH RFC v5 10/53] KVM: guest_memfd: Add basic support for KVM_SET_MEMORY_ATTRIBUTES2*
-
-"Liam R. Howlett" <liam@infradead.org> writes:
-
->
-> [...snip...]
-
-Thanks again for this tip! I'll try the walk API in the next revision
-after v6 [1]
-
-[1] https://lore.kernel.org/all/20260507-gmem-inplace-conversion-v6-0-91ab5a8b19a4@google.com/T/
-
->
->>> Do you have testing of these functions somewhere?
-
-I've not worked directly with the maple tree tests but the xarray tests
-(similarly set up, I believe) are a joy to work with.
-
-> I actually insist that any fix has a test before I accept them.  There are two reasons for this: 1. Avoiding the regression. 2. People really understand the bug if they can create a reproducer.
->
-
-The maple tree tests are set up to directly test maple tree code, but
-KVM selftests test from the userspace interface, and it's hard to test
-this invariant from userspace.
-
->>>> +	if (entry && xa_to_value(entry) == attributes)
->>>> +		last = mas->last;
 
 ---

@@ -1,9 +1,9 @@
 ---
 title: 'struct page to PFN conversion for TDX guest private memory'
 date: 2026-04-30
-last_reply: 2026-05-07
-message_count: 19
-participants: ['Yan Zhao', 'Ackerley Tng', 'Edgecombe, Rick P', 'Sean Christopherson', 'Dave Hansen', 'Xiaoyao Li']
+last_reply: 2026-05-27
+message_count: 26
+participants: ['Yan Zhao', 'Ackerley Tng', 'Edgecombe, Rick P', 'Sean Christopherson', 'Dave Hansen', 'Xiaoyao Li', 'Kiryl Shutsemau']
 ---
 
 ## [1] Yan Zhao — 2026-04-30
@@ -865,5 +865,116 @@ On Thu, May 07, 2026, Yan Zhao wrote:
 
 Yeah, I wouldn't worry too much about that effort.  The onus will firmly be on
 that series to do the right thing for TDX (and any other unique code).
+
+---
+
+## [20] Kiryl Shutsemau — 2026-05-22
+*Subject: Re: [PATCH v2 1/4] x86/tdx: Use PFN directly for mapping guest
+ private memory*
+
+On Thu, Apr 30, 2026 at 09:49:29AM +0800, Yan Zhao wrote:
+> From: Sean Christopherson <seanjc@google.com>
+> 
+
+Acked-by: Kiryl Shutsemau <kas@kernel.org>
+
+---
+
+## [21] Kiryl Shutsemau — 2026-05-22
+*Subject: Re: [PATCH v2 2/4] x86/tdx: Use PFN directly for unmapping guest
+ private memory*
+
+On Thu, Apr 30, 2026 at 09:49:48AM +0800, Yan Zhao wrote:
+> From: Sean Christopherson <seanjc@google.com>
+> 
+
+Acked-by: Kiryl Shutsemau <kas@kernel.org>
+
+---
+
+## [22] Kiryl Shutsemau — 2026-05-22
+*Subject: Re: [PATCH v2 3/4] x86/tdx: Drop exported function
+ tdx_quirk_reset_page()*
+
+On Thu, Apr 30, 2026 at 09:50:01AM +0800, Yan Zhao wrote:
+> KVM invokes tdx_quirk_reset_page() to reset TDX control pages (including
+> S-EPT pages, TDR page, etc.), as all those pages are allocated by KVM TDX
+
+Acked-by: Kiryl Shutsemau <kas@kernel.org>
+
+---
+
+## [23] Kiryl Shutsemau — 2026-05-22
+*Subject: Re: [PATCH v2 4/4] x86/virt/tdx: Move mk_keyed_paddr() to tdx.c due
+ to no external users*
+
+On Thu, Apr 30, 2026 at 09:50:14AM +0800, Yan Zhao wrote:
+> Move mk_keyed_paddr() from tdx.h to tdx.c to avoid unnecessary header
+> inclusion and improve encapsulation since there are no users outside of
+
+Add a new line before SoB.
+
+> Signed-off-by: Yan Zhao <yan.y.zhao@intel.com>
+
+Otherwise:
+
+Acked-by: Kiryl Shutsemau <kas@kernel.org>
+
+---
+
+## [24] Sean Christopherson — 2026-05-26
+*Subject: Re: [PATCH v2 0/4] struct page to PFN conversion for TDX guest
+ private memory*
+
+On Thu, Apr 30, 2026, Yan Zhao wrote:
+> Hi
+> 
+
+Dave, any concerns?
+
+I'd like to get these into the KVM x86 tree sooner than later, so that we at
+least have a fighting chance of landing the S-EPT cleanup (prep work for D-PAMT)
+in 7.2.
+
+---
+
+## [25] Dave Hansen — 2026-05-26
+*Subject: Re: [PATCH v2 0/4] struct page to PFN conversion for TDX guest
+ private memory*
+
+On 5/26/26 12:37, Sean Christopherson wrote:
+>> v2 is based on v7.1.0-rc1 + Sean's 4 cleanup patches (see details in
+>> section "Base" below). The purpose is to get Dave's Ack, so Sean can take
+
+These look fine to me. They make the code marginally cleaner and the
+changelogs are much better at describing the problem now.
+
+Going to Linus via the KVM route is fine with me:
+
+Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
+
+---
+
+## [26] Sean Christopherson — 2026-05-27
+*Subject: Re: [PATCH v2 0/4] struct page to PFN conversion for TDX guest
+ private memory*
+
+On Thu, 30 Apr 2026 09:48:52 +0800, Yan Zhao wrote:
+> This is v2 of the struct page to PFN conversion series, which converts TDX
+> guest private memory mapping/unmapping APIs from taking struct page to
+
+Applied to kvm-x86 mmu, thanks!
+
+[1/4] x86/tdx: Use PFN directly for mapping guest private memory
+      https://github.com/kvm-x86/linux/commit/6ad0badd765c
+[2/4] x86/tdx: Use PFN directly for unmapping guest private memory
+      https://github.com/kvm-x86/linux/commit/4c7a1247646c
+[3/4] x86/tdx: Drop exported function tdx_quirk_reset_page()
+      https://github.com/kvm-x86/linux/commit/4a72a6dc447d
+[4/4] x86/virt/tdx: Move mk_keyed_paddr() to tdx.c due to no external users
+      https://github.com/kvm-x86/linux/commit/3f330fbb918f
+
+--
+https://github.com/kvm-x86/linux/tree/next
 
 ---

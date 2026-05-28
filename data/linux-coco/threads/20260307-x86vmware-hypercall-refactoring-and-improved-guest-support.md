@@ -1,8 +1,8 @@
 ---
 title: 'x86/vmware: Hypercall refactoring and improved guest support'
 date: 2026-03-07
-last_reply: 2026-03-09
-message_count: 12
+last_reply: 2026-05-18
+message_count: 13
 participants: ['Alexey Makhalov', 'kernel test robot']
 ---
 
@@ -2368,5 +2368,18 @@ index c631e577348a..523a9b99847d 100644
  		vmware_guest_cpu_init();
  #endif
  	}
+
+---
+
+## [13] Alexey Makhalov — 2026-05-18
+*Subject: Re: [PATCH v2 0/4] x86/vmware: Hypercall refactoring and improved
+ guest support*
+
+On 3/9/26 4:52 PM, Alexey Makhalov wrote:
+> This series improves VMware guest support on x86 by refactoring the
+> hypercall infrastructure and adding better crash diagnostics, along
+
+Gentle reminder to review this change. Thanks,
+--Alexey
 
 ---

@@ -1,12 +1,12 @@
 ---
 title: 'x86/tdx: Port I/O emulation fixes'
-date: 2026-04-28
-last_reply: 2026-05-22
-message_count: 9
-participants: ['Kiryl Shutsemau (Meta)', 'Dave Hansen', 'H. Peter Anvin', 'Sean Christopherson']
+date: 2026-05-27
+last_reply: 2026-05-27
+message_count: 6
+participants: ['Kiryl Shutsemau (Meta)', 'Edgecombe, Rick P', 'Dave Hansen']
 ---
 
-## [1] Kiryl Shutsemau (Meta) — 2026-04-28
+## [1] Kiryl Shutsemau (Meta) — 2026-05-27
 
 This series addresses two technical inaccuracies in the TDX guest port
 I/O emulation code reported by Borys Tsyrulnikov.
@@ -24,6 +24,13 @@ Both issues were introduced in the initial implementation of the runtime
 hypercalls for port I/O.
 
 v1: https://lore.kernel.org/all/20260331112430.71425-1-kas@kernel.org/
+v2: https://lore.kernel.org/all/20260428125632.129770-1-kas@kernel.org/
+
+Changes in v3:
+  - Expand the comment in patch 2 with a table describing which RAX
+    bits each IN form writes vs preserves, clarifying why the 32-bit
+    case needs to clear RAX[63:32] (Dave Hansen).
+  - Rebase onto v7.1-rc5.
 
 Changes in v2:
   - Rephrase the size check in handle_in() as "if (size == 4)" for
@@ -36,16 +43,16 @@ Kiryl Shutsemau (Meta) (2):
   x86/tdx: Fix off-by-one in port I/O handling
   x86/tdx: Fix zero-extension for 32-bit port I/O
 
- arch/x86/coco/tdx/tdx.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ arch/x86/coco/tdx/tdx.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
 
-base-commit: 254f49634ee16a731174d2ae34bc50bd5f45e731
+base-commit: e7ae89a0c97ce2b68b0983cd01eda67cf373517d
 
 ---
 
-## [2] Kiryl Shutsemau (Meta) — 2026-04-28
-*Subject: [PATCH v2 1/2] x86/tdx: Fix off-by-one in port I/O handling*
+## [2] Kiryl Shutsemau (Meta) — 2026-05-27
+*Subject: [PATCH v3 1/2] x86/tdx: Fix off-by-one in port I/O handling*
 
 handle_in() and handle_out() in arch/x86/coco/tdx/tdx.c use:
 
@@ -93,8 +100,8 @@ index 186915a17c50..65119362f9a2 100644
 
 ---
 
-## [3] Kiryl Shutsemau (Meta) — 2026-04-28
-*Subject: [PATCH v2 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+## [3] Kiryl Shutsemau (Meta) — 2026-05-27
+*Subject: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
 
 According to x86 architecture rules, 32-bit operations zero-extend the
 result to 64 bits. The current implementation of handle_in() only masks
@@ -113,24 +120,32 @@ Reviewed-by: Kai Huang <kai.huang@intel.com>
 Reviewed-by: Kuppuswamy Sathyanarayanan <sathyanarayanan.kuppuswamy@linux.intel.com>
 Cc: stable@vger.kernel.org
 ---
- arch/x86/coco/tdx/tdx.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/coco/tdx/tdx.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/coco/tdx/tdx.c b/arch/x86/coco/tdx/tdx.c
-index 65119362f9a2..e09636564237 100644
+index 65119362f9a2..58feca419326 100644
 --- a/arch/x86/coco/tdx/tdx.c
 +++ b/arch/x86/coco/tdx/tdx.c
-@@ -703,8 +703,17 @@ static bool handle_in(struct pt_regs *regs, int size, int port)
+@@ -703,8 +703,25 @@ static bool handle_in(struct pt_regs *regs, int size, int port)
  	 */
  	success = !__tdx_hypercall(&args);
  
 -	/* Update part of the register affected by the emulated instruction */
 -	regs->ax &= ~mask;
 +	/*
-+	 * Update part of the register affected by the emulated instruction.
++	 * IN writes the result into a sub-register of RAX. Only the
++	 * 32-bit form zero-extends; the smaller forms leave the upper
++	 * bits untouched:
 +	 *
-+	 * 32-bit operands generate a 32-bit result, zero-extended to a 64-bit
-+	 * result.
++	 *   insn  dest  size  bits written     bits preserved
++	 *   inb   AL    1     RAX[ 7: 0]       RAX[63: 8]
++	 *   inw   AX    2     RAX[15: 0]       RAX[63:16]
++	 *   inl   EAX   4     RAX[63: 0]       (none, zero-extended)
++	 *
++	 * 'mask' only covers the low 'size' bytes, which is exactly the
++	 * range affected for size 1 and 2. For size 4 the write also
++	 * clears RAX[63:32], so widen the clear-mask.
 +	 */
 +	if (size == 4)
 +		regs->ax = 0;
@@ -142,109 +157,89 @@ index 65119362f9a2..e09636564237 100644
 
 ---
 
-## [4] Kiryl Shutsemau — 2026-05-08
-*Subject: Re: [PATCH v2 0/2] x86/tdx: Port I/O emulation fixes*
+## [4] Edgecombe, Rick P — 2026-05-27
+*Subject: Re: [PATCH v3 1/2] x86/tdx: Fix off-by-one in port I/O handling*
 
-On Tue, Apr 28, 2026 at 01:56:30PM +0100, Kiryl Shutsemau (Meta) wrote:
-> Kiryl Shutsemau (Meta) (2):
->   x86/tdx: Fix off-by-one in port I/O handling
+On Wed, 2026-05-27 at 13:05 +0100, Kiryl Shutsemau (Meta) wrote:
+> handle_in() and handle_out() in arch/x86/coco/tdx/tdx.c use:
+> 
 
-Dave, could get them applied?
-
----
-
-## [5] Dave Hansen — 2026-05-08
-*Subject: Re: [PATCH v2 0/2] x86/tdx: Port I/O emulation fixes*
-
-On 5/8/26 15:52, Kiryl Shutsemau wrote:
-> On Tue, Apr 28, 2026 at 01:56:30PM +0100, Kiryl Shutsemau (Meta) wrote:
->> Kiryl Shutsemau (Meta) (2):
-
-I'll look on Monday. Thanks for the reminder.
+Reviewed-by: Rick Edgecombe <rick.p.edgecombe@intel.com>
 
 ---
 
-## [6] Dave Hansen — 2026-05-12
-*Subject: Re: [PATCH v2 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+## [5] Edgecombe, Rick P — 2026-05-27
+*Subject: Re: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
 
-On 4/28/26 05:56, Kiryl Shutsemau (Meta) wrote:
-> +	if (size == 4)
-> +		regs->ax = 0;
+On Wed, 2026-05-27 at 13:05 +0100, Kiryl Shutsemau (Meta) wrote:
+> +	/*
+> +	 * IN writes the result into a sub-register of RAX. Only the
 
-I haven't thought about this _that_ much, but this feels wrong. Why is
-is 4 so special cased?
+We are working on getting the GHCI spec amended to clarify who is supposed to do
+this zero-extending and masking, host or guest. For this and the similar
+tdvmcalls. The process involves getting all VMMs in agreement.
 
-Also, what _are_ the limits on the registers that 'in' can be used on?
+Today I think the spec doesn't say to *not* do it, so I think it is reasonable
+to merge this, but there is some small risk of complications depending on how
+that discussion goes.
 
-RAX - n/a, no 64-bit I/O
-EAX - size=4
-AX  - size=2
-AH  - n/a no encoding for inb
-AL  - size=1
-
-I'd find this much easier to grasp if there was a nice table of what the
-registers, sizes, and masks ended up being usable. As usual, x86 is
-"fun" here.
+> +	 *
+> +	 * 'mask' only covers the low 'size' bytes, which is exactly the
 
 ---
 
-## [7] H. Peter Anvin — 2026-05-12
-*Subject: Re: [PATCH v2 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+## [6] Dave Hansen — 2026-05-27
+*Subject: Re: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
 
-On May 12, 2026 6:14:13 PM PDT, Dave Hansen <dave.hansen@intel.com> wrote:
->On 4/28/26 05:56, Kiryl Shutsemau (Meta) wrote:
->> +	if (size == 4)
+On 5/27/26 05:05, Kiryl Shutsemau (Meta) wrote:
+...
+> -	/* Update part of the register affected by the emulated instruction */
+> -	regs->ax &= ~mask;
 
-Because zero extension only applies to dwords.
+Is there any way we could do this with fewer comments and more code?
 
-x86-64 has three subregisters per GPR:
+I mean, there's only three cases. Why have;
 
-Bits 7-0
-Bits 15-8
-Bits 63-16
+	u64 mask = GENMASK(BITS_PER_BYTE * size - 1, 0);
 
----
+When there are only 3 possible cases:
 
-## [8] Sean Christopherson — 2026-05-13
-*Subject: Re: [PATCH v2 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+	1 => 0xf
+	2 => 0xff
+	4 => 0xffff
 
-On Tue, May 12, 2026, H. Peter Anvin wrote:
-> On May 12, 2026 6:14:13 PM PDT, Dave Hansen <dave.hansen@intel.com> wrote:
-> >On 4/28/26 05:56, Kiryl Shutsemau (Meta) wrote:
+and one of those cases needs a special case on top of it.
 
-Aren't there four?  The fourth being 31:0, which is the one that is zero-extended
-and so "clobbers" 63:32.
+Maybe something like this?
 
-> Bits 7-0
-> Bits 15-8
+	/* Clear out part of RAX so part of args.r11 can be OR'd in: */
+	switch (size) {
+	case 1:
+		/* inb consumes lower 8 bits of r11: */
+		regs->ax &= ~GENMASK_ULL(7, 0);
+		args.r11 &=  GENMASK_ULL(7, 0);
+		break;
+	case 2:
+		/* inw consumes lower 16 bits of r11: */
+		regs->ax &= ~GENMASK_ULL(15, 0);
+		args.r11 &=  GENMASK_ULL(15, 0);
+		break;
+	case 4:
+		/* inl is weird and zeros the whole register: */
+		regs->ax &= ~GENMASK_ULL(63, 0);
+		/* But only consumes 32-bits from r11: */
+		args.r11 &=  GENMASK_ULL(31, 0);
+		break;
+	default:
+		/* Probable TDX module bug. Illegal in[bwl] size: */
+		WARN_ON_ONCE(1);
+		success = 0;
+	}
 
-I assume you mean 15:0?  63:16 isn't addressable.  And these are the ones that
-aren't zero-extended, i.e. don't "clobber" other bits.
+	if (success)
+		regs->ax |= args.r11;
 
----
-
-## [9] Kiryl Shutsemau — 2026-05-22
-*Subject: Re: [PATCH v2 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
-
-On Tue, May 12, 2026 at 06:14:13PM -0700, Dave Hansen wrote:
-> On 4/28/26 05:56, Kiryl Shutsemau (Meta) wrote:
-> > +	if (size == 4)
-
-How about this for the comment:
-
-        /*
-         * IN writes the result into a sub-register of RAX. Only the
-         * 32-bit form zero-extends; the smaller forms leave the upper
-         * bits untouched:
-         *
-         *   insn  dest  size  bits written     bits preserved
-         *   inb   AL    1     RAX[ 7: 0]       RAX[63: 8]
-         *   inw   AX    2     RAX[15: 0]       RAX[63:16]
-         *   inl   EAX   4     RAX[63: 0]       (none, zero-extended)
-         *
-         * 'mask' only covers the low 'size' bytes, which is exactly
-         * the range affected for size 1 and 2. For size 4 the write
-         * also clears RAX[63:32], so widen the clear-mask.
-         */
+It might need a temporary variable for args.r11, but you get the point.
+That's basically the data from the comment but written as code.
 
 ---

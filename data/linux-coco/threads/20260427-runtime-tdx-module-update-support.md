@@ -2,7 +2,7 @@
 title: 'Runtime TDX module update support'
 date: 2026-04-27
 last_reply: 2026-05-08
-message_count: 48
+message_count: 49
 participants: ['Chao Gao', 'Vishal Annapurve', 'Dave Hansen', 'Edgecombe, Rick P']
 ---
 
@@ -4185,5 +4185,24 @@ Kai suggested this approach for two reasons:
 That reasoning made sense to me, and I do not see a strong reason not to
 use the "bug bit" infrastructure. If there is no objection to it, I will
 add a short explanation to the changelog.
+
+---
+
+## [49] Dave Hansen — 2026-05-08
+*Subject: Re: [PATCH v8 08/21] x86/virt/seamldr: Allocate and populate a module
+ update request*
+
+On 5/7/26 06:19, Chao Gao wrote:
+...
+>>> +	/*
+>>> +	 * Don't care about user passing the wrong file, but protect
+
+Either one of those is fine with me. I'd probably do the sizeof()
+variant, but no strong preference.
+
+>>> +	struct seamldr_params *params;
+>>> +	int module_pg_cnt, sig_pg_cnt;
+
+That's fine too.
 
 ---
