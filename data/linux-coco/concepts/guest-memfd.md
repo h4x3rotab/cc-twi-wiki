@@ -111,6 +111,26 @@ This separation is necessary for in-place conversion: when a page converts from 
 
 `[RFC PATCH] arm64/kernel: iommufd: Allow mapping from KVM's guest_memfd`[^iommufd] — explores using IOMMUFD (the kernel's IOMMU management interface) to map guest_memfd pages through the IOMMU for device DMA, enabling secure DMA for confidential VMs without copying.
 
+## May 2026 Updates
+
+### In-Place Conversion — v7
+
+Ackerley Tng posted v7 (May 22, 43 messages) of the guest_memfd in-place conversion series[^inplace-v7]. Core design: a new **guest_memfd ioctl** lets userspace set per-page shared/private attributes directly on the memfd file descriptor (rather than through the KVM VM fd), since shared/private-ness is a property of memory, not of the VM. All pages remain mmap()-able by the host; accesses to guest-private pages return `SIGBUS`.
+
+This v7 is a foundation for **guest_memfd huge-page support**: in-place conversion avoids the fragmentation that would arise from punching holes in huge pages when using two separate backing memory pools.
+
+Key difference from v6: the ioctl goes to guest_memfd directly (`KVM_CAP_MEMORY_ATTRIBUTES` path with `CONFIG_KVM_VM_MEMORY_ATTRIBUTES` toggled for testing), not through KVM_VM fd.
+
+### Bind/Populate Fixes
+
+A companion series (May 22, 4 patches) fixed three bugs in the bind and populate flows identified by Sashiko during review of the in-place conversion series[^gmem-fixes]:
+- Write permissions missing when GUP-ing source pages (possible write to read-only page)
+- Signed integer overflow in `kvm_gmem_bind()` (two instances)
+- Unchecked `xa_store_range()` return value
+
+[^inplace-v7]: [20260522-guest-memfd-in-place-conversion-support.md](../threads/20260522-guest-memfd-in-place-conversion-support.md)
+[^gmem-fixes]: [20260522-guest-memfd-fixes-for-bind-and-populate.md](../threads/20260522-guest-memfd-fixes-for-bind-and-populate.md)
+
 ### Bi-Weekly Calls
 
 The guest_memfd community holds bi-weekly upstream calls (tracked via meeting invite threads on linux-coco)[^biweekly], coordinating patch ordering, review priorities, and integration with other CoCo subsystems.

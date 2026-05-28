@@ -70,6 +70,32 @@ This is distinct from the KVM host work — one series makes KVM able to *create
 [^cca-guest-nov24]: [20241017-arm64-support-for-running-as-a-guest-in-arm-cca.md](../threads/20241017-arm64-support-for-running-as-a-guest-in-arm-cca.md)
 [^pkvm-guest]: [20240730-support-for-running-as-a-pkvm-protected-guest.md](../threads/20240730-support-for-running-as-a-pkvm-protected-guest.md)
 
+## May 2026 Updates
+
+### ARM CCA in KVM — v14
+
+Steven Price posted v14 (May 13, 107 messages) of the ARM CCA KVM series, rebased on v7.1-rc1 and targeting **RMM v2.0-bet1**[^cca-v14]. Major changes from v13:
+
+| Change | Detail |
+|---|---|
+| RMI definitions fully updated | All SMC wrappers align with RMM v2.0-bet1; v1.0 compatibility shim dropped |
+| Range-based RMI APIs | `RMI_GRANULE_TRACKING_GET` works on ranges, no longer requires alignment to tracking size |
+| GIC state via system registers | Replaces the previous memory-based GIC state exchange |
+| PSCI completion ioctl removed | KVM now auto-issues `RMI_PSCI_COMPLETE` before re-entering a REC; userspace no longer calls `KVM_ARM_VCPU_RMI_PSCI_COMPLETE` |
+| RMI init moved to `arch/arm64/kernel/rmi.c` | Generic RMI init, RMM config, GPT setup, and delegate/undelegate helpers are now outside KVM, enabling non-KVM RMI consumers |
+| SRO support moved earlier | Improved mechanism for providing extra memory to RMM; still incomplete pending TF-RMM implementation |
+| ARM VM type encoding reworked | Coexists cleanly with pKVM's `KVM_VM_TYPE_ARM_PROTECTED` bit |
+| PMU support dropped | Will be added in a separate follow-on series |
+
+The simplified uAPI and the MPIDR mapping (still required for PSCI multi-vCPU calls) are explicitly called out as areas for future spec improvement.
+
+### ARM CCA: TSM on Auxiliary Device
+
+Aneesh Kumar K.V posted a series (May 14) switching the ARM CCA TSM interface from a **platform device** to an **auxiliary device**[^cca-auxdev]. The original approach used a platform device solely to anchor the TSM sysfs interface — an inappropriate use since there is no underlying platform resource. The auxiliary device is parented by the `arm-smccc` platform device, keeping the sysfs path under `/devices/platform/arm-smccc/`. The TSM class entry resolves as: `tsm0 → arm_cca_guest.arm-rsi-dev.0/tsm/tsm0`.
+
+[^cca-v14]: [20260513-arm64-support-for-arm-cca-in-kvm.md](../threads/20260513-arm64-support-for-arm-cca-in-kvm.md)
+[^cca-auxdev]: [20260514-switch-arm-cca-to-use-an-auxiliary-device-instead-of-a-platf.md](../threads/20260514-switch-arm-cca-to-use-an-auxiliary-device-instead-of-a-platf.md)
+
 ## Active Patch Series (May 2025 – May 2026)
 
 ### ARM CCA in KVM
@@ -129,5 +155,6 @@ The LFA series (multiple iterations through the archive)[^lfa][^lfa-v2]:
 ## See Also
 
 - [ARM CCA in KVM (patch series)](../entities/patches/arm-cca-kvm.md)
+
 - [PCI/TDISP](pci-tdisp.md)
 - [TSM Framework](tsm-framework.md)

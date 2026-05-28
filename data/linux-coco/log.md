@@ -5,6 +5,23 @@ date: 2026-05-08
 tags: [log, meta]
 ---
 
+## 2026-05-11 — Incremental update (May 11–27, 2026)
+
+- Fetched new mail: `git fetch origin` in `linux-coco/git/0.git`.
+- Updated `~/.public-inbox/config` inboxdir to new consolidated repo path.
+- Re-ran scraper: 360 threads since 2025-05-08 → 631 total files; 29 new threads, 29 updated.
+- Noise filtered (6 skipped): guest-memfd bi-weekly call invites, SVSM dev call notices, Linux Security Summit CFP.
+- Signal incorporated (23 threads):
+  - `concepts/tdx.md` — TDX Module Update v9/v10, TDX Module Extensions + DICE quoting RFC, Dynamic PAMT v6, TDX KVM selftests, TDX offline CPU bug, Rick Edgecombe maintainer promotion
+  - `concepts/arm-coca.md` — ARM CCA KVM v14 (RMM v2.0-bet1), CCA auxiliary device
+  - `concepts/sev-snp.md` — RMPOPT v1 (first upstream posting)
+  - `concepts/guest-memfd.md` — in-place conversion v7 (guest_memfd-native ioctl), bind/populate fixes
+  - `concepts/pci-tdisp.md` — IOMMUFD TSM ioctls v5, crypto/ccp root port ordering fix
+  - `concepts/tsm-framework.md` — DMA_ATTR_CC_SHARED propagation v1+v2
+  - `entities/patches/arm-cca-kvm.md` — v14 row added to revision table
+  - `overview.md` — corpus count updated (631 threads, ~9,800 messages through 2026-05-27)
+  - `timeline.md` — May 2026 section added
+
 ## 2026-05-09 — Extended to 24 months (May 2024 – May 2025 added)
 
 - Ran scraper with `SINCE=2024-05-08, UNTIL=2025-05-08` to extract the prior year.

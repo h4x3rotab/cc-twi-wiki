@@ -204,6 +204,30 @@ Three major RFCs land simultaneously[^pci-rfc][^tdrfc][^gmemfd-rfc][^cca-rfc]. �
 [^cca-dev-v4]: [20260427-rfc-patch-v4-0014-cocotsm-host-side-arm-cca-ide-setup-via-co.md](threads/20260427-rfc-patch-v4-0014-cocotsm-host-side-arm-cca-ide-setup-via-co.md)
 [^cca-mr]: [20260414-arm64virt-add-arm-cca-measurement-register-support.md](threads/20260414-arm64virt-add-arm-cca-measurement-register-support.md)
 [^gmemfd-v6]: [20260507-guest-memfd-in-place-conversion-support.md](threads/20260507-guest-memfd-in-place-conversion-support.md)
+[^tdxv9]: [20260513-runtime-tdx-module-update-support.md](threads/20260513-runtime-tdx-module-update-support.md)
+[^cca-v14]: [20260513-arm64-support-for-arm-cca-in-kvm.md](threads/20260513-arm64-support-for-arm-cca-in-kvm.md)
+[^cca-auxdev]: [20260514-switch-arm-cca-to-use-an-auxiliary-device-instead-of-a-platf.md](threads/20260514-switch-arm-cca-to-use-an-auxiliary-device-instead-of-a-platf.md)
+[^rmpopt-v1]: [20260518-add-rmpopt-support.md](threads/20260518-add-rmpopt-support.md)
+[^tdxv10]: [20260520-runtime-tdx-module-update-support.md](threads/20260520-runtime-tdx-module-update-support.md)
+[^tdxext]: [20260522-enable-tdx-module-extensions-and-dice-based-tdx-quoting.md](threads/20260522-enable-tdx-module-extensions-and-dice-based-tdx-quoting.md)
+[^gmemfd-v7]: [20260522-guest-memfd-in-place-conversion-support.md](threads/20260522-guest-memfd-in-place-conversion-support.md)
+[^iommufd-tsm]: [20260525-add-iommufd-ioctls-to-support-tsm-operations.md](threads/20260525-add-iommufd-ioctls-to-support-tsm-operations.md)
+[^dpamt-v6]: [20260525-dynamic-pamt.md](threads/20260525-dynamic-pamt.md)
+[^tdxmaintainer]: [20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md](threads/20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md)
+
+## May 2026 — Acceleration Toward 7.2
+
+The May 2026 burst reflects the kernel 7.2 merge window approaching. Multiple long-running series posted rapid new revisions simultaneously.
+
+- **TDX Module Update v9/v10** (Chao Gao): two revisions in two weeks, polishing changelogs and bounds checks, explicitly targeting 7.2 merge[^tdxv9][^tdxv10].
+- **ARM CCA in KVM v14** (Steven Price): major update to RMM v2.0-bet1 — range-based RMI, removed PSCI completion ioctl, RMI init moved out of KVM to `arch/arm64/kernel/rmi.c` for non-KVM consumers[^cca-v14].
+- **ARM CCA auxiliary device** (Aneesh Kumar): TSM interface anchored on an auxiliary device (not platform device)[^cca-auxdev].
+- **RMPOPT v1** (Ashish Kalra): first upstream posting of AMD's 1GB-granularity RMP check bypass instruction[^rmpopt-v1].
+- **TDX Module Extensions + DICE-based TDX Quoting** (Xu Yilun): RFC for an Extension SEAMCALL framework enabling DICE attestation without the traditional TDREPORT path[^tdxext].
+- **guest_memfd in-place conversion v7** (Ackerley Tng): new guest_memfd-native per-page ioctl, foundation for huge-page support[^gmemfd-v7].
+- **IOMMUFD TSM ioctls v5** (Aneesh Kumar): VMM-side bind/unbind API for TSM device management[^iommufd-tsm].
+- **Dynamic PAMT v6** (Rick Edgecombe): conflict resolution with Sean's mega-v5; awaiting prerequisite series[^dpamt-v6].
+- **Rick Edgecombe → TDX co-maintainer**: promoted from reviewer alongside Kiryl Shutsemau[^tdxmaintainer].
 
 ## See Also
 

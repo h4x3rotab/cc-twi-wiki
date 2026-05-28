@@ -73,6 +73,34 @@ A data-leak fix for MMIO reads was also posted (August 2024)[^mmio-leak], tighte
 [^ucall]: [20240703-support-userspace-hypercalls-for-tdx.md](../threads/20240703-support-userspace-hypercalls-for-tdx.md)
 [^tdboot]: [20240512-x86tdx-adjust-td-settings-on-boot.md](../threads/20240512-x86tdx-adjust-td-settings-on-boot.md)
 
+## May 2026 Updates
+
+### Runtime TDX Module Update — v9/v10
+
+The fw_upload-based non-disruptive TDX module update series continued its rapid iteration in May 2026. **v9** (Chao Gao, May 13) adopted a new `tdx_blob` format suggested by Dave Hansen, removed module version printing during updates, and reworked the update state machine loop for readability[^tdxupdate-v9]. **v10** (May 20) polished variable names (`data_len`, `is_lead_cpu`), added early bounds checks against `SEAMLDR_MAX_NR_*` limits, and fixed a `BIT(16)` → `BIT_ULL(16)` overflow. The series targets **kernel 7.2** and is considered mature enough for merge pending final review[^tdxupdate-v10].
+
+### TDX Module Extensions + DICE-Based TDX Quoting
+
+Xu Yilun posted an RFC (v1, May 22) introducing **TDX Module Extensions** — a new capability in the TDX Module that enables complex, preemptible flows inside the SEAM range via "Extension SEAMCALLs." Extensions require ~50 MB of additional host memory added via `TDH.EXT.MEM.ADD` and initialized via `TDH.EXT.INIT`; they are off by default and must be explicitly enabled[^tdxext].
+
+The first feature built on Extensions is **DICE-based TDX Quoting** — an industry-standard certificate-chain attestation framework that produces TDX quotes through a chain of DICE certificates rather than the traditional TDREPORT path. The RFC covers the initialization infrastructure (first 4 patches), with DICE-quoting patches included as a usage example. The x86 KVM changes are preliminary; the RFC explicitly targets acks for the generic Extensions init code.
+
+### TDX Dynamic PAMT — v6
+
+Rick Edgecombe posted Dynamic PAMT v6 (May 25), resolving conflicts between his v4 and Sean Christopherson's "mega v5" that combined MMU refactor, DPAMT, and huge-page work[^dpamt-v6]. The resolution rolls back to the v4 caching approach for S-EPT backing pages after multiple alternative proposals failed on review. v6 is described as mature but blocked on two prerequisite series (TDX MMU refactor split and VMXON bringup) that must land first. Collecting acks while waiting.
+
+### TDX KVM Selftests
+
+Lisa Wang posted the first **TDX KVM selftest** series (May 21, 26 messages), covering the full TDX VM lifecycle: bring-up, boot via x86 reset vector, and teardown[^tdxselftests]. Because TDX protects guest register state from the host, the tests cannot use standard KVM register injection (KVM_SET_SREGS/GPRs); instead, the host writes values into a known memory region and a small boot stub in the guest reads and applies them. The ucall mechanism is also adapted: PIO carries the ucall address in the port number rather than the data payload.
+
+### TDX Offline CPU Bug
+
+A preemption assertion violation was reported in `tdx_offline_cpu()`: it calls `tdx_cpu_flush_cache()` which asserts `lockdep_assert_preemption_disabled()`, but the CPUHP_AP_ONLINE_DYN offline callback runs with preemption enabled. Fix: wrap the call with `preempt_disable()`/`preempt_enable()` at the offline site[^tdxcpubug].
+
+### Rick Edgecombe — TDX Co-Maintainer
+
+Rick Edgecombe (Intel) was promoted from TDX reviewer to **TDX co-maintainer** (alongside Kiryl Shutsemau) in `MAINTAINERS`, effective May 27. Edgecombe has led key TDX host-side work including the initial KVM integration, Dynamic PAMT, and the VMXON bringup series[^tdxmaintainer].
+
 ## Active Patch Series (May 2025 – May 2026)
 
 ### Runtime TDX Module Update
@@ -129,6 +157,13 @@ Combined into RFC v5 with 45 patches and 151 messages. Still dependent on the VM
 [^kexec]: [20260323-fuller-tdx-kexec-support.md](../threads/20260323-fuller-tdx-kexec-support.md)
 [^pfn]: [20260319-struct-page-to-pfn-conversion-for-tdx-guest-pr.md](../threads/20260319-struct-page-to-pfn-conversion-for-tdx-guest-pr.md)
 [^version]: [20260109-x86virttdx-print-tdx-module-version-to-dmesg.md](../threads/20260109-x86virttdx-print-tdx-module-version-to-dmesg.md)
+[^tdxupdate-v9]: [20260513-runtime-tdx-module-update-support.md](../threads/20260513-runtime-tdx-module-update-support.md)
+[^tdxupdate-v10]: [20260520-runtime-tdx-module-update-support.md](../threads/20260520-runtime-tdx-module-update-support.md)
+[^tdxext]: [20260522-enable-tdx-module-extensions-and-dice-based-tdx-quoting.md](../threads/20260522-enable-tdx-module-extensions-and-dice-based-tdx-quoting.md)
+[^dpamt-v6]: [20260525-dynamic-pamt.md](../threads/20260525-dynamic-pamt.md)
+[^tdxselftests]: [20260521-tdx-kvm-selftests.md](../threads/20260521-tdx-kvm-selftests.md)
+[^tdxcpubug]: [20260511-bug-x86virttdx-tdx-offline-cpu-violates-tdx-cpu-flush-cache.md](../threads/20260511-bug-x86virttdx-tdx-offline-cpu-violates-tdx-cpu-flush-cache.md)
+[^tdxmaintainer]: [20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md](../threads/20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md)
 
 ## See Also
 

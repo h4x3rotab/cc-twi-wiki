@@ -109,6 +109,19 @@ This patch series adds proper IBPB-on-entry support for SEV guests, aligning wit
 
 Patch series: `KVM: SEV: Disable SEV-SNP support on initialization failure`. If SNP initialization fails (e.g., firmware version mismatch, ASID exhaustion), KVM now disables SNP for all subsequent VMs rather than silently creating VMs in an undefined state[^snpinit].
 
+## May 2026 Updates
+
+### RMPOPT — v1
+
+Ashish Kalra (AMD) posted the first upstream posting of **RMPOPT** (May 18, 15 messages)[^rmpopt-v1]. RMPOPT is a new AMD CPU instruction that optimizes RMP (Reverse Map Table) write checks for the hypervisor and non-SNP guests. In SNP-enabled systems, every write must be RMP-checked to protect SNP guest memory integrity — a performance cost even for non-SNP workloads.
+
+RMPOPT allows software to mark 1 GB regions as "entirely hypervisor-owned" in a separate RMPOPT table. Once marked, hardware skips RMP checks for writes into those regions. Hardware automatically clears the RMPOPT bit via RMPUPDATE when any page in the region is assigned to a guest.
+
+The v1 series enables RMP optimizations for up to **2 TB of system RAM**; support beyond 2 TB is deferred to a follow-on series. There is an earlier x86 CPU feature flag posting from February 2026[^rmpopt-flag] that precedes this series.
+
+[^rmpopt-v1]: [20260518-add-rmpopt-support.md](../threads/20260518-add-rmpopt-support.md)
+[^rmpopt-flag]: [20260217-x86cpufeatures-add-x86-feature-amd-rmpopt-feature-flag.md](../threads/20260217-x86cpufeatures-add-x86-feature-amd-rmpopt-feature-flag.md)
+
 ## SVSM Integration
 
 AMD's **Secure VM Service Module (SVSM)** runs in VMPL0 (the most privileged SEV-SNP privilege level) inside a VM. It provides services to the guest OS running at VMPL1+: vTPM, filesystem encryption, key management. See [SVSM](svsm.md) for the full overview.

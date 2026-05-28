@@ -133,6 +133,25 @@ v3 key additions:
 
 → See [ARM CCA](arm-cca.md) for the RFC v1/v4 ARM-side TDISP implementation.
 
+## May 2026 Updates
+
+### IOMMUFD Ioctls for TSM Operations — v5
+
+Aneesh Kumar K.V (ARM) posted v5 (May 25, 14 messages) adding **iommufd ioctls for TSM device management**[^iommufd-tsm]. The series provides `IOMMU_VDEVICE_TSM_REQ` — an ioctl that allows VMMs to perform TSM bind/unbind operations and handle guest device requests via iommufd rather than through KVM or VFIO directly.
+
+Key changes from v4: switch to `struct file *kvm_file` instead of `kvm->users_count` reference counting; define TSM request scope values globally in iommufd; renamed ioctl to `IOMMU_VDEVICE_TSM_REQ`. Two new patches associate `struct kvm *` pointers with `iommufd_device` and `iommufd_viommu` objects.
+
+The series explicitly drops the TSM map ioctl (superseded by the KVM prefault patch for private memory pre-allocation).
+
+### crypto/ccp/tsm: PCIe IDE Root Port Ordering Fix
+
+A one-patch fix by Alexey Kardashevskiy (May 21)[^ccp-rp] enforces the PCIe r7.0 §6.33.8 rule: for Selective IDE with config-request IDE enabled, the endpoint stream must be enabled **before** the root port. The existing `sev-dev-tsm.c` code reversed this order.
+
+`Fixes: 4be423572da1 ("crypto/ccp: Implement SEV-TIO PCIe IDE (phase1)")`
+
+[^iommufd-tsm]: [20260525-add-iommufd-ioctls-to-support-tsm-operations.md](../threads/20260525-add-iommufd-ioctls-to-support-tsm-operations.md)
+[^ccp-rp]: [20260521-cryptoccptsm-enable-the-root-port-after-the-endpoint.md](../threads/20260521-cryptoccptsm-enable-the-root-port-after-the-endpoint.md)
+
 [^pci-tsm-core]: [20250515-pcitsm-core-infrastructure-for-pci-device-security-tdisp.md](../threads/20250515-pcitsm-core-infrastructure-for-pci-device-security-tdisp.md)
 [^tdisp-host]: [20250529-rfc-patch-0030-host-side-kvmvfioiommufd-support-for-tdisp-us.md](../threads/20250529-rfc-patch-0030-host-side-kvmvfioiommufd-support-for-tdisp-us.md)
 [^tdisp-tdx]: [20251117-pcitsm-tdx-connect-spdm-session-and-ide-establishment.md](../threads/20251117-pcitsm-tdx-connect-spdm-session-and-ide-establishment.md)

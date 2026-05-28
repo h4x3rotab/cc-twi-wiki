@@ -20,7 +20,8 @@ The **ARM CCA in KVM** series adds Linux KVM host-side support for creating and 
 | Rev 2 | Jul 2025 | 74 | RMM v1.0 |
 | Rev 3 | Aug 2025 | 74 | RMM v1.0 |
 | Rev 4 | Dec 2025 | 82 | RMM v1.x |
-| **Rev 5** | **Mar 2026** | **133** | **RMM v2.0-beta** |
+| Rev 5 | Mar 2026 | 133 | RMM v2.0-beta |
+| **v14** | **May 2026** | **107** | **RMM v2.0-bet1**[^cca-v14] |
 
 [^cca-jun24]: [20240610-arm64-support-for-arm-cca-in-kvm.md](../../threads/20240610-arm64-support-for-arm-cca-in-kvm.md)
 [^cca-aug24]: [20240821-arm64-support-for-arm-cca-in-kvm.md](../../threads/20240821-arm64-support-for-arm-cca-in-kvm.md)
@@ -71,6 +72,7 @@ The series provides an **SMC shim layer** that translates v2.0 API calls to v1.0
 - **coc/tsm callbacks**: TSM lock/accept for CCA device assignment[^tsm-lock].
 - **ARM CCA Planes** (RFC): in-VM isolation layers[^planes].
 
+[^cca-v14]: [20260513-arm64-support-for-arm-cca-in-kvm.md](../../threads/20260513-arm64-support-for-arm-cca-in-kvm.md)
 [^cca-mar26]: [20260318-arm64-support-for-arm-cca-in-kvm.md](../../threads/20260318-arm64-support-for-arm-cca-in-kvm.md)
 [^vgic]: [20250512-arm64-rme-support-for-the-vgic-in-realms.md](../../threads/20250512-arm64-rme-support-for-the-vgic-in-realms.md)
 [^tsm-lock]: [20251117-tsm-implement-lock-accept-callbacks-for-arm-cca-tdisp-setup.md](../../threads/20251117-tsm-implement-lock-accept-callbacks-for-arm-cca-tdisp-setup.md)

@@ -1,13 +1,13 @@
 ---
 title: linux-coco Wiki — Overview
 description: Hub page for the linux-coco kernel mailing list archive (May 2024 – May 2026) covering two years of confidential computing development in the Linux kernel.
-date: 2026-05-08
+date: 2026-05-11
 tags: [linux-coco, confidential-computing, tdx, sev-snp, arm-cca, hub]
 ---
 
 This wiki covers the **linux-coco** mailing list (`linux-coco@lists.linux.dev`), the central coordination point for confidential computing support in the Linux kernel. The archive mirrors at [lore.kernel.org/linux-coco](https://lore.kernel.org/linux-coco).
 
-The corpus indexed here: **602 threads / 9,235 messages**, from **2024-05-08** through **2026-05-08**[^src].
+The corpus indexed here: **631 threads / ~9,800 messages**, from **2024-05-08** through **2026-05-27**[^src].
 
 [^src]: Source: public-inbox git mirror at `https://lore.kernel.org/linux-coco/git/0.git`, indexed with public-inbox 1.9.0.
 
@@ -19,11 +19,11 @@ The corpus indexed here: **602 threads / 9,235 messages**, from **2024-05-08** t
 
 | # | Finding | Sources |
 |---|---|---|
-| 1 | **TDX Runtime Module Update** reached v8 targeting merge in kernel 7.2 — the first non-reboot TDX firmware update path, preserving running TDs. | [TDX Module Update](entities/patches/tdx-module-update.md) |
-| 2 | **ARM CCA in KVM** hit RFC stage with RMM v2.0-beta and Stateful RMI Operations — the largest ARM-side milestone in the archive. | [ARM CCA in KVM](entities/patches/arm-cca-kvm.md) |
+| 1 | **TDX Runtime Module Update** reached v10 targeting merge in kernel 7.2 — the first non-reboot TDX firmware update path, preserving running TDs. | [TDX Module Update](entities/patches/tdx-module-update.md) |
+| 2 | **ARM CCA in KVM** reached v14 with RMM v2.0-bet1, range-based RMI APIs, and RMI init moved out of KVM — largest ARM-side milestone in the archive. | [ARM CCA in KVM](entities/patches/arm-cca-kvm.md) |
 | 3 | **PCI/TSM (TDISP)** infrastructure merged into `tsm.git#next` in v3, establishing a vendor-agnostic kernel API for attesting PCIe devices in CoCo VMs. | [PCI/TDISP](concepts/pci-tdisp.md) |
-| 4 | **guest_memfd in-place conversion** reached v6 with extensive selftests, enabling shared↔private memory conversion without two physical memory pools — critical for huge-page support. | [guest_memfd](concepts/guest-memfd.md) |
-| 5 | **TDX Dynamic PAMT + S-EPT Hugepage** remains in RFC (v5 with 151 messages) — complex dependencies on VMXON series kept it from advancing. | [TDX Dynamic PAMT](entities/patches/tdx-dynamic-pamt.md) |
+| 4 | **guest_memfd in-place conversion** reached v7 with a new guest_memfd-native ioctl for per-page shared/private attributes — foundation for huge-page support. | [guest_memfd](concepts/guest-memfd.md) |
+| 5 | **TDX Module Extensions + DICE-based TDX Quoting** RFC introduces a new Extension SEAMCALL framework (~50 MB memory) enabling complex in-module flows, with DICE attestation as the first user. | [Intel TDX](concepts/tdx.md) |
 
 ## Mailing List Structure
 

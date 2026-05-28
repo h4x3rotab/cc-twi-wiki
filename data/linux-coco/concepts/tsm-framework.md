@@ -79,6 +79,23 @@ Supported backends: TDX TDREPORT, SEV-SNP attestation report, ARM CCA token.
 
 `sample/tsm-mr: Use SHA-2 library APIs` / `sample/tsm-mr: Fix missing static for sample_report`[^tsm-sha2] — maintenance patches to the TSM sample code, converting it from deprecated hash interfaces to the new SHA-2 library.
 
+## May 2026 Updates
+
+### DMA_ATTR_CC_SHARED Propagation
+
+Aneesh Kumar K.V (ARM) posted a series (May 12, 67 messages) propagating `DMA_ATTR_CC_SHARED` consistently through the `dma-direct`, `dma-pool`, and `swiotlb` paths[^dma-cc]. Previously, shared/decrypted DMA buffer handling relied on `force_dma_unencrypted()` scattered across call sites. This series:
+
+- Centralizes encrypted/decrypted `pgprot` selection in `dma_pgprot()` using DMA attributes
+- Moves swiotlb-backed allocations out of `__dma_direct_alloc_pages()`
+- Propagates `DMA_ATTR_CC_SHARED` through atomic DMA pools and swiotlb pool selection
+- Makes `dma_direct_map_phys()` fall back to swiotlb when a shared DMA request cannot be satisfied from encrypted memory
+- Passes DMA attributes into `dma_capable()` so capability checks can validate address encoding vs. `DMA_ATTR_CC_SHARED`
+
+A version 2 with review feedback incorporated was posted May 22[^dma-cc-v2].
+
+[^dma-cc]: [20260512-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md](../threads/20260512-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md)
+[^dma-cc-v2]: [20260522-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md](../threads/20260522-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md)
+
 ## MAINTAINERS Entry
 
 The TSM subsystem is tracked in `MAINTAINERS` under `TRUSTED SECURITY MODULE (TSM)`. The `MAINTAINERS` entry update`[^tsm-maintainers] adds file coverage for the new `coco/` directory tree and `sample/tsm-mr/`.
