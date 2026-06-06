@@ -1,9 +1,9 @@
 ---
 title: 'guest_memfd: In-place conversion support'
 date: 2026-05-22
-last_reply: 2026-05-22
-message_count: 43
-participants: ['Ackerley Tng via B4 Relay']
+last_reply: 2026-06-05
+message_count: 62
+participants: ['Ackerley Tng via B4 Relay', 'Michael Roth', 'Suzuki K Poulose', 'Ackerley Tng', 'Askar Safin', 'Sean Christopherson']
 ---
 
 ## [1] Ackerley Tng via B4 Relay — 2026-05-22
@@ -4984,5 +4984,688 @@ index 10db9fe6d9063..70ed16066c63e 100644
 +
  	vm = vm_create_shape_with_one_vcpu(protected_vm_shape, &vcpu,
  					   guest_repeatedly_read);
+
+---
+
+## [44] Michael Roth — 2026-06-01
+*Subject: Re: [PATCH v7 09/42] KVM: guest_memfd: Add base support for
+ KVM_SET_MEMORY_ATTRIBUTES2*
+
+On Fri, May 22, 2026 at 05:17:51PM -0700, Ackerley Tng via B4 Relay wrote:
+> From: Ackerley Tng <ackerleytng@google.com>
+> 
+
+Typo on the "person".
+
+(Sent this earlier but looks like some of my emails never hit the
+list so re-sending. Apologies if this is a dupe).
+
+Thanks,
+
+Mike
+
+> Reviewed-by: Fuad Tabba <tabba@google.com>
+> Signed-off-by: Ackerley Tng <ackerleytng@google.com>
+
+---
+
+## [45] Suzuki K Poulose — 2026-06-02
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+On 23/05/2026 01:17, Ackerley Tng via B4 Relay wrote:
+> From: Ackerley Tng <ackerleytng@google.com>
+> 
+
+nit: s/non-CoCo/CoCo ?
+
+> 
+> In addition, KVM_SET_MEMORY_ATTRIBUTES2 is about to be supported in
+
+nit: Missing Co-Developed-by: ?
+
+> Reviewed-by: Fuad Tabba <tabba@google.com>
+> Signed-off-by: Ackerley Tng <ackerleytng@google.com>
+
+Don't we need to make sure the entire folio is private ? Not just the 
+page at the index ?
+	if (kvm_gmem_range_is_private(, index, folio_nr_pages(folio)) ?
+
+Suzuki
+
+> +		r = kvm_gmem_prepare_folio(kvm, slot, gfn, folio);
+>
+
+---
+
+## [46] Suzuki K Poulose — 2026-06-02
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+On 02/06/2026 09:55, Suzuki K Poulose wrote:
+> On 23/05/2026 01:17, Ackerley Tng via B4 Relay wrote:
+>> From: Ackerley Tng <ackerleytng@google.com>
+
+Or rather, we should go through the individual pages and apply the
+prepare for ones that are private ?
+
+Suzuki
+
+> 
+> Suzuki
+
+---
+
+## [47] Ackerley Tng — 2026-06-02
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+> On 23/05/2026 01:17, Ackerley Tng via B4 Relay wrote:
+>> From: Ackerley Tng <ackerleytng@google.com>
+
+Yes, thanks!
+
+>>
+>> In addition, KVM_SET_MEMORY_ATTRIBUTES2 is about to be supported in
+
+IIRC this should have been
+
+Suggested-by: Michael Roth <michael.roth@amd.com>
+
+IIRC Michael suggested this on one of the guest_memfd calls, Michael
+please let me know if you remember otherwise!
+
+>>
+>> [...snip...]
+
+---
+
+## [48] Askar Safin — 2026-06-03
+*Subject: Re: [PATCH v7 34/42] KVM: selftests: Test conversion with elevated page refcount*
+
+Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>:
+> This test uses vmsplice to increment the refcount of a specific page
+
+I recently submitted a patch, which makes vmsplice equivalent to
+preadv2/pwritev2, and it was accepted to next.
+
+For now it is just an experiment, it is possible it will be reverted.
+
+https://lore.kernel.org/all/20260601-aufweichen-dissens-ausrechnen-0d9b84728113@brauner/
+
+---
+
+## [49] Ackerley Tng — 2026-06-02
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+>
+> [...snip...]
+
+I was thinking to fix this when I do huge pages, for now guest_memfd is
+always just PAGE_SIZE, so just looking up index is fine.
+
+Is that okay?
+
+>
+> Or rather, we should go through the individual pages and apply the
+
+IIRC the plan was to make kvm_gmem_prepare_folio() idempotent, as in, if
+a page is already private, just skip. Currently sev_gmem_prepare() does
+a pr_debug(), which I guess is technically still idempotent.
+
+I'm thinking that the information tha needs tracking to make
+.gmem_prepare() idempotent should be tracked by arch code.
+
+Does this work for ARM CCA?
+
+>>
+>> [...snip...]
+
+---
+
+## [50] Suzuki K Poulose — 2026-06-03
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+On 02/06/2026 23:41, Ackerley Tng wrote:
+> Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+> 
+
+Thats fine, but would be good to enforce that here, so that we don't 
+miss out when we add support for multi page folios.
+
+> 
+>>
+
+We don't hook into the prepare yet, but have plans to do that. We should
+be able to handle the pages that are already private. (For CCA context,
+RMI_GRANULE_DELEGATE_RANGE can skip over already REALM pages). So this
+should be fine.
+
+My point is, in a given folio, there may be pages that are shared.
+Like you said, this could be dealt with when we support hugepages.
+
+Suzuki
+
+
+> 
+>>>
+
+---
+
+## [51] Michael Roth — 2026-06-03
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+On Wed, Jun 03, 2026 at 09:58:45AM +0100, Suzuki K Poulose wrote:
+> On 02/06/2026 23:41, Ackerley Tng wrote:
+> > Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+We sort of already enforce that in kvm_gmem_get_folio():
+
+        /*
+         * External interfaces like kvm_gmem_get_pfn() support dealing
+         * with hugepages to a degree, but internally, guest_memfd currently
+         * assumes that all folios are order-0 and handling would need
+         * to be updated for anything otherwise (e.g. page-clearing
+         * operations).
+         */
+        WARN_ON_ONCE(!IS_ERR(folio) && folio_order(folio));
+
+which was done as part of:
+
+  commit 6538b6221cc2feda415ca1946e66a5ef02dc6a0a
+  Author: Michael Roth <michael.roth@amd.com>
+  Date:   Thu Jan 8 15:46:18 2026 -0600
+  
+      KVM: guest_memfd: Remove partial hugepage handling from kvm_gmem_populate()
+
+and that should trigger before you even reach the prepare path, so I think
+that's covered.
+
+In general, there some previous discussion where we decided we would stop wasting
+time guessing at what we'll need to do for hugepages and instead just strip out
+the partial support. Sean wanted the folio order kept at part of the internal API
+since we know MMU will need that one way or another, but elsewhere within
+guest_memfd we are okay to assume 4K. If we *know* certain points that will need
+to change then a comment mentioning it isn't a bad idea, but even those comments
+have tended to be wrong so far about exactly what changes are supposed to happen.
+
+I'm not sure where the original discussion happened but there's some aftermath
+discussion here[1] that I think summarizes current [non-]plans around
+prepare+hugepages.
+
+[1] https://lore.kernel.org/kvm/20250711163440.kwjebnzd7zeb4bxt@amd.com/
+
+> 
+> > 
+
+Sounds good, that's also what SNP will do once hugepages come along.
+
+-Mike
+
+> 
+> Suzuki
+
+---
+
+## [52] Michael Roth — 2026-06-03
+*Subject: Re: [PATCH v7 07/42] KVM: guest_memfd: Only prepare folios for
+ private pages*
+
+On Tue, Jun 02, 2026 at 01:46:09PM -0700, Ackerley Tng wrote:
+> Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+> 
+
+That rings a bell. Feel free to add, or just drop the stray SoB, either
+way.
+
+-Mike
+
+> 
+> >>
+
+---
+
+## [53] Ackerley Tng — 2026-06-03
+*Subject: Re: [PATCH v7 00/42] guest_memfd: In-place conversion support*
+
+Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+writes:
+
+> This is v7 of guest_memfd in-place conversion support.
+>
+
+Here's the outstanding items after going over everyone's comments
+including Sashiko's:
+
++ KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION
+    + Need to move page clearing into __kvm_gmem_get_pfn to resolve
+      leak where populate can put initialized kernel memory into TDX
+      guest
+    + See suggested fix at [1]
++ KVM: guest_memfd: Only prepare folios for private pages,
+    + s/non-CoCo/CoCo in commit message "INIT_SHARED is about to be
+      supported for non-CoCo VMs in a later patch in this series
+    + Use Suggested-by: Michael Roth <michael.roth@amd.com>
++ KVM: selftests: Test that shared/private status is consistent across
+  processes
+    + Improve test reliability using pthread_mutex
+    + I have a fixup patch offline.
+	
+I would like feedback on these:
+	
++ KVM: selftests: Test conversion with elevated page refcount
+    + Askar pointed out that soon vmsplice may not pin pages. Should I
+      pin pages through CONFIG_GUP_TEST like in [2]? I prefer not to
+      take a dependency on CONFIG_GUP_TEST.
++ KVM: selftests: Add script to exercise private_mem_conversions_test
+    + Would like to know what people think of a wrapper script before
+      I address Sashiko's comments.
+
+[1] https://lore.kernel.org/all/CAEvNRgEVC=fFuKVgZYvWyZD7t_zvUZihFG8hrACjvtkD5cwugw@mail.gmail.com/
+[2] https://lore.kernel.org/all/baa8838f623102931e755cf34c86314b305af49c.1747264138.git.ackerleytng@google.com/
+
+>
+> [...snip...]
+
+---
+
+## [54] Suzuki K Poulose — 2026-06-04
+*Subject: Re: [PATCH v7 20/42] KVM: SEV: Make 'uaddr' parameter optional for
+ KVM_SEV_SNP_LAUNCH_UPDATE*
+
+On 23/05/2026 01:18, Ackerley Tng via B4 Relay wrote:
+> From: Michael Roth <michael.roth@amd.com>
+> 
+
+
+
+
+> ---
+>   Documentation/virt/kvm/x86/amd-memory-encryption.rst | 15 +++++++++++----
+
+Just to confirm, so the sev_gmem_prepare doesn't destroy the contents in 
+the process of making it "private" ? i.e., the contents of a SNP shared
+page are preserved while transitioning to "SNP Private" (via RMP
+update).
+
+Suzuki
+
+
+
+>   
+>   Parameters (in): struct  kvm_sev_snp_launch_update
+
+---
+
+## [55] Ackerley Tng — 2026-06-04
+*Subject: Re: [PATCH v7 20/42] KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE*
+
+Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+>
+> [...snip...]
+
+The following is the guest_memfd perspective, I didn't look at the SNP
+spec:
+
+Do you mean specifically for KVM_SEV_SNP_PAGE_TYPE_ZERO, or for any
+type?
+
+guest_memfd has no plans to do any special zeroing based on type.
+
+guest_memfd decoupled zeroing from preparation a while ago (Michael had
+some patches), so zeroing is supposed to be once during folio ownership
+by guest_memfd, tracked by the uptodate flag, and preparation is tracked
+outside of guest_memfd. So far only SNP does preparation.
+
+>
+>
+
+---
+
+## [56] Michael Roth — 2026-06-04
+*Subject: Re: [PATCH v7 20/42] KVM: SEV: Make 'uaddr' parameter optional for
+ KVM_SEV_SNP_LAUNCH_UPDATE*
+
+On Thu, Jun 04, 2026 at 04:29:19PM +0100, Suzuki K Poulose wrote:
+> On 23/05/2026 01:18, Ackerley Tng via B4 Relay wrote:
+> > From: Michael Roth <michael.roth@amd.com>
+
+sev_gmem_prepare() does sort of destroy contents since it finalizes the
+shared->private conversion which puts the page in an unusable state
+until the guest 'accepts' it as private memory and re-initializes the
+contents.
+
+But that's run-time, when the guest is doing conversions. The
+documentation here is relating to initialization time when we are
+setting up the initial pre-encrypted/pre-measured guest memory image,
+via SNP_LAUNCH_UPDATE. That path calls into kvm_gmem_populate(), and it
+is then sev_gmem_post_populate() callback that actually finalizes the
+shared->private conversion. The sev_gmem_prepare() hook doesn't get used
+in this flow (kvm_gmem_populate() calls __kvm_gmem_get_pfn() which skips
+preparation).
+
+-Mike
+
+> 
+> Suzuki
+
+---
+
+## [57] Sean Christopherson — 2026-06-04
+*Subject: Re: [PATCH v7 00/42] guest_memfd: In-place conversion support*
+
+On Wed, Jun 03, 2026, Ackerley Tng wrote:
+> Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+> writes:
+
+That fix works for me.  The initial guest image will typically be a tiny subset
+of guest memory, so unnecessarily zeroing a few pages isn't a performance concern.
+
+> + KVM: guest_memfd: Only prepare folios for private pages,
+>     + s/non-CoCo/CoCo in commit message "INIT_SHARED is about to be
+
+I'm not exactly excited about taking a dependency on CONFIG_GUP_TEST either, but
+it probably is the least awful choice.  E.g. KVM also pins pages is certain flows,
+but we're _also_ actively working to remove the need to pin.
+
+Hmm, maybe IORING_REGISTER_PBUF_RING?  AFAICT, it's almost literally a "pin user
+memory" syscall.
+
+> + KVM: selftests: Add script to exercise private_mem_conversions_test
+>     + Would like to know what people think of a wrapper script before
+
+NAK to a wrapper script.  This sounds like a perfect fit for Vipin's selftest
+runner (which I'm like 4 months overdue for reviewing, testing, and merging).
+If the runner _can't_ do what you want, then I'd rather improve the runner.
+
+[*] https://lore.kernel.org/all/20260331194202.1722082-1-vipinsh@google.com
+
+> 
+> [1] https://lore.kernel.org/all/CAEvNRgEVC=fFuKVgZYvWyZD7t_zvUZihFG8hrACjvtkD5cwugw@mail.gmail.com/
+
+---
+
+## [58] Ackerley Tng — 2026-06-04
+*Subject: Re: [PATCH v7 00/42] guest_memfd: In-place conversion support*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Wed, Jun 03, 2026, Ackerley Tng wrote:
+>> Ackerley Tng via B4 Relay <devnull+ackerleytng.google.com@kernel.org>
+
+In regular usage moving the zeroing in [1] doesn't change anything,
+since the same zeroing would have first happened when the host faults
+the pages to put the initial image. When populating, there's no more
+zeroing since it was zeroed.
+
+[1] covers the case where the host doesn't write anything to the pages
+and directly tries to populate the pages to the guest.
+
+>> + KVM: guest_memfd: Only prepare folios for private pages,
+>>     + s/non-CoCo/CoCo in commit message "INIT_SHARED is about to be
+
+Hmm that takes a dependency on io_uring, which isn't always compiled
+in. Between CONFIG_IO_URING and CONFIG_GUP_TEST, I'd rather
+CONFIG_GUP_TEST.
+
+>> + KVM: selftests: Add script to exercise private_mem_conversions_test
+>>     + Would like to know what people think of a wrapper script before
+
+Good to know we have this!
+
+Thanks, I'll work on a v8 to clean up the above.
+
+>>
+>> [1] https://lore.kernel.org/all/CAEvNRgEVC=fFuKVgZYvWyZD7t_zvUZihFG8hrACjvtkD5cwugw@mail.gmail.com/
+
+---
+
+## [59] Suzuki K Poulose — 2026-06-05
+*Subject: Re: [PATCH v7 20/42] KVM: SEV: Make 'uaddr' parameter optional for
+ KVM_SEV_SNP_LAUNCH_UPDATE*
+
+On 04/06/2026 20:05, Ackerley Tng wrote:
+> Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+> 
+
+I am talking about the SEV SNP conversions (specifically quoted in my 
+response), I will follow up on Michael's response.
+
+Suzuki
+
+---
+
+## [60] Suzuki K Poulose — 2026-06-05
+*Subject: Re: [PATCH v7 20/42] KVM: SEV: Make 'uaddr' parameter optional for
+ KVM_SEV_SNP_LAUNCH_UPDATE*
+
+On 04/06/2026 21:11, Michael Roth wrote:
+> On Thu, Jun 04, 2026 at 04:29:19PM +0100, Suzuki K Poulose wrote:
+>> On 23/05/2026 01:18, Ackerley Tng via B4 Relay wrote:
+
+Thanks, thats the bit I was missing. Skipping the prepare path, with 
+__kvm_gmem_get_pfn(). I was under the assumption that 
+kvm_arch_gmem_prepare() was called for all PFNs allocated from gmem
+and how SNP was handling this populate case.
+
+
+Thanks
+Suzuki
+
+
+> 
+> -Mike
+
+---
+
+## [61] Ackerley Tng — 2026-06-05
+*Subject: [POC] KVM: selftests: Verify conversion works with TDX*
+
+This POC shows that conversions works with TDX:
+
+1. Find 2 pages in GVA space, map those twice, once as private and once as
+   shared. This avoids having to manipulate page tables in the guest.
+2. Use memory as private memory in the guest.
+3. Request to convert memory to shared.
+4. Write shared memory in the guest, check in the host.
+5. Write shared memory in the host, check in the guest.
+6. Request to convert memory to private.
+7. Use memory as private memory in the guest.
+
+I based this on Lisa's series at [1].
+
+[1] https://lore.kernel.org/all/20260521-tdx-selftests-v13-v13-0-6983ae4c3a4d@google.com/
+
+Signed-off-by: Ackerley Tng <ackerleytng@google.com>
+---
+ tools/testing/selftests/kvm/x86/tdx_vm_test.c | 154 ++++++++++++++++++
+ 1 file changed, 154 insertions(+)
+
+diff --git a/tools/testing/selftests/kvm/x86/tdx_vm_test.c b/tools/testing/selftests/kvm/x86/tdx_vm_test.c
+index 7cdcaf33b585b..093921af7d93e 100644
+--- a/tools/testing/selftests/kvm/x86/tdx_vm_test.c
++++ b/tools/testing/selftests/kvm/x86/tdx_vm_test.c
+@@ -26,6 +26,160 @@ TEST(verify_td_lifecycle)
+ 	kvm_vm_free(vm);
+ }
+
++static gva_t conversions_private_gva;
++static gpa_t conversions_private_gpa;
++static gva_t conversions_shared_gva;
++static gpa_t conversions_shared_gpa;
++static size_t conversions_size;
++
++u64 tdx_map_gpa(u64 gpa, u64 size)
++{
++#define TDG_VP_VMCALL 0
++#define TDG_VP_VMCALL_MAP_GPA 0x10001
++#define TDVMCALL_EXPOSE_REGS_MASK 0xFC00
++	register u64 r10_reg asm("r10") = TDG_VP_VMCALL;
++	register u64 r11_reg asm("r11") = TDG_VP_VMCALL_MAP_GPA;
++	register u64 r12_reg asm("r12") = gpa;
++	register u64 r13_reg asm("r13") = size;
++	register u64 rax_reg asm("rax") = TDG_VP_VMCALL;
++	register u64 rcx_reg asm("rcx") = TDVMCALL_EXPOSE_REGS_MASK;
++
++	asm volatile(
++	 ".byte 0x66,0x0f,0x01,0xcc" /* tdcall */
++	 : "+r" (r10_reg), "+r" (r11_reg)
++	 : "r" (r12_reg), "r" (r13_reg), "r" (rax_reg), "r" (rcx_reg)
++	 : "cc", "memory"
++	);
++
++	return r10_reg;
++}
++
++enum accept_page_level {
++	PAGE_LEVEL_4K = 0,
++	PAGE_LEVEL_2M,
++};
++
++u64 tdx_accept_page(u64 gpa, enum accept_page_level level)
++{
++#define TDG_MEM_PAGE_ACCEPT 6
++	register u64 rax_reg asm("rax") = TDG_MEM_PAGE_ACCEPT;
++	register u64 rcx_reg asm("rcx") = gpa | level;
++
++	asm volatile(
++	 ".byte 0x66,0x0f,0x01,0xcc" /* tdcall */
++	 : "+r" (rax_reg)
++	 : "r" (rcx_reg)
++	 : "cc", "memory"
++	);
++
++	return rax_reg;
++}
++
++static void handle_hypercall_map_gpa(struct kvm_vcpu *vcpu)
++{
++	struct kvm_run *run = vcpu->run;
++	u64 attributes;
++	size_t size;
++	gpa_t gpa;
++
++	TEST_ASSERT_KVM_EXIT_REASON(vcpu, KVM_EXIT_HYPERCALL);
++	TEST_ASSERT_EQ(run->hypercall.nr, KVM_HC_MAP_GPA_RANGE);
++	TEST_ASSERT_EQ(run->hypercall.flags, KVM_EXIT_HYPERCALL_LONG_MODE);
++
++	gpa = run->hypercall.args[0];
++	size = run->hypercall.args[1] * PAGE_SIZE;
++	attributes = 0;
++	if (run->hypercall.args[2] & KVM_MAP_GPA_RANGE_ENCRYPTED)
++		attributes = KVM_MEMORY_ATTRIBUTE_PRIVATE;
++
++	vm_mem_set_memory_attributes(vcpu->vm, gpa, size, attributes);
++}
++
++#define CONVERSIONS_PRIVATE_VAL 'A'
++#define CONVERSIONS_GUEST_SHARED_VAL 'B'
++#define CONVERSIONS_HOST_SHARED_VAL 'C'
++#define CONVERSIONS_STAGE_WROTE_SHARED 0x99
++
++static void guest_code_conversions(void)
++{
++	char *addr;
++
++	addr = (void *)conversions_private_gva;
++	WRITE_ONCE(*addr, CONVERSIONS_PRIVATE_VAL);
++	GUEST_ASSERT_EQ(READ_ONCE(*addr), CONVERSIONS_PRIVATE_VAL);
++
++	GUEST_ASSERT_EQ(tdx_map_gpa(conversions_shared_gpa, conversions_size), 0);
++
++	addr = (void *)conversions_shared_gva;
++	WRITE_ONCE(*addr, CONVERSIONS_GUEST_SHARED_VAL);
++	GUEST_ASSERT_EQ(READ_ONCE(*addr), CONVERSIONS_GUEST_SHARED_VAL);
++
++	GUEST_SYNC(CONVERSIONS_STAGE_WROTE_SHARED);
++
++	GUEST_ASSERT_EQ(READ_ONCE(*addr), CONVERSIONS_HOST_SHARED_VAL);
++
++	GUEST_ASSERT_EQ(tdx_map_gpa(conversions_private_gpa, conversions_size), 0);
++	GUEST_ASSERT_EQ(tdx_accept_page(conversions_private_gpa, PAGE_LEVEL_4K), 0);
++
++	addr = (void *)conversions_private_gva;
++	WRITE_ONCE(*addr, CONVERSIONS_PRIVATE_VAL);
++	GUEST_ASSERT_EQ(READ_ONCE(*addr), CONVERSIONS_PRIVATE_VAL);
++
++	GUEST_DONE();
++}
++
++TEST(verify_conversions)
++{
++	struct kvm_vcpu *vcpu;
++	struct kvm_vm *vm;
++	struct ucall uc;
++	char *test_hva;
++
++	vm = __vm_create(VM_SHAPE_TDX, 1, 0);
++	vcpu = vm_vcpu_add(vm, 0, guest_code_conversions);
++
++	conversions_size = getpagesize();
++
++	conversions_private_gva = vm_alloc_page(vm);
++	conversions_shared_gva = vm_alloc_shared(vm, conversions_size,
++						 KVM_UTIL_MIN_VADDR,
++						 MEM_REGION_TEST_DATA);
++	conversions_private_gpa = addr_gva2gpa(vm, conversions_private_gva);
++	conversions_shared_gpa = conversions_private_gpa | BIT_ULL(vm->pa_bits - 1);
++
++	vm_enable_cap(vm, KVM_CAP_EXIT_HYPERCALL, (1 << KVM_HC_MAP_GPA_RANGE));
++
++	sync_global_to_guest(vm, conversions_size);
++	sync_global_to_guest(vm, conversions_private_gva);
++	sync_global_to_guest(vm, conversions_private_gpa);
++	sync_global_to_guest(vm, conversions_shared_gva);
++	sync_global_to_guest(vm, conversions_shared_gpa);
++
++	kvm_arch_vm_finalize_vcpus(vm);
++
++	test_hva = addr_gva2hva(vm, conversions_shared_gva);
++
++	vcpu_run(vcpu);
++	handle_hypercall_map_gpa(vcpu);
++
++	vcpu_run(vcpu);
++	TEST_ASSERT_EQ(get_ucall(vcpu, &uc), UCALL_SYNC);
++	TEST_ASSERT_EQ(uc.args[1], CONVERSIONS_STAGE_WROTE_SHARED);
++
++	TEST_ASSERT_EQ(READ_ONCE(*test_hva), CONVERSIONS_GUEST_SHARED_VAL);
++
++	WRITE_ONCE(*test_hva, CONVERSIONS_HOST_SHARED_VAL);
++	TEST_ASSERT_EQ(READ_ONCE(*test_hva), CONVERSIONS_HOST_SHARED_VAL);
++
++	vcpu_run(vcpu);
++	handle_hypercall_map_gpa(vcpu);
++
++	vcpu_run(vcpu);
++	TEST_ASSERT_EQ(get_ucall(vcpu, &uc), UCALL_DONE);
++
++	kvm_vm_free(vm);
++}
++
+ int main(int argc, char **argv)
+ {
+ 	TEST_REQUIRE(is_tdx_supported());
+--
+2.54.0.1032.g2f8565e1d1-goog
+
+---
+
+## [62] Sean Christopherson — 2026-06-05
+*Subject: Re: [PATCH v7 00/42] guest_memfd: In-place conversion support*
+
+On Thu, Jun 04, 2026, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> >> + KVM: selftests: Test conversion with elevated page refcount
+
+Or try both?  If it's not a ridiculous amount of work.
 
 ---

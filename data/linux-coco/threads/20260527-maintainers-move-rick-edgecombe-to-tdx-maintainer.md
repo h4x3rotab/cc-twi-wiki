@@ -1,9 +1,9 @@
 ---
 title: 'MAINTAINERS: Move Rick Edgecombe to TDX maintainer'
 date: 2026-05-27
-last_reply: 2026-05-27
-message_count: 1
-participants: ['Rick Edgecombe']
+last_reply: 2026-05-28
+message_count: 2
+participants: ['Rick Edgecombe', 'Kiryl Shutsemau']
 ---
 
 ## [1] Rick Edgecombe — 2026-05-27
@@ -35,5 +35,16 @@ index 882214b0e7db5..a838ff047d891 100644
  L:	x86@kernel.org
  L:	linux-coco@lists.linux.dev
  L:	kvm@vger.kernel.org
+
+---
+
+## [2] Kiryl Shutsemau — 2026-05-28
+*Subject: Re: [PATCH] MAINTAINERS: Move Rick Edgecombe to TDX maintainer*
+
+On Wed, May 27, 2026 at 03:13:42PM -0700, Rick Edgecombe wrote:
+> Per some offline discussion with Kiryl, he could use some help on the TDX
+> host side. I have worked on the TDX host side for the past few years
+
+Reviewed-by: Kiryl Shutsemau (Meta) <kas@kernel.org>
 
 ---

@@ -1,9 +1,9 @@
 ---
 title: 'TDX KVM selftests'
 date: 2026-05-21
-last_reply: 2026-05-22
-message_count: 26
-participants: ['Lisa Wang', 'Yosry Ahmed', 'Sean Christopherson']
+last_reply: 2026-06-05
+message_count: 31
+participants: ['Lisa Wang', 'Yosry Ahmed', 'Sean Christopherson', 'Ackerley Tng']
 ---
 
 ## [1] Lisa Wang — 2026-05-21
@@ -2537,5 +2537,182 @@ we can always convert if/when the TDX series lands the fancy stuff.
 > > code blocks) -- as opposed to say using .equ [*]?
 
 Ack. We can do the switch later like you say.
+
+---
+
+## [27] Yosry Ahmed — 2026-05-28
+*Subject: Re: [PATCH v13 07/22] KVM: selftests: Introduce structures for TDX
+ guest boot parameters*
+
+On Fri, May 22, 2026 at 04:50:07PM -0700, Yosry Ahmed wrote:
+> > > Sean, is this the preferred way to expose offsets to asm files (or asm
+> > > code blocks) -- as opposed to say using .equ [*]?
+
+I take this back. My series builds with the internal toolchain, but not
+when I just use make with LLVM. Probably different compiler versions or
+build options, but the fact the .equ thing doesn't always work means I
+can't use it.
+
+I would paste the error here, but the compiler literally spits out
+incomprehensible garbage.
+
+Lisa, if you will send a new version of this series for other reasons,
+do you mind splitting out the non-TDX parts of this patch? Ideally we'd
+have 1-2 patches that introduce the OFFSET() infrastructure without any
+TDX parts, which should make it easier to pick up separately or include
+with other series.
+
+If a new version won't be needed anyway, I will just wait for this to
+land before refreshing my series on top.
+
+---
+
+## [28] Ackerley Tng — 2026-06-05
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+Lisa Wang <wyihan@google.com> writes:
+
+> From: Sagi Shahar <sagis@google.com>
+>
+
+This doesn't necessarily block this series, we could (re)move this
+later: I'm not sure if kvm_arch_vm_finalize_vcpus() is the correct place
+to be finalizing the VM.
+
+Was kvm_arch_vm_finalize_vcpus() supposed to be for finalizing vCPUs
+instead?
+
+The awkward part is that kvm_arch_vm_finalize_vcpus() is called from
+__vm_create_with_vcpus().
+
+While building this POC to test conversions [1] I only wanted to create
+the vm and vcpus and didn't want to finalize yet, since I still needed
+to do more mappings in the guest (and I needed the vm pointer to do
+mappings in the guest).
+
+Would calling tdx_vm_finalize() from within vcpu_run(), just once, be
+too magical?
+
+It's also possible to have some kvm_vm_finalize() call that can be
+explicitly and manually invoked from selftests just for CoCo selftests.
+
+[1] https://lore.kernel.org/all/20260605134153.204152-1-ackerleytng@google.com/
+
+>  void setup_smram(struct kvm_vm *vm, struct kvm_vcpu *vcpu, u64 smram_gpa,
+>  		 const void *smi_handler, size_t handler_size)
+
+---
+
+## [29] Sean Christopherson — 2026-06-05
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+On Fri, Jun 05, 2026, Ackerley Tng wrote:
+> Lisa Wang <wyihan@google.com> writes:
+> 
+
+Hmm, I would argue this is a flaw in the selftests infrastructure.  IMO, as a
+developer, it's quite surprising that the current value of a global variable
+doesn't show up in the VM automagically.  I totally understand why selftests
+work that way, but it's certainly odd and annoying.  If _that_ were solved, then
+the kludginess of what you're doing goes away.
+
+The other way this could be solved is by adding support for annotating globals
+with a __shared flag, a la the kernel's __bss_decrypted, so that loading memory
+into the VM can automatically mark the associated globals' pages as shared.
+
+> Would calling tdx_vm_finalize() from within vcpu_run(), just once, be
+> too magical?
+
+Yes.
+
+> It's also possible to have some kvm_vm_finalize() call that can be
+> explicitly and manually invoked from selftests just for CoCo selftests.
+
+Why bother?  It's obviously possible to all kvm_arch_vm_finalize_vcpus() directly.
+
+---
+
+## [30] Ackerley Tng — 2026-06-05
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+>
+> [...snip...]
+
+More generally, is your opinion that tests should not have to add extra
+memslots?
+
+If I wanted a shared page, would I have to do
+
+  static __shared test_page[4096] = {0};
+
+and then rely on ELF loading to put that in the guest for me? Are there
+some compiler flags/how will I require that test_page be page aligned?
+
+If I mark 10 globals as __shared, would the compiler automatically
+consolidate the shared memory together?
+
+I think it's a bit constraining to require that all guest memory be set
+up statically. It's nice to have but I'd like another option...
+
+Many tests use vm_userspace_mem_region_add(), CoCo tests that require
+finalizing shouldn't be disallowed that option.
+
+>> Would calling tdx_vm_finalize() from within vcpu_run(), just once, be
+>> too magical?
+
+Works for me to call directly. Do you mean kvm_arch_vm_finalize_vcpus()
+is the right function where the TD is finalized?
+
+For tests that need to do more setup after creating a vm, is the only
+way out to call __vm_create() then vm_vcpu_add() to avoid premature
+finalization in __vm_create_with_vcpus() when
+kvm_arch_vm_finalize_vcpus() is called?
+
+---
+
+## [31] Sean Christopherson — 2026-06-05
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+On Fri, Jun 05, 2026, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> 
+
+I don't care?  What I care about is making it as easy and intuitive as possible
+for people to write tests, and to minimize maintenance costs.
+
+> If I wanted a shared page, would I have to do
+> 
+
+Compilere and linker shenanigans.
+
+> If I mark 10 globals as __shared, would the compiler automatically
+> consolidate the shared memory together?
+
+Yes, follow the __bss_decrypted breadcrumbs.
+
+  #define __bss_decrypted __section(".bss..decrypted")
+
+> I think it's a bit constraining to require that all guest memory be set
+> up statically. It's nice to have but I'd like another option...
+
+You do have options, they just require more work.
+
+> Many tests use vm_userspace_mem_region_add(), CoCo tests that require
+> finalizing shouldn't be disallowed that option.
+
+What does that have to do with finalizing the VM?
+
+> >> It's also possible to have some kvm_vm_finalize() call that can be
+> >> explicitly and manually invoked from selftests just for CoCo selftests.
+
+Depends on what you're doing.  Sometimes, the answer will be yes.  That's why
+there are "low level" APIs, so that some tests can do fancy things, while most
+tests can leave the details to the infrastructure.
+
+If there's a recurring problem, or we anticipate one, then we can and should
+figure out how to minimize the pain so that tests don't have to deal with the
+same boilerplate issues over and over.  Hence the __shared idea.
 
 ---

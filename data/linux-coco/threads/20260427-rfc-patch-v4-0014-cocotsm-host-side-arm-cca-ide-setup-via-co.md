@@ -1,8 +1,8 @@
 ---
 title: '[RFC PATCH v4 00/14] coco/TSM: Host-side Arm CCA IDE setup via connect/disconnect callbacks'
 date: 2026-04-27
-last_reply: 2026-05-27
-message_count: 20
+last_reply: 2026-06-02
+message_count: 21
 participants: ['Aneesh Kumar K.V (Arm)', 'Will Deacon', 'Suzuki K Poulose', 'Dan Williams (nvidia)']
 ---
 
@@ -3582,5 +3582,42 @@ Thinking about a bisection case this should either fail here, print a
 message that is removed in the final enabling patch, or do the
 __maybe_unused arrangement to land all the CCA bits first and then do
 this hookup. Up to you.
+
+---
+
+## [21] Aneesh Kumar K.V — 2026-06-02
+*Subject: Re: [RFC PATCH v4 01/14] coco: host: arm64: Add host TSM callback
+ and IDE stream allocation support*
+
+"Dan Williams (nvidia)" <djbw@kernel.org> writes:
+
+> Aneesh Kumar K.V (Arm) wrote:
+>> Register the TSM callback when the DA feature is supported by KVM.
+
+Sure, I’ll update the commit message.
+
+>
+> Minor comments below...
+
+Yes, I’ll split this into a separate patch.
+
+>
+>> diff --git a/drivers/virt/coco/arm-cca-host/Makefile b/drivers/virt/coco/arm-cca-host/Makefile
+
+Yes. This get updated later in
+https://lore.kernel.org/all/20260427065121.916615-14-aneesh.kumar@kernel.org
+
+>
+>> +
+
+Yes, I’ll switch to that.
+
+>
+>> +}
+
+Will do the latter. ie, I’ll call tsm_register() only in the final
+patch.
+
+-aneesh
 
 ---

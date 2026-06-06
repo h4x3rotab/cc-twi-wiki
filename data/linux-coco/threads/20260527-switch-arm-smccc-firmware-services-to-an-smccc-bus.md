@@ -1,9 +1,9 @@
 ---
 title: 'Switch Arm SMCCC firmware services to an SMCCC bus'
 date: 2026-05-27
-last_reply: 2026-05-27
-message_count: 5
-participants: ['Aneesh Kumar K.V (Arm)']
+last_reply: 2026-06-04
+message_count: 13
+participants: ['Aneesh Kumar K.V (Arm)', 'Sudeep Holla', 'Suzuki K Poulose']
 ---
 
 ## [1] Aneesh Kumar K.V (Arm) — 2026-05-27
@@ -942,5 +942,343 @@ index da440f71bb64..a333029ddf08 100644
 +	return ret;
 +}
 +device_initcall(realm_sysfs_init);
+
+---
+
+## [6] Sudeep Holla — 2026-06-03
+*Subject: Re: [PATCH v6 1/4] firmware: smccc: Add an Arm SMCCC bus*
+
+On Wed, May 27, 2026 at 03:32:30PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> SMCCC-discovered firmware services are currently represented by separate
+> platform devices, such as smccc_trng and arm-cca-dev. Those devices do not
+
+This looks good to me.
+
+> Based on arm_ffa code
+> 
+
+I think it is better to keep it separate say bus.c ?
+
+---
+
+## [7] Suzuki K Poulose — 2026-06-04
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On 27/05/2026 11:02, Aneesh Kumar K.V (Arm) wrote:
+> The Arm CCA guest TSM provider currently binds through the arm-cca-dev
+> platform device. Like arm-smccc-trng, this device is not an independent
+
+minor nit: Could we rename this global symbol to scope it under rmm ?
+perhaps, rmm_register_rsi_device()?
+
+> +{
+> +	unsigned long ret;
+
+minor nit: Could the header files be moved to rmm.c ?
+
+> +void __init register_rsi_device(void);
+> +#else
+
+
+> +
+> +static inline void __init register_rsi_device(void)
+
+
+> +#endif
+> diff --git a/drivers/firmware/smccc/smccc.c b/drivers/firmware/smccc/smccc.c
+
+nit: We don't have RMI devices yet ? Do we want to make it
+
+rmm_register_devices();
+
+instead ?
+
+
+
+> +
+>   	if (smccc_trng_available) {
+
+Would you like to either :
+
+1) Call out renaming the existing cca_tsm to reflect cca_tsm_report
+in the commit description ?
+
+OR
+
+2) Split the renaming of the "report" stuff in a follow up patch ?
+
+Rest looks fine by me.
+
+Suzuki
+
+
+> -/**
+> - * arm_cca_guest_init - Register with the Trusted Security Module (TSM)
+
+---
+
+## [8] Sudeep Holla — 2026-06-04
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On Wed, May 27, 2026 at 03:32:32PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> The Arm CCA guest TSM provider currently binds through the arm-cca-dev
+> platform device. Like arm-smccc-trng, this device is not an independent
+
+OK, I had something else in my mind when I started looking at 1/4. I didn't
+expect each device added on this bus comes up with it's own way to enumerate
+it. IMO, it defeats the purpose of building the smccc bus. We may find the
+specs for each feature deviated a bit but we can have a generic probe
+IMO, let's try that before exploring per feature probe function.
+
+I have a brief sketch of what I think we should aim for(uncompiled/untested)
+below. Let me know if that makes sense. I just based it on your bus code.
+
+Regards,
+Sudeep
+
+-->8
+
+diff --git c/drivers/firmware/smccc/smccc.c w/drivers/firmware/smccc/smccc.c
+index 695c920a8087..450605ddfab6 100644
+--- c/drivers/firmware/smccc/smccc.c
++++ w/drivers/firmware/smccc/smccc.c
+@@ -9,21 +9,58 @@
+ #include <linux/init.h>
+ #include <linux/arm-smccc.h>
+ #include <linux/kernel.h>
+-#include <linux/platform_device.h>
+ #include <linux/arm-smccc-bus.h>
+ #include <linux/idr.h>
+ #include <linux/slab.h>
+
+-#include <asm/archrandom.h>
+-
+ static u32 smccc_version = ARM_SMCCC_VERSION_1_0;
+ static enum arm_smccc_conduit smccc_conduit = SMCCC_CONDUIT_NONE;
+ static DEFINE_IDA(arm_smccc_bus_id);
+
+-bool __ro_after_init smccc_trng_available = false;
++struct smccc_device_info {
++       u32 func_id;
++       bool requires_smc;
++       unsigned long min_return;
++       const char *device_name;
++};
++
++bool __ro_after_init smccc_trng_available;
+ s32 __ro_after_init smccc_soc_id_version = SMCCC_RET_NOT_SUPPORTED;
+ s32 __ro_after_init smccc_soc_id_revision = SMCCC_RET_NOT_SUPPORTED;
+
++static const struct smccc_device_info smccc_devices[] __initconst = {
++       {
++               .func_id        = ARM_SMCCC_TRNG_VERSION,
++               .requires_smc   = false,
++               .min_return     = ARM_SMCCC_TRNG_MIN_VERSION,
++               .device_name    = "arm-smccc-trng",
++       },
++};
++
++static bool __init
++smccc_probe_smccc_device(const struct smccc_device_info *smccc_dev)
++{
++       struct arm_smccc_res res;
++       unsigned long ret;
++
++       if (!IS_ENABLED(CONFIG_ARM64))
++               return false;
++
++       if (smccc_conduit == SMCCC_CONDUIT_NONE)
++               return false;
++
++       if (smccc_dev->requires_smc && smccc_conduit != SMCCC_CONDUIT_SMC)
++               return false;
++
++       arm_smccc_1_1_invoke(smccc_dev->func_id, &res);
++       ret = res.a0;
++
++       if ((s32)ret < 0)
++               return false;
++
++       return ret >= smccc_dev->min_return;
++}
++
+ void __init arm_smccc_version_init(u32 version, enum arm_smccc_conduit conduit)
+ {
+        struct arm_smccc_res res;
+@@ -31,7 +68,7 @@ void __init arm_smccc_version_init(u32 version, enum arm_smccc_conduit conduit)
+        smccc_version = version;
+        smccc_conduit = conduit;
+
+-       smccc_trng_available = smccc_probe_trng();
++       smccc_trng_available = smccc_probe_smccc_device(&smccc_devices[0]);
+
+        if ((smccc_version >= ARM_SMCCC_VERSION_1_2) &&
+            (smccc_conduit != SMCCC_CONDUIT_NONE)) {
+@@ -241,14 +278,20 @@ subsys_initcall(arm_smccc_bus_init);
+
+ static int __init smccc_devices_init(void)
+ {
+-       struct platform_device *pdev;
+-
+-       if (smccc_trng_available) {
+-               pdev = platform_device_register_simple("smccc_trng", -1,
+-                                                      NULL, 0);
+-               if (IS_ERR(pdev))
+-                       pr_err("smccc_trng: could not register device: %ld\n",
+-                              PTR_ERR(pdev));
++       const struct smccc_device_info *smccc_dev;
++       struct arm_smccc_device *sdev;
++       int i;
++
++       for (i = 0; i < ARRAY_SIZE(smccc_devices); i++) {
++               smccc_dev = &smccc_devices[i];
++
++               if (!smccc_probe_smccc_device(smccc_dev))
++                       continue;
++
++               sdev = arm_smccc_device_register(smccc_dev->device_name);
++               if (IS_ERR(sdev))
++                       pr_err("%s: could not register device: %ld\n",
++                              smccc_dev->device_name, PTR_ERR(sdev));
+        }
+
+        return 0;
+
+---
+
+## [9] Suzuki K Poulose — 2026-06-04
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On 04/06/2026 10:21, Sudeep Holla wrote:
+> On Wed, May 27, 2026 at 03:32:32PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>> The Arm CCA guest TSM provider currently binds through the arm-cca-dev
+
+I guess this is ideal, but see below.
+
+> 
+> I have a brief sketch of what I think we should aim for(uncompiled/untested)
+
+Is this viable for all ? There may be additional restrictions around
+the return values and further SMC calls ? Which brings us to call backs
+and we kind of have a variant of that here.
+
+Suzuki
+
+
+> +       const char *device_name;
+> +};
+
+---
+
+## [10] Sudeep Holla — 2026-06-04
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On Thu, Jun 04, 2026 at 11:24:05AM +0100, Suzuki K Poulose wrote:
+> On 04/06/2026 10:21, Sudeep Holla wrote:
+> > On Wed, May 27, 2026 at 03:32:32PM +0530, Aneesh Kumar K.V (Arm) wrote:
+
+I wanted to ask this but just forgot.
+
+RSI uses SMC because the Realm is calling the RMM, not the host hypervisor.
+Using HVC would make RSI look like a hypervisor ABI and would blur the trust
+boundary, is that right assumption ?
+
+I assume the conduit derived from PSCI node for the realms will always be
+SMC and it shouldn't be a problem. I mean there won't be a case where you
+would need HVC as conduit within the realm VM kernel ?
+
+> > +       unsigned long min_return;
+> 
+
+Fair enough, but do you have examples currently ?
+
+> Which brings us to call backs and we kind of have a variant of that here.
+> 
+
+I am fine with callback but need to keep the scope of it as minimum as
+possible IMO. For me it's simple if that main FID for that feature is
+implemented we create SMCCC device and probe can deal with all the extra
+details, why won't that work ? Just trying to understand why the core
+SMCCC bus need to know more or must provide a callback.
+
+---
+
+## [11] Aneesh Kumar K.V — 2026-06-04
+*Subject: Re: [PATCH v6 0/4] Switch Arm SMCCC firmware services to an SMCCC bus*
+
+Hi Greg,
+
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> writes:
+
+> As discussed here:
+> https://lore.kernel.org/all/20250728135216.48084-12-aneesh.kumar@kernel.org
+
+
+Gentle ping. Based on your feedback in [1], I reworked the series to use
+an SMCCC bus, with smccc-trng and arm-cca-dev represented as devices on
+that bus. Could you let me know whether this approach addresses your
+concerns?
+
+[1] https://lore.kernel.org/all/2026051451-comfort-museum-4d2a@gregkh/
+
+-aneesh
+
+---
+
+## [12] Aneesh Kumar K.V — 2026-06-04
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+Sudeep Holla <sudeep.holla@kernel.org> writes:
+
+...
+
+> +static const struct smccc_device_info smccc_devices[] __initconst = {
+> +       {
+
+I am not sure we want the check to be as simple as ret < 0. Some
+function IDs may return input errors based on the supplied arguments
+(for example, RMI_ERROR_INPUT). In those cases, we would likely want
+this to be handled via a callback.
+
+We also want to use conditional compilation for some function IDs.
+Given the callback approach and the #ifdefs, I wonder whether what we
+currently have is actually simpler and more flexible.”
+
+>  void __init arm_smccc_version_init(u32 version, enum arm_smccc_conduit conduit)
+>  {
+
+-aneesh
+
+---
+
+## [13] Sudeep Holla — 2026-06-04
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On Thu, Jun 04, 2026 at 06:56:28PM +0530, Aneesh Kumar K.V wrote:
+> Sudeep Holla <sudeep.holla@kernel.org> writes:
+> 
+
+As I mentioned in response to Suzuki, we can defer that to probe of
+that device. If *_VERSION, succeeds SMCCC core can add that device and
+leave the rest to the core keeping the core and bus layer simple IMO.
+
+> We also want to use conditional compilation for some function IDs.
+> Given the callback approach and the #ifdefs, I wonder whether what we
+
+I was trying to avoid conditional compilation altogether and hence the
+reason for keeping it as simple as possible. Also IS_ENABLED(CONFIG_ARM64)
+in above snippet must come as some condition to this generic probe.
+
+Adding any more logic or callback defeats the bus idea here if we need
+to rely/depend on multiple conditional compilation or callbacks IMO.
+
+Let's find see if it can work with what we are adding now and may add in
+near future and then decide.
 
 ---

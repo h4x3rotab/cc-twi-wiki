@@ -1,12 +1,12 @@
 ---
 title: 'dma-mapping: Use DMA_ATTR_CC_SHARED through direct, pool and swiotlb paths'
-date: 2026-05-22
-last_reply: 2026-06-04
-message_count: 35
-participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM', 'Michael Kelley', 'Jason Gunthorpe']
+date: 2026-06-04
+last_reply: 2026-06-05
+message_count: 22
+participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM']
 ---
 
-## [1] Aneesh Kumar K.V (Arm) — 2026-05-22
+## [1] Aneesh Kumar K.V (Arm) — 2026-06-04
 
 This series propagates DMA_ATTR_CC_SHARED through the dma-direct,
 dma-pool, and swiotlb paths so that encrypted and decrypted DMA buffers
@@ -37,6 +37,15 @@ The series:
   relying on SWIOTLB_FORCE for DMA mappings
 - use the selected swiotlb pool state to derive the returned DMA
   address.
+
+Changes since v5:
+https://lore.kernel.org/all/20260522042815.370873-1-aneesh.kumar@kernel.org
+* Add Tested-by
+* Drop the pKVM patch, which has now been posted separately:
+  https://lore.kernel.org/all/20260603110522.3331819-1-smostafa@google.com
+* Remove the DO_NOT_MERGE tag from the s390 change.
+* Add a patch to drop the SWIOTLB_FORCE flag.
+* Rebase onto the latest kernel.
 
 Changes since v4:
 https://lore.kernel.org/all/20260512090408.794195-1-aneesh.kumar@kernel.org
@@ -108,10 +117,9 @@ Cc: Christian Borntraeger <borntraeger@linux.ibm.com>
 Cc: Sven Schnelle <svens@linux.ibm.com>
 Cc: x86@kernel.org
 
+
 Aneesh Kumar K.V (Arm) (20):
-  [DO NOT MERGE] arm64/coco: Add pKVM as a CC platform
-  [DO NOT MERGE] s390: Expose protected virtualization through
-    cc_platform_has()
+  s390: Expose protected virtualization through cc_platform_has()
   dma-direct: swiotlb: handle swiotlb alloc/free outside
     __dma_direct_alloc_pages
   dma-direct: use DMA_ATTR_CC_SHARED in alloc/free paths
@@ -131,183 +139,33 @@ Aneesh Kumar K.V (Arm) (20):
   dma: swiotlb: handle set_memory_decrypted() failures
   dma: free atomic pool pages by physical address
   swiotlb: Preserve allocation virtual address for dynamic pools
+  swiotlb: remove unused SWIOTLB_FORCE flag
 
- arch/arm64/include/asm/hypervisor.h           |   6 +
- arch/arm64/include/asm/mem_encrypt.h          |   3 +-
- arch/arm64/kernel/rsi.c                       |  12 -
- arch/arm64/mm/init.c                          |  17 +-
- arch/powerpc/platforms/pseries/svm.c          |   2 +-
- arch/s390/Kconfig                             |   1 +
- arch/s390/mm/init.c                           |  16 +-
- arch/x86/kernel/amd_gart_64.c                 |  30 +-
- arch/x86/kernel/pci-dma.c                     |   4 +-
- drivers/iommu/dma-iommu.c                     |  15 +-
- drivers/virt/coco/pkvm-guest/arm-pkvm-guest.c |   5 +
- drivers/xen/swiotlb-xen.c                     |   8 +-
- include/linux/dma-direct.h                    |  20 +-
- include/linux/dma-map-ops.h                   |   3 +-
- include/linux/swiotlb.h                       |  20 +-
- kernel/dma/direct.c                           | 275 +++++++++++++-----
- kernel/dma/direct.h                           |  47 +--
- kernel/dma/mapping.c                          |  16 +-
- kernel/dma/pool.c                             | 221 ++++++++++----
- kernel/dma/swiotlb.c                          | 270 +++++++++++++----
- 20 files changed, 717 insertions(+), 274 deletions(-)
+ arch/arm64/mm/init.c                 |   4 +-
+ arch/powerpc/platforms/pseries/svm.c |   2 +-
+ arch/s390/Kconfig                    |   1 +
+ arch/s390/mm/init.c                  |  16 +-
+ arch/x86/kernel/amd_gart_64.c        |  30 +--
+ arch/x86/kernel/pci-dma.c            |   4 +-
+ drivers/iommu/dma-iommu.c            |  15 +-
+ drivers/xen/swiotlb-xen.c            |   8 +-
+ include/linux/dma-direct.h           |  20 +-
+ include/linux/dma-map-ops.h          |   3 +-
+ include/linux/swiotlb.h              |  21 +-
+ kernel/dma/direct.c                  | 275 +++++++++++++++++++--------
+ kernel/dma/direct.h                  |  47 ++---
+ kernel/dma/mapping.c                 |  16 +-
+ kernel/dma/pool.c                    | 221 +++++++++++++++------
+ kernel/dma/swiotlb.c                 | 273 ++++++++++++++++++++------
+ 16 files changed, 692 insertions(+), 264 deletions(-)
 
 
-base-commit: 50897c955902c93ae71c38698abb910525ebdc89
+base-commit: ba3e43a9e601636f5edb54e259a74f96ca3b8fd8
 
 ---
 
-## [2] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 01/20] [DO NOT MERGE] arm64/coco: Add pKVM as a CC platform*
-
-pKVM does support memory encryption, expose that to the rest of
-the kernel through cc_platform_has()
-
-At the moment, all devices inside the guest are emulated which
-requires its memory to be shared back to the host (decrypted), so
-set force_dma_unencrypted() to always return true.
-
-Signed-off-by: Mostafa Saleh <smostafa@google.com>
-Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
----
- arch/arm64/include/asm/hypervisor.h           |  6 ++++++
- arch/arm64/include/asm/mem_encrypt.h          |  3 ++-
- arch/arm64/kernel/rsi.c                       | 12 ------------
- arch/arm64/mm/init.c                          | 13 +++++++++++++
- drivers/virt/coco/pkvm-guest/arm-pkvm-guest.c |  5 +++++
- 5 files changed, 26 insertions(+), 13 deletions(-)
-
-diff --git a/arch/arm64/include/asm/hypervisor.h b/arch/arm64/include/asm/hypervisor.h
-index a12fd897c877..1b0e15f290be 100644
---- a/arch/arm64/include/asm/hypervisor.h
-+++ b/arch/arm64/include/asm/hypervisor.h
-@@ -10,8 +10,14 @@ void kvm_arm_target_impl_cpu_init(void);
- 
- #ifdef CONFIG_ARM_PKVM_GUEST
- void pkvm_init_hyp_services(void);
-+bool is_protected_kvm_guest(void);
- #else
- static inline void pkvm_init_hyp_services(void) { };
-+
-+static inline bool is_protected_kvm_guest(void)
-+{
-+	return false;
-+}
- #endif
- 
- static inline void kvm_arch_init_hyp_services(void)
-diff --git a/arch/arm64/include/asm/mem_encrypt.h b/arch/arm64/include/asm/mem_encrypt.h
-index 314b2b52025f..636f45b4d8af 100644
---- a/arch/arm64/include/asm/mem_encrypt.h
-+++ b/arch/arm64/include/asm/mem_encrypt.h
-@@ -2,6 +2,7 @@
- #ifndef __ASM_MEM_ENCRYPT_H
- #define __ASM_MEM_ENCRYPT_H
- 
-+#include <asm/hypervisor.h>
- #include <asm/rsi.h>
- 
- struct device;
-@@ -20,7 +21,7 @@ int realm_register_memory_enc_ops(void);
- 
- static inline bool force_dma_unencrypted(struct device *dev)
- {
--	return is_realm_world();
-+	return is_realm_world() || is_protected_kvm_guest();
- }
- 
- /*
-diff --git a/arch/arm64/kernel/rsi.c b/arch/arm64/kernel/rsi.c
-index 92160f2e57ff..25ca75ce1a4d 100644
---- a/arch/arm64/kernel/rsi.c
-+++ b/arch/arm64/kernel/rsi.c
-@@ -7,7 +7,6 @@
- #include <linux/memblock.h>
- #include <linux/psci.h>
- #include <linux/swiotlb.h>
--#include <linux/cc_platform.h>
- #include <linux/platform_device.h>
- 
- #include <asm/io.h>
-@@ -23,17 +22,6 @@ EXPORT_SYMBOL(prot_ns_shared);
- DEFINE_STATIC_KEY_FALSE_RO(rsi_present);
- EXPORT_SYMBOL(rsi_present);
- 
--bool cc_platform_has(enum cc_attr attr)
--{
--	switch (attr) {
--	case CC_ATTR_MEM_ENCRYPT:
--		return is_realm_world();
--	default:
--		return false;
--	}
--}
--EXPORT_SYMBOL_GPL(cc_platform_has);
--
- static bool rsi_version_matches(void)
- {
- 	unsigned long ver_lower, ver_higher;
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 97987f850a33..c1b223e7cc8e 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -12,6 +12,7 @@
- #include <linux/swap.h>
- #include <linux/init.h>
- #include <linux/cache.h>
-+#include <linux/cc_platform.h>
- #include <linux/mman.h>
- #include <linux/nodemask.h>
- #include <linux/initrd.h>
-@@ -36,6 +37,7 @@
- 
- #include <asm/boot.h>
- #include <asm/fixmap.h>
-+#include <asm/hypervisor.h>
- #include <asm/kasan.h>
- #include <asm/kernel-pgtable.h>
- #include <asm/kvm_host.h>
-@@ -416,6 +418,17 @@ void dump_mem_limit(void)
- 	}
- }
- 
-+bool cc_platform_has(enum cc_attr attr)
-+{
-+	switch (attr) {
-+	case CC_ATTR_MEM_ENCRYPT:
-+		return is_realm_world() || is_protected_kvm_guest();
-+	default:
-+		return false;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(cc_platform_has);
-+
- #ifdef CONFIG_EXECMEM
- static u64 module_direct_base __ro_after_init = 0;
- static u64 module_plt_base __ro_after_init = 0;
-diff --git a/drivers/virt/coco/pkvm-guest/arm-pkvm-guest.c b/drivers/virt/coco/pkvm-guest/arm-pkvm-guest.c
-index 4230b817a80b..297e6d6019b8 100644
---- a/drivers/virt/coco/pkvm-guest/arm-pkvm-guest.c
-+++ b/drivers/virt/coco/pkvm-guest/arm-pkvm-guest.c
-@@ -95,6 +95,11 @@ static int mmio_guard_ioremap_hook(phys_addr_t phys, size_t size,
- 	return 0;
- }
- 
-+bool is_protected_kvm_guest(void)
-+{
-+	return !!pkvm_granule;
-+}
-+
- void pkvm_init_hyp_services(void)
- {
- 	int i;
-
----
-
-## [3] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 02/20] [DO NOT MERGE] s390: Expose protected virtualization through cc_platform_has()*
+## [2] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 01/20] s390: Expose protected virtualization through cc_platform_has()*
 
 Protected virtualization guests use memory encryption, so advertise that to
 the rest of the kernel through cc_platform_has(CC_ATTR_MEM_ENCRYPT).
@@ -374,8 +232,8 @@ index 1f72efc2a579..ad3c6d92b801 100644
 
 ---
 
-## [4] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 03/20] dma-direct: swiotlb: handle swiotlb alloc/free outside __dma_direct_alloc_pages*
+## [3] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 02/20] dma-direct: swiotlb: handle swiotlb alloc/free outside __dma_direct_alloc_pages*
 
 Move swiotlb allocation out of __dma_direct_alloc_pages() and handle it in
 dma_direct_alloc() / dma_direct_alloc_pages().
@@ -399,6 +257,8 @@ accessed after remap/ioremap and the returned address is suitable for
 decrypted memory access. So existing code paths remain valid.
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  include/linux/swiotlb.h |  6 ++++
@@ -431,7 +291,7 @@ index 3dae0f592063..133bb8ca9032 100644
  {
  	return false;
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index ec887f443741..fe8e83a36058 100644
+index 583c5922bca2..a741c8a2ee66 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -96,14 +96,6 @@ static int dma_set_encrypted(struct device *dev, void *vaddr, size_t size)
@@ -625,8 +485,8 @@ index 1abd3e6146f4..ac03a6856c2e 100644
 
 ---
 
-## [5] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 04/20] dma-direct: use DMA_ATTR_CC_SHARED in alloc/free paths*
+## [4] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 03/20] dma-direct: use DMA_ATTR_CC_SHARED in alloc/free paths*
 
 Propagate force_dma_unencrypted() into DMA_ATTR_CC_SHARED in the
 dma-direct allocation path and use the attribute to drive the related
@@ -636,13 +496,15 @@ This updates dma_direct_alloc(), dma_direct_free(), and
 dma_direct_alloc_pages() to fold the forced unencrypted case into attrs.
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/direct.c | 53 +++++++++++++++++++++++++++++++++++++--------
  1 file changed, 44 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index fe8e83a36058..a224b1bed6f9 100644
+index a741c8a2ee66..90dc5057a0c0 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -193,16 +193,31 @@ void *dma_direct_alloc(struct device *dev, size_t size,
@@ -749,8 +611,8 @@ index fe8e83a36058..a224b1bed6f9 100644
 
 ---
 
-## [6] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and select them via attrs*
+## [5] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and select them via attrs*
 
 Teach the atomic DMA pool code to distinguish between encrypted and
 unencrypted pools, and make pool allocation select the matching pool based
@@ -766,6 +628,8 @@ Also pass DMA_ATTR_CC_SHARED from the swiotlb atomic allocation path so
 decrypted swiotlb allocations are taken from the correct atomic pool.
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Reviewed-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
@@ -803,7 +667,7 @@ index 6a1832a73cad..696b2c3a2305 100644
  bool dma_free_from_pool(struct device *dev, void *start, size_t size);
  
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index a224b1bed6f9..dd959716df33 100644
+index 90dc5057a0c0..681f16a984ab 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -154,7 +154,7 @@ static bool dma_direct_use_pool(struct device *dev, gfp_t gfp)
@@ -1159,8 +1023,8 @@ index ac03a6856c2e..be4d418d92ac 100644
 
 ---
 
-## [7] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 06/20] dma: swiotlb: pass mapping attributes by reference*
+## [6] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 05/20] dma: swiotlb: pass mapping attributes by reference*
 
 Change swiotlb_tbl_map_single() to take the DMA mapping attributes by
 reference and update the direct callers accordingly.
@@ -1171,6 +1035,8 @@ separate makes the follow-up patch easier to review.
 
 No functional change in this patch.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  drivers/iommu/dma-iommu.c | 2 +-
@@ -1251,8 +1117,8 @@ index be4d418d92ac..78ce05857c00 100644
 
 ---
 
-## [8] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 07/20] dma: swiotlb: track pool encryption state and honor DMA_ATTR_CC_SHARED*
+## [7] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 06/20] dma: swiotlb: track pool encryption state and honor DMA_ATTR_CC_SHARED*
 
 Teach swiotlb to distinguish between encrypted and decrypted bounce
 buffer pools, and make allocation and mapping paths select a pool whose
@@ -1268,6 +1134,8 @@ unencrypted} helper so the DMA address encoding stays consistent with the
 chosen pool.
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  include/linux/dma-direct.h |  10 +++
@@ -1345,7 +1213,7 @@ index 29187cec90d8..4dcbf3931be1 100644
  	return NULL;
  }
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index dd959716df33..7cf1618a235d 100644
+index 681f16a984ab..0b4a26c6b6fd 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -96,9 +96,10 @@ static int dma_set_encrypted(struct device *dev, void *vaddr, size_t size)
@@ -1793,8 +1661,8 @@ index 78ce05857c00..2bf3981db35d 100644
 
 ---
 
-## [9] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 08/20] dma-mapping: make dma_pgprot() honor DMA_ATTR_CC_SHARED*
+## [8] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 07/20] dma-mapping: make dma_pgprot() honor DMA_ATTR_CC_SHARED*
 
 Fold encrypted/decrypted pgprot selection into dma_pgprot() so callers
 do not need to adjust the page protection separately.
@@ -1806,6 +1674,8 @@ instead of open-coding force_dma_unencrypted() handling around
 dma_pgprot().
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/direct.c  |  8 +++-----
@@ -1813,7 +1683,7 @@ Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
  2 files changed, 15 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index 7cf1618a235d..429791b2599a 100644
+index 0b4a26c6b6fd..e4cba322386d 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -290,9 +290,6 @@ void *dma_direct_alloc(struct device *dev, size_t size,
@@ -1840,10 +1710,10 @@ index 7cf1618a235d..429791b2599a 100644
  	if (dma_mmap_from_dev_coherent(dev, vma, cpu_addr, size, &ret))
  		return ret;
 diff --git a/kernel/dma/mapping.c b/kernel/dma/mapping.c
-index 23ed8eb9233e..44f715f3aa2d 100644
+index e6b07f160d20..3f4ae283c466 100644
 --- a/kernel/dma/mapping.c
 +++ b/kernel/dma/mapping.c
-@@ -543,13 +543,21 @@ EXPORT_SYMBOL(dma_get_sgtable_attrs);
+@@ -539,13 +539,21 @@ EXPORT_SYMBOL(dma_get_sgtable_attrs);
   */
  pgprot_t dma_pgprot(struct device *dev, pgprot_t prot, unsigned long attrs)
  {
@@ -1871,8 +1741,8 @@ index 23ed8eb9233e..44f715f3aa2d 100644
 
 ---
 
-## [10] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 09/20] dma-direct: pass attrs to dma_capable() for DMA_ATTR_CC_SHARED checks*
+## [9] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 08/20] dma-direct: pass attrs to dma_capable() for DMA_ATTR_CC_SHARED checks*
 
 Teach dma_capable() about DMA_ATTR_CC_SHARED so the capability
 check can reject encrypted DMA addresses for devices that require
@@ -1883,6 +1753,8 @@ SWIOTLB pool is decrypted so the capability check sees the correct DMA
 address attribute.
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  arch/x86/kernel/amd_gart_64.c | 30 ++++++++++++++++--------------
@@ -2091,8 +1963,8 @@ index 2bf3981db35d..f4e8b241a1c4 100644
 
 ---
 
-## [11] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 10/20] dma-direct: make dma_direct_map_phys() honor DMA_ATTR_CC_SHARED*
+## [10] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 09/20] dma-direct: make dma_direct_map_phys() honor DMA_ATTR_CC_SHARED*
 
 Teach dma_direct_map_phys() to select the DMA address encoding based on
 DMA_ATTR_CC_SHARED.
@@ -2107,6 +1979,8 @@ Update the arm64, x86, s390 and powerpc secure-guest setup to not use
 swiotlb force option
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
 Changes from v3:
@@ -2121,10 +1995,10 @@ Changes from v3:
  6 files changed, 31 insertions(+), 30 deletions(-)
 
 diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index c1b223e7cc8e..a087ac5b15f7 100644
+index 97987f850a33..acf67c7064db 100644
 --- a/arch/arm64/mm/init.c
 +++ b/arch/arm64/mm/init.c
-@@ -340,10 +340,8 @@ void __init arch_mm_preinit(void)
+@@ -338,10 +338,8 @@ void __init arch_mm_preinit(void)
  	unsigned int flags = SWIOTLB_VERBOSE;
  	bool swiotlb = max_pfn > PFN_DOWN(arm64_dma_phys_limit);
  
@@ -2179,7 +2053,7 @@ index 6267363e0189..75cf8f6ae8cd 100644
  #else
  static inline void __init pci_swiotlb_detect(void)
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index 429791b2599a..9e65c8432b6e 100644
+index e4cba322386d..6d0ce3cfd8cc 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -702,8 +702,10 @@ size_t dma_direct_max_mapping_size(struct device *dev)
@@ -2263,8 +2137,8 @@ index e05dc7649366..f3fc28f352ba 100644
 
 ---
 
-## [12] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 11/20] dma-direct: set decrypted flag for remapped DMA allocations*
+## [11] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 10/20] dma-direct: set decrypted flag for remapped DMA allocations*
 
 Devices that are DMA non-coherent and require a remap were skipping
 dma_set_decrypted(), leaving DMA buffers encrypted even when the device
@@ -2279,13 +2153,15 @@ highmem buffers do not provide a usable linear-map address.
 
 Fixes: f3c962226dbe ("dma-direct: clean up the remapping checks in dma_direct_alloc")
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/direct.c | 55 ++++++++++++++++++++++++++++++++++++---------
  1 file changed, 44 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index 9e65c8432b6e..d7eee77f95af 100644
+index 6d0ce3cfd8cc..9ce4fff6c112 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -196,6 +196,7 @@ void *dma_direct_alloc(struct device *dev, size_t size,
@@ -2403,8 +2279,8 @@ index 9e65c8432b6e..d7eee77f95af 100644
 
 ---
 
-## [13] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 12/20] dma-direct: select DMA address encoding from DMA_ATTR_CC_SHARED*
+## [12] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 11/20] dma-direct: select DMA address encoding from DMA_ATTR_CC_SHARED*
 
 Make the dma-direct helpers derive the DMA address encoding from
 DMA_ATTR_CC_SHARED instead of implicitly relying on
@@ -2416,13 +2292,15 @@ encryption state. Also only call dma_set_decrypted() when
 DMA_ATTR_CC_SHARED is actually set.
 
 Tested-by: Jiri Pirko <jiri@nvidia.com>
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/direct.c | 42 +++++++++++++++++++++++++-----------------
  1 file changed, 25 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index d7eee77f95af..6f3aff8448a0 100644
+index 9ce4fff6c112..aa3489aa10a0 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -24,11 +24,11 @@
@@ -2445,7 +2323,7 @@ index d7eee77f95af..6f3aff8448a0 100644
  u64 dma_direct_get_required_mask(struct device *dev)
  {
 +	bool require_decrypted = force_dma_unencrypted(dev);
- 	phys_addr_t phys = (phys_addr_t)(max_pfn - 1) << PAGE_SHIFT;
+ 	phys_addr_t phys = ((phys_addr_t)max_pfn << PAGE_SHIFT) - 1;
 -	u64 max_dma = phys_to_dma_direct(dev, phys);
 +	u64 max_dma = phys_to_dma_direct(dev, phys, require_decrypted);
  
@@ -2538,8 +2416,8 @@ index d7eee77f95af..6f3aff8448a0 100644
 
 ---
 
-## [14] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 13/20] dma-pool: fix page leak in atomic_pool_expand() cleanup*
+## [13] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 12/20] dma-pool: fix page leak in atomic_pool_expand() cleanup*
 
 atomic_pool_expand() frees the allocated pages from the remove_mapping
 error path only when CONFIG_DMA_DIRECT_REMAP is enabled.
@@ -2551,6 +2429,8 @@ freeing the pages.
 Move __free_pages(page, order) out of the CONFIG_DMA_DIRECT_REMAP block so
 that cleanup paths always release the allocation.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/pool.c | 2 +-
@@ -2574,8 +2454,8 @@ index be78474a6c49..e7df8d279e75 100644
 
 ---
 
-## [15] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 14/20] dma-direct: rename ret to cpu_addr in alloc helpers*
+## [14] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 13/20] dma-direct: rename ret to cpu_addr in alloc helpers*
 
 ret in dma_direct_alloc() and dma_direct_alloc_pages() holds the returned
 CPU mapping, not a generic return value. Rename it to cpu_addr and update
@@ -2584,13 +2464,15 @@ the remaining uses to match.
 This makes the allocation paths easier to follow and keeps the local naming
 consistent with what the variable actually represents.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/direct.c | 31 +++++++++++++++----------------
  1 file changed, 15 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index 6f3aff8448a0..6b00c7f4a78b 100644
+index aa3489aa10a0..4e446aa4130e 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -204,7 +204,7 @@ void *dma_direct_alloc(struct device *dev, size_t size,
@@ -2682,8 +2564,8 @@ index 6f3aff8448a0..6b00c7f4a78b 100644
 
 ---
 
-## [16] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 15/20] dma-direct: return struct page from dma_direct_alloc_from_pool()*
+## [15] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 14/20] dma-direct: return struct page from dma_direct_alloc_from_pool()*
 
 Commit 5b138c534fda ("dma-direct: factor out a dma_direct_alloc_from_pool
 helper") changed dma_direct_alloc_from_pool() to return the CPU address
@@ -2697,13 +2579,15 @@ dma_direct_alloc() caller.
 Fixes: 5b138c534fda ("dma-direct: factor out a dma_direct_alloc_from_pool helper")
 Cc: stable@vger.kernel.org
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/direct.c | 21 ++++++++++++---------
  1 file changed, 12 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index 6b00c7f4a78b..907c6084c616 100644
+index 4e446aa4130e..e0ab9ff3f1d6 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -157,24 +157,24 @@ static bool dma_direct_use_pool(struct device *dev, gfp_t gfp)
@@ -2764,8 +2648,8 @@ index 6b00c7f4a78b..907c6084c616 100644
 
 ---
 
-## [17] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 16/20] iommu/dma: Check atomic pool allocation result directly*
+## [16] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 15/20] iommu/dma: Check atomic pool allocation result directly*
 
 The non-blocking, non-coherent allocation path uses dma_alloc_from_pool(),
 which returns the allocated page and fills cpu_addr only on success.
@@ -2774,6 +2658,8 @@ Do not rely on cpu_addr to detect allocation failure in this path. Check
 the returned page directly before using it for the IOMMU mapping.
 
 Fixes: 9420139f516d ("dma-pool: fix coherent pool allocations for IOMMU mappings")
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  drivers/iommu/dma-iommu.c | 11 +++++++----
@@ -2807,8 +2693,8 @@ index 725c7adb0a8d..52c599f4472c 100644
 
 ---
 
-## [18] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 17/20] dma: swiotlb: free dynamic pools from process context*
+## [17] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 16/20] dma: swiotlb: free dynamic pools from process context*
 
 swiotlb_dyn_free() is used after removing a dynamic swiotlb pool from
 RCU-protected lists. It can call swiotlb_free_tlb(), which may need to
@@ -2825,6 +2711,8 @@ teardown from workqueue context. Use the same helper for the transient-pool
 error path, since that path may also be reached from atomic DMA mapping
 context.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  include/linux/swiotlb.h |  4 ++--
@@ -2907,8 +2795,8 @@ index f4e8b241a1c4..4c56f64602ea 100644
 
 ---
 
-## [19] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 18/20] dma: swiotlb: handle set_memory_decrypted() failures*
+## [18] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 17/20] dma: swiotlb: handle set_memory_decrypted() failures*
 
 Check the return value when converting swiotlb pools between encrypted and
 decrypted mappings. If the default pool cannot be decrypted after early
@@ -2923,6 +2811,8 @@ This prevents swiotlb from using pools whose encryption attributes do not
 match their metadata, and avoids returning pages with uncertain encryption
 state back to the allocator.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/swiotlb.c | 80 +++++++++++++++++++++++++++++++++++---------
@@ -3095,8 +2985,8 @@ index 4c56f64602ea..14d834ca298b 100644
 
 ---
 
-## [20] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 19/20] dma: free atomic pool pages by physical address*
+## [19] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 18/20] dma: free atomic pool pages by physical address*
 
 dma_direct_alloc_pages() may satisfy atomic allocations from the coherent
 atomic pools. The pool allocation is keyed by the virtual address stored in
@@ -3115,6 +3005,8 @@ physical address, translates it back to the gen_pool virtual address, and
 frees that address to the pool. Use it from dma_direct_free_pages() while
 keeping the existing virtual-address helper for coherent allocation frees.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  include/linux/dma-map-ops.h |  1 +
@@ -3135,7 +3027,7 @@ index 696b2c3a2305..8be059e69935 100644
  int dma_direct_set_offset(struct device *dev, phys_addr_t cpu_start,
  		dma_addr_t dma_start, u64 size);
 diff --git a/kernel/dma/direct.c b/kernel/dma/direct.c
-index 907c6084c616..488d53ed21f3 100644
+index e0ab9ff3f1d6..58f7ea1be963 100644
 --- a/kernel/dma/direct.c
 +++ b/kernel/dma/direct.c
 @@ -488,9 +488,9 @@ void dma_direct_free_pages(struct device *dev, size_t size,
@@ -3215,8 +3107,8 @@ index e7df8d279e75..43b8101d860f 100644
 
 ---
 
-## [21] Aneesh Kumar K.V (Arm) — 2026-05-22
-*Subject: [PATCH v5 20/20] swiotlb: Preserve allocation virtual address for dynamic pools*
+## [20] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 19/20] swiotlb: Preserve allocation virtual address for dynamic pools*
 
 swiotlb_alloc_tlb() can allocate from the DMA atomic pool when a decrypted
 pool is needed from atomic context. With CONFIG_DMA_DIRECT_REMAP, the
@@ -3233,6 +3125,8 @@ Pass the virtual address returned by the allocation path into
 swiotlb_init_io_tlb_pool(), and store that address in pool->vaddr. This
 keeps the pool free path using the same virtual address as the allocator.
 
+Tested-by: Michael Kelley <mhklinux@outlook.com>
+Tested-by: Mostafa Saleh <smostafa@google.com>
 Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
 ---
  kernel/dma/swiotlb.c | 32 +++++++++++++++++++-------------
@@ -3359,352 +3253,68 @@ index 14d834ca298b..e4bd8c9eaeda 100644
 
 ---
 
-## [22] JAEHOON KIM — 2026-05-22
-*Subject: Re: [PATCH v5 02/20] [DO NOT MERGE] s390: Expose protected
- virtualization through cc_platform_has()*
+## [21] Aneesh Kumar K.V (Arm) — 2026-06-04
+*Subject: [PATCH v6 20/20] swiotlb: remove unused SWIOTLB_FORCE flag*
 
-On 5/21/2026 11:27 PM, Aneesh Kumar K.V (Arm) wrote:
+SWIOTLB_FORCE has no remaining in-tree users. Forced bouncing is now
+controlled through the swiotlb=force command line option via
+swiotlb_force_bounce.
+
+Remove the unused flag and simplify the force_bounce initialization.
+
+Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
+---
+ include/linux/swiotlb.h | 1 -
+ kernel/dma/swiotlb.c    | 3 +--
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 526f82e9da45..af88ca7182f4 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -15,7 +15,6 @@ struct page;
+ struct scatterlist;
+ 
+ #define SWIOTLB_VERBOSE	(1 << 0) /* verbose initialization */
+-#define SWIOTLB_FORCE	(1 << 1) /* force bounce buffering */
+ #define SWIOTLB_ANY	(1 << 2) /* allow any memory for the buffer */
+ 
+ /*
+diff --git a/kernel/dma/swiotlb.c b/kernel/dma/swiotlb.c
+index e4bd8c9eaeda..81cc4928e949 100644
+--- a/kernel/dma/swiotlb.c
++++ b/kernel/dma/swiotlb.c
+@@ -400,8 +400,7 @@ void __init swiotlb_init_remap(bool addressing_limit, unsigned int flags,
+ 	if (swiotlb_force_disable)
+ 		return;
+ 
+-	io_tlb_default_mem.force_bounce =
+-		swiotlb_force_bounce || (flags & SWIOTLB_FORCE);
++	io_tlb_default_mem.force_bounce = swiotlb_force_bounce;
+ 
+ #ifdef CONFIG_SWIOTLB_DYNAMIC
+ 	if (!remap)
+
+---
+
+## [22] JAEHOON KIM — 2026-06-05
+*Subject: Re: [PATCH v6 01/20] s390: Expose protected virtualization through
+ cc_platform_has()*
+
+On 6/4/2026 3:39 AM, Aneesh Kumar K.V (Arm) wrote:
 > Protected virtualization guests use memory encryption, so advertise that to
 > the rest of the kernel through cc_platform_has(CC_ATTR_MEM_ENCRYPT).
 
-Hello Aneesh,
+Tested-by: Jaehoon Kim <jhkim@linux.ibm.com>
 
-Thanks for adding this s390 support patch.
-
-The previous v4 series broke virtio initialization and caused boot
-failures on s390. With this patch in v5, the issue is completely
-resolved and virtio devices now initialize successfully and are
-working well.
-
-I'm going to do some more testing and will let you know if I run
-into any issues.
+Tested on s390 PV guest with swiotlb_dynamic configuration. SWIOTLB
+bounce buffer allocation and dynamic pool management work correctly.
+Also concurrent I/O stress completed successfully.
 
 Thanks,
 Jaehoon.
 
----
-
-## [23] Michael Kelley — 2026-05-26
-*Subject: RE: [PATCH v5 10/20] dma-direct: make dma_direct_map_phys() honor
- DMA_ATTR_CC_SHARED*
-
-From: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org> Sent: Thursday, May 21, 2026 9:28 PM
-> 
-> Teach dma_direct_map_phys() to select the DMA address encoding based on
-
-With this patch removing SWIOTLB_FORCE from four places in
-kernel code, there are no remaining places where it is set.
-The test of SWIOTLB_FORCE could be removed from
-swiotlb_init_remap(), and its definition could be deleted
-from include/linux/swiotlb.h.
-
-Michael
-
----
-
-## [24] Michael Kelley — 2026-05-26
-*Subject: RE: [PATCH v5 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
- direct, pool and swiotlb paths*
-
-From: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org> Sent: Thursday, May 21, 2026 9:28 PM
-> 
-> This series propagates DMA_ATTR_CC_SHARED through the dma-direct,
-
-[snip]
-
-> 
-> 
-
-I tested the series in a linux-next20260518 kernel, running in an
-Azure VM on the Hyper-V hypervisor. The physical processor is Intel
-XEON(R) PLATINUM 8573C with TDX memory encryption in use, so
-this is a Linux CoCo VM. The VM has the usual VMBus synthetic disk
-and network devices provided by Hyper-V, plus two PCI NVMe devices
-that are directly assigned to the VM. I did basic smoke tests in the
-VM, including reading and writing the NVMe devices. The swiotlb is
-used as expected for DMA transfers to/from the synthetic and NVMe
-devices. The NVMe driver does dma_alloc_coherent() to allocate
-memory for control structures that must be decrypted. I did "unbind"
-on the NVMe devices, and then rebound them so the dma allocations
-would be freed and then reallocated. All looks good.
-
-I'd like to try the same tests in a CoCo VM based on AMD SEV-SNP,
-but I need to get quota for that VM size in Azure, and I don't know
-how soon that can happen.
-
-So as described above,
-
-Tested-by: Michael Kelley <mhklinux@outlook.com>
-
----
-
-## [25] Jason Gunthorpe — 2026-05-26
-*Subject: Re: [PATCH v5 10/20] dma-direct: make dma_direct_map_phys() honor
- DMA_ATTR_CC_SHARED*
-
-On Tue, May 26, 2026 at 02:56:57AM +0000, Michael Kelley wrote:
-
-> With this patch removing SWIOTLB_FORCE from four places in
-> kernel code, there are no remaining places where it is set.
-
-That's great! I think it shows this is the right approach!
-
-Jason
-
----
-
-## [26] Michael Kelley — 2026-05-28
-*Subject: RE: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-From: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>Sent: Thursday, May 21, 2026 9:28 PM
-> 
-> Teach the atomic DMA pool code to distinguish between encrypted and
-
-[snip]
- 
-> +static __init struct dma_gen_pool *__dma_atomic_pool_init(struct dma_gen_pool *dma_pool,
-> +		size_t pool_size, gfp_t gfp)
-
-I'm curious about the name of the "unencrypted" field in struct dma_gen_pool,
-and similarly in Patch 7 of the series for the swiotlb struct io_tlb_pool and
-struct io_tlb_mem. Up through v3 of this series, you used "decrypted", but
-starting in v4 switched to "unencrypted".
-
-To me, the above "if" statement has some cognitive dissonance in that if
-CC_ATTR_MEM_ENCRYPT is false (i.e., a normal VM), "unencrypted" is set
-to false. But I think of memory in a normal VM as "unencrypted" since it
-was never encrypted. A similar "if" statement occurs in your swiotlb changes.
-
-Two related concepts are captured by the field:
-1) Is some action needed to put the memory into the unencrypted state,
-and to remove it from that state? This applies when assigning memory to the
-pool, or freeing the memory in the pool.
-2) Is the memory currently in the unencrypted state? This applies when
-allocating memory from the pool to a caller.
-
-It's hard to capture all that in a short field name. But I think I prefer "decrypted"
-over "unencrypted".  The former implies that some action was taken. It's a
-little easier to think of a normal VM as *not* having decrypted memory. The
-memory was never encrypted in the first place, so no decryption action was taken.
-
-Throughout the kernel, "decrypted" occurs much more frequently than
-"unencrypted".  We have set_memory_encrypted() and set_memory_decrypted()
-that are "take action" names.  But we also have force_dma_unencrypted(),
-phys_to_dma_unencrypted(), and dma_addr_unencrypted(). So it's a bit
-of a mess.
-
-But maybe there's more background here that led to the change
-between your v3 and v4.
-
-Michael
-
----
-
-## [27] Aneesh Kumar K.V — 2026-06-02
-*Subject: RE: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-Michael Kelley <mhklinux@outlook.com> writes:
-
-> From: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>Sent: Thursday, May 21, 2026 9:28 PM
->> 
-
-The current APIs, phys_to_dma_unencrypted() and dma_addr_unencrypted(),
-are the reason I changed the pool attribute name from decrypted to
-unencrypted. The rationale was that nobody actually decrypted the
-memory; the memory was already in an unencrypted state.
-
-In other words, the DMA pool did not contain encrypted content that was
-later decrypted. Rather, the DMA pool itself was in an unencrypted
-state.
-
-IMHO, set_memory_decrypted()/set_memory_encrypted() is the right naming
-because those APIs describe an operation that transitions memory between
-states. In contrast, the pool attribute describes the state of the
-memory itself, which is why I used unencrypted rather than decrypted.
-
--aneesh
-
----
-
-## [28] Aneesh Kumar K.V — 2026-06-02
-*Subject: RE: [PATCH v5 10/20] dma-direct: make dma_direct_map_phys() honor
- DMA_ATTR_CC_SHARED*
-
-Michael Kelley <mhklinux@outlook.com> writes:
-
-> From: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org> Sent: Thursday, May 21, 2026 9:28 PM
->> 
-
-...
-
-> With this patch removing SWIOTLB_FORCE from four places in
-> kernel code, there are no remaining places where it is set.
-
-Sure, I’ll add that as a separate patch in the series.
-
--aneesh
-
----
-
-## [29] Michael Kelley — 2026-06-02
-*Subject: RE: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-From: Aneesh Kumar K.V <aneesh.kumar@kernel.org> Sent: Monday, June 1, 2026 11:05 PM
-> 
-> Michael Kelley <mhklinux@outlook.com> writes:
-
-Except that in a normal VM, the "unencrypted" pool attribute does *not*
-describe the state of the memory itself.  In a normal VM, the memory is
-unencrypted, but the "unencrypted" pool attribute is false. That
-contradiction is the essence of my concern.
-
-Michael
-
----
-
-## [30] Jason Gunthorpe — 2026-06-02
-*Subject: Re: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-On Tue, Jun 02, 2026 at 02:24:40PM +0000, Michael Kelley wrote:
-
-> Except that in a normal VM, the "unencrypted" pool attribute does *not*
-> describe the state of the memory itself.  In a normal VM, the memory is
-
-I would argue no..
-
-When CC is enabled the default state of memory in a Linux environment
-is "encrypted". You have to take a special action to "decrypt" it.
- 
-Thus the default state of memory in a non-CC environment is also
-paradoxically "encrypted" too. "decryption" is impossible.
-
-Therefore the "unencrypted" state is a special state that only memory
-inside a CC VM can have. A normal VM can never have "unencrypted"
-memory at all, so having it be false in the pool is accurate as far as
-the APIs go.
-
-un-encrypted = true means "the memory in this pool was transformed with
-set_memory_decrypted()" - which is impossible on a normal VM.
-
-Jason
-
----
-
-## [31] Michael Kelley — 2026-06-04
-*Subject: RE: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-From: Jason Gunthorpe <jgg@ziepe.ca> Sent: Tuesday, June 2, 2026 5:55 PM
-> 
-> On Tue, Jun 02, 2026 at 02:24:40PM +0000, Michael Kelley wrote:
-
-The need to have such an unnatural premise is usually an indication
-of a conceptual problem with the overall model, or perhaps just a
-terminology problem. 
-
-Here's a proposal. The new DMA attribute is DMA_ATTR_CC_SHARED.
-Name the pool attribute "cc_shared" instead of "unencrypted". Having
-"cc_shared" set to false in a normal VM doesn't lead to the non-sensical
-situation of claiming that a normal VM is encrypted. The boolean
-"unencrypted" parameter that has been added to various calls also
-becomes "cc_shared".  If "CC_SHARED" is a suitable name for the DMA
-attribute, it ought to be suitable as the pool attribute. And everything
-matches as well.
-
-Michael  
-
-
-> "decryption" is impossible.
->
-
----
-
-## [32] Jason Gunthorpe — 2026-06-04
-*Subject: Re: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-On Thu, Jun 04, 2026 at 02:05:35PM +0000, Michael Kelley wrote:
-> From: Jason Gunthorpe <jgg@ziepe.ca> Sent: Tuesday, June 2, 2026 5:55 PM
-> > 
-
-Oh yes I do think the AMD derived terminogy is aweful :(
-
-> Here's a proposal. The new DMA attribute is DMA_ATTR_CC_SHARED.
-> Name the pool attribute "cc_shared" instead of "unencrypted". 
-
-Yeah maybe. I sometimes imagine replacing the encrypted/decrypted
-names with cc_shared too just to make it sane.
-
-> "cc_shared" set to false in a normal VM doesn't lead to the non-sensical
-> situation of claiming that a normal VM is encrypted.
-
-It seems like a good idea to me
-
-Jason
-
----
-
-## [33] Aneesh Kumar K.V — 2026-06-04
-*Subject: RE: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-Michael Kelley <mhklinux@outlook.com> writes:
-
-> From: Jason Gunthorpe <jgg@ziepe.ca> Sent: Tuesday, June 2, 2026 5:55 PM
->> 
-
-That is better. It would also simplify:
-
-	if (mem->unencrypted != !!(attrs & DMA_ATTR_CC_SHARED))
-		return NULL;
-
-to
-	if (mem->cc_shared != !!(attrs & DMA_ATTR_CC_SHARED))
-		return NULL;
-
-
-I already sent a v6 in the hope of getting this merged for the next
-merge window. Should I send a v7, or would you prefer that I do the
-rename on top of v6?
-
--aneesh
-
----
-
-## [34] Michael Kelley — 2026-06-04
-*Subject: RE: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-From: Aneesh Kumar K.V <aneesh.kumar@kernel.org> Sent: Thursday, June 4, 2026 7:58 AM
-> 
-> Michael Kelley <mhklinux@outlook.com> writes:
-
-I would advocate for a v7 with the rename, vs. a separate follow-on
-patch to do the rename, just to reduce churn. But I don't know what
-the tradeoffs are in trying to hit the next merge window. If a follow-on
-patch is more practical from a timing standpoint, I won't object.
-
-Michael
-
----
-
-## [35] Jason Gunthorpe — 2026-06-04
-*Subject: Re: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
- select them via attrs*
-
-On Thu, Jun 04, 2026 at 08:27:36PM +0530, Aneesh Kumar K.V wrote:
-> I already sent a v6 in the hope of getting this merged for the next
-> merge window. Should I send a v7, or would you prefer that I do the
-
-I think it is too late for such a major change, but this should be
-imaginged to be for rc2ish next cycle. You also have to spell out how
-the pkvm patch will get sequenced as well, it would be best to push
-that it gets picked up right away.
-
-Jason
+> ---
+> Cc: Halil Pasic <pasic@linux.ibm.com>
 
 ---

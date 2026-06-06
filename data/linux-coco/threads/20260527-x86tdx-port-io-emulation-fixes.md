@@ -1,9 +1,9 @@
 ---
 title: 'x86/tdx: Port I/O emulation fixes'
 date: 2026-05-27
-last_reply: 2026-05-27
-message_count: 6
-participants: ['Kiryl Shutsemau (Meta)', 'Edgecombe, Rick P', 'Dave Hansen']
+last_reply: 2026-05-28
+message_count: 10
+participants: ['Kiryl Shutsemau (Meta)', 'Edgecombe, Rick P', 'Dave Hansen', 'David Laight']
 ---
 
 ## [1] Kiryl Shutsemau (Meta) — 2026-05-27
@@ -241,5 +241,176 @@ Maybe something like this?
 
 It might need a temporary variable for args.r11, but you get the point.
 That's basically the data from the comment but written as code.
+
+---
+
+## [7] Kiryl Shutsemau — 2026-05-28
+*Subject: Re: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+
+On Wed, May 27, 2026 at 10:45:28AM -0700, Dave Hansen wrote:
+> On 5/27/26 05:05, Kiryl Shutsemau (Meta) wrote:
+> ...
+
+I hate how verbose it is. All these GENMASK_ULL() make it hard to
+follow.
+
+What about the patch below. Inspired by kvm's assign_register().
+
+diff --git a/arch/x86/coco/tdx/tdx.c b/arch/x86/coco/tdx/tdx.c
+index 65119362f9a2..460b9fbabf14 100644
+--- a/arch/x86/coco/tdx/tdx.c
++++ b/arch/x86/coco/tdx/tdx.c
+@@ -693,8 +693,8 @@ static bool handle_in(struct pt_regs *regs, int size, int port)
+ 		.r13 = PORT_READ,
+ 		.r14 = port,
+ 	};
+-	u64 mask = GENMASK(BITS_PER_BYTE * size - 1, 0);
+ 	bool success;
++	u32 val;
+ 
+ 	/*
+ 	 * Emulate the I/O read via hypercall. More info about ABI can be found
+@@ -703,10 +703,33 @@ static bool handle_in(struct pt_regs *regs, int size, int port)
+ 	 */
+ 	success = !__tdx_hypercall(&args);
+ 
+-	/* Update part of the register affected by the emulated instruction */
+-	regs->ax &= ~mask;
+ 	if (success)
+-		regs->ax |= args.r11 & mask;
++		val = args.r11;
++	else
++		val = 0;
++
++	/*
++	 * IN writes the result into a sub-register of RAX.
++	 *
++	 * Only the 32-bit form zero-extends; the smaller forms leave
++	 * the upper bits untouched.
++	 */
++	switch (size) {
++	case 1:
++		*(u8 *)&regs->ax = (u8)val;
++		break;
++	case 2:
++		*(u16 *)&regs->ax = (u16)val;
++		break;
++	case 4:
++		/* zero-extended */
++		regs->ax = val;
++		break;
++	default:
++		/* Probable TDX module bug. Illegal in[bwl] size. */
++		WARN_ON_ONCE(1);
++		break;
++	}
+ 
+ 	return success;
+ }
+
+---
+
+## [8] Dave Hansen — 2026-05-28
+*Subject: Re: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+
+On 5/28/26 03:14, Kiryl Shutsemau wrote:
+> +	switch (size) {
+> +	case 1:
+
+Is this intentionally clever to only work on little endian, or
+accidentally clever? This seems like a great IOCCC thing to do, but it's
+far too clever for my taste.
+
+I mean, it's making a pointer to a 64-bit value with an 8-bit name and
+casting that to an 8-bit pointer and then assigning that to a 32-bit
+value cast to a u8.
+
+Is it just my tiny brain that thinks this will be unintelligible on Monday?
+
+How about we just make the CPU do the thinking for us? IN[BWL] and
+MOV[BWL] have the same semantics here, right? So even if 'rax' and 'val'
+are 64-bit values here, the following should have all the right
+behaviors, I think.
+
+I generally loathe inline assembly. But we have a CPU that kinda knows
+the rules already. No need for us to laboriously reimplement it. Right?
+
+Thanks to the friendly LLM that knows inline assembly better than I do.
+The resulting compiled assembly looks right to me.
+
+/*
+ * Use MOV[BWL] to/from registers to match the IN[BWL] behavior
+ * including the fact that INL zeros the upper 64-bits while
+ * IN[BW] don't zero anything.
+ */
+
+    switch (size) {
+    case 1:
+	// Just write 1 byte of RAX:
+        __asm__ volatile ("movb %b1, %b0" : "+q"(rax)
+                                          : "q"(val));
+        break;
+    case 2:
+	// Write 2 bytes of RAX:
+        __asm__ volatile ("movw %w1, %w0" : "+r"(rax)
+                                          : "r"(val));
+        break;
+    case 4:
+	// Write 'val' into lower 32 bits. Zero the upper 32 bits:
+        __asm__ volatile ("movl %k1, %k0" : "=r"(rax)
+                                          : "r"(val));
+        break;
+    default:
+	// WARN
+    }
+
+Thoughts?
+
+---
+
+## [9] Dave Hansen — 2026-05-28
+*Subject: Re: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+
+On 5/28/26 03:14, Kiryl Shutsemau wrote:
+> What about the patch below. Inspired by kvm's assign_register().
+
+I think I could stand this if it consolidated this site with kvm's
+assign_register(). The copy/paste is too much to bear.
+
+---
+
+## [10] David Laight — 2026-05-28
+*Subject: Re: [PATCH v3 2/2] x86/tdx: Fix zero-extension for 32-bit port I/O*
+
+On Thu, 28 May 2026 11:14:38 +0100
+Kiryl Shutsemau <kas@kernel.org> wrote:
+
+> On Wed, May 27, 2026 at 10:45:28AM -0700, Dave Hansen wrote:
+> > On 5/27/26 05:05, Kiryl Shutsemau (Meta) wrote:
+
+Just write it as normal arithmetic code:
+
+	/* IN writes the result into a sub-register of RAX. */
+	switch (size) {
+	case 1:
+		regs->ax = (regs->ax & ~0xfful) | (val & 0xff);
+		break;
+	case 2:
+		regs->ax = (regs->ax & ~0xfffful) | (val & 0xffff);
+		break;
+	case 4:
+	default:
+		/* 32bit 'INB' will zero the high bits. */
+		regs->ax = val
+		break;
+	}
+
+Succinct, obvious and readable.
+
+-- David
+
+
+>  
+>  	return success;
 
 ---

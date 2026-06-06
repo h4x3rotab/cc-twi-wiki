@@ -1,9 +1,9 @@
 ---
 title: 'arm64: Support for Arm CCA in KVM'
 date: 2026-05-13
-last_reply: 2026-05-28
-message_count: 107
-participants: ['Steven Price', 'Aneesh Kumar K.V', 'Gavin Shan', 'Suzuki K Poulose', 'Marc Zyngier', 'Wei-Lin Chang']
+last_reply: 2026-06-05
+message_count: 134
+participants: ['Steven Price', 'Aneesh Kumar K.V', 'Gavin Shan', 'Suzuki K Poulose', 'Marc Zyngier', 'Wei-Lin Chang', 'Lorenzo Pieralisi']
 ---
 
 ## [1] Steven Price — 2026-05-13
@@ -9490,5 +9490,896 @@ way, potentially deviating from the existing KVM S2 management?
 Thanks,
 
 	M.
+
+---
+
+## [108] Suzuki K Poulose — 2026-06-02
+*Subject: Re: [PATCH v14 13/44] arm64: RMI: Define the user ABI*
+
+Hi Marc
+
+On 27/05/2026 16:21, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:21 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+The measurement is stored by the RMM and is made available to the Guests
+via RSI interface (RSI_ATTEST_TOKEN_{INIT,CONTINUE}) as part of the 
+attestation report along with the Platform attestation. On Linux Guest,
+this could be fetched using TSM report infrastructure. This could be 
+added to the doc.
+
+
+Suzuki
+
+
+
+> 
+>> +
+
+---
+
+## [109] Suzuki K Poulose — 2026-06-02
+*Subject: Re: [PATCH v14 14/44] arm64: RMI: Basic infrastructure for creating a
+ realm.*
+
+Hi Marc
+
+On 28/05/2026 08:10, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:22 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+The states are in line with what the RMM maintains for the Realm state,
+(Section A2.2.5 Realm Lifecycle)
+except for :
+
+1. REALM_STATE_DYING is really a KVM internal state to indicate, we
+are in the process of destroying the Realm and no further requests
+needs to be serviced
+
+2. We don't track the REALM_SYSTEM_OFF, REALM_ZOMBIE states separately
+as we :
+  a) Always TERMINATE the Realm, just before the DESTROY
+  b) SYSTEM_OFF is naturally triggering the tear down path, leading to 
+DYING.
+
+
+
+
+> 
+>> +
+
+Not really. This is an object that RMM manages (Realm Descriptor)
+in the Realm world. We use it as a parameter to address the Realm.
+
+
+> 
+>> +	struct realm_params *params;
+
+Agreed. Perhaps, kvm_rmm_ipa_limit() ?
+
+
+> 
+>> +
+
+Because, we need to know the "kvm" instance for kvm_init_ipa_range to
+detect the limit that applies to Realms.
+
+> 
+>>   	err = KVM_PGT_FN(kvm_pgtable_stage2_init)(pgt, mmu, &kvm_s2_mm_ops);
+
+Actually yes, we could make it work. We need to skip walking the page
+table for Realms. We may be able to do the checks via 
+pgt->mmu->arch->kvm and skip the walking for Realms. ( The S2 is 
+unmapped and torn
+down before the RD is destroyed in kvm_destroy_realm(). We can't
+rely on the contents of the PGDs to be zero - e.g., with MEC.)
+
+
+
+> 
+>>   		kfree(pgt);
+
+Agreed.
+
+> 
+> But even more importantly, why is this built in a completely parallel
+
+
+RMM requires a Realm is not live at the time of REALM_DESTROY.
+(See section A2.2.4 Realm Liveness).
+i.e., All RECs are destroyed, Root RTTs wiped clean (no live mappings)
+before the RD is destroyed. So, we need to make sure all of this is
+done at Realm Destroy. Hence we delay the kvm_free_stage2_pgd() until
+we destroy the RD.
+
+Does that help? May be we could improve the comments around it.
+
+
+Suzuki
+
+
+
+ > Thanks,>
+> 	M.
+>
+
+---
+
+## [110] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 04/44] arm64: RMI: Add SMC definitions for calling the
+ RMM*
+
+On 22/05/2026 10:58, Marc Zyngier wrote:
+> On Thu, 21 May 2026 16:33:09 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+Sadly the nearest I found to a link directly to the PDF is:
+
+https://documentation-service.arm.com/static/69cb945ac1586b7c59b1c00c
+
+But I have 0 confidence that that link will work for long (if indeed it
+even works for others now!). If you know of any way of getting a better
+link out of the Arm website that I'm all ears!
+
+> [...]
+> 
+
+Do you really think
+
+ 		u8 padding3[SZ_4K - SZ_256 * 3];
+
+is better? I certainly don't. I'll give you (SZ_4K - 0x300) is tempting.
+Although it then makes the BUILD_BUG_ON idea below somewhat pointless.
+
+> And a lot of these structures> seem to be designed to form a 4kB blob.
+I'm sure we can make use of
+> that information (BUILD_BUG_ON?).
+
+BUILD_BUG_ON requires being in a function. But static_assert() can be
+used in the header by the struct definitions - I'll add that, thanks for
+the suggestion.
+
+>>
+>> The RMM deals with this with macro magic:
+
+I'll look into the possibility of generating the headers. While dull and
+error prone I have found it is sometimes useful for forcing a review of
+the spec itself. There have been a number of bugs I've found (and have
+been corrected) in the spec while writing the header files - it's very
+easy to skim read those parts of the document otherwise.
+
+Writing the structures out in a "more abstract way" might be a good
+idea, but I'm just a little wary of writing another tool which is only
+used in this one spot. The RMM structures are somewhat unusual in being
+so sparse.
+
+Thanks,
+Steve
+
+> Thanks,
+>
+
+---
+
+## [111] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 06/44] arm64: RMI: Check for RMI support at init*
+
+On 25/05/2026 07:58, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Fair enough, and actually refactoring this function to pass error codes
+up the call stack I think does improve the look.
+
+Thanks,
+Steve
+
+>> Thanks,
+>> Steve
+
+---
+
+## [112] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 06/44] arm64: RMI: Check for RMI support at init*
+
+On 21/05/2026 14:02, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:14 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+Good point - there's no requirement. Also the name isn't quite right - 
+these should be named rmi_ as there is a different set for RSI.
+
+>> +
+>> +static int rmi_check_version(void)
+
+Yes I'm expecting this to be called before KVM's initialisation. 
+kvm_init_rmi() alls rmi_is_available() to check if CCA is supported and 
+only enables the KVM side of things if that check passes. So if the 
+initialisation was the other way round then Realm guests would be 
+unsupported. I'll add a comment
+
+/*
+ * Note arm64_init_rmi() must be called before kvm_init_rmi() otherwise KVM
+ * will not support realm guests. subsys_initcall() is called before
+ * module_init() (used for KVM) so this is OK.
+ */
+
+Thanks,
+Steve
+
+---
+
+## [113] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 07/44] arm64: RMI: Configure the RMM with the host's
+ page size*
+
+On 21/05/2026 14:30, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:15 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+Good spot. I have to admit I'm still getting the hang of these cleanup
+handlers.
+
+>> +
+>> +	switch (PAGE_SIZE) {
+
+No, but falling through is clearly wrong (and likely to trigger AI
+review comments if nothing else) - BUILD_BUG() sounds like a good solution.
+
+>> +		return -EINVAL;
+>> +	}
+
+Yes, as Suzuki answered - it never leaves the NS PAS. The RMM just reads it.
+
+Thanks,
+Steve
+
+>> +
+>> +	ret = rmi_rmm_activate();
+
+---
+
+## [114] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 08/44] arm64: RMI: Ensure that the RMM has GPT entries
+ for memory*
+
+On 19/05/2026 06:55, Aneesh Kumar K.V wrote:
+>> +
+>> +bool rmi_is_available(void)
+
+Sure, will do.
+
+Thanks,
+Steve
+
+---
+
+## [115] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 08/44] arm64: RMI: Ensure that the RMM has GPT entries
+ for memory*
+
+On 21/05/2026 01:58, Gavin Shan wrote:
+> Hi Steven,
+> 
+
+Ah, good spot. In a previous version the tracking size was necessary 
+when walking below. But the spec was updated to a range based API so 
+this is no longer necessary.
+
+>> +/*
+>> + * Make sure the area is tracked by RMM at FINE granularity.
+
+True - I think partly due to the long line I split this into a separate 
+function. But I could do something like:
+
+	unsigned long l0gpt_sz;
+
+	l0gpt_sz = 1UL << (30 + FIELD_GET(RMI_FEATURE_REGISTER_1_L0GPTSZ,
+					  rmi_feat_reg(1)));
+
+which isn't too bad.
+
+Thanks,
+Steve
+
+>> +static int rmi_create_gpts(phys_addr_t start, phys_addr_t end)
+>> +{
+
+---
+
+## [116] Steven Price — 2026-06-03
+*Subject: Re: [PATCH v14 08/44] arm64: RMI: Ensure that the RMM has GPT entries
+ for memory*
+
+On 21/05/2026 16:39, Suzuki K Poulose wrote:
+> On 21/05/2026 14:47, Marc Zyngier wrote:
+>> On Wed, 13 May 2026 14:17:16 +0100,
+
+As Gavin pointed out we actually don't need this anymore because of the
+move to a range based API.
+
+It's also not quite that simple because for 4K PAGE_SIZED the RMM
+doesn't support 2MB (which would be the level 2 size), instead jumping
+to 1GB. And if we add a Kconfig option in the future then this could
+change because of that.
+
+For now I'll just delete this block since it's unused.
+
+>>
+>>> +
+
+I'm not sure 1 message really counts as 'spam' - it provides the
+information on why the RMI interface (and therefore realm guests) is
+unavailable. The PA might help track down whether this physical region
+was intended to be given to Linux.
+
+> This could be triggered if the RMM doesn't have static carveout
+> for tracking the DRAM granules. (state != RMI_TRACKING_FINE).
+
+As Suzuki says - this case should be handled in the future - so it's a
+limitation in the current implementation. So a WARN_ONCE is a bit strong
+- it's not a "can never happen" situation - it's a "Linux doesn't
+support this (yet)".
+
+>>
+>> If that's not expected, turn this into a WARN_ONCE().
+
+The missing SRO support is why we're not donating memory - with that
+missing the clean up is unnecessary as Suzuki says.
+
+>>> +        }
+>>> +        start += l0gpt_sz;
+
+Yep, that was an oversight - we definitely will need to handle hotplug.
+
+Thanks,
+Steve
+
+> Suzuki
+>
+
+---
+
+## [117] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 09/44] arm64: RMI: Provide functions to
+ delegate/undelegate ranges of memory*
+
+On 21/05/2026 14:59, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:17 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+Ok, I'll admit that this is left over debugging - although this is a
+condition that shouldn't happen.
+
+Note that the while() condition prevents this from actually getting to
+the RMM.
+
+I'll drop the WARN_ON() since it's confusing.
+
+Thanks,
+Steve
+
+> You also don't seem to be bothered with that on the delegation side...
+>
+
+---
+
+## [118] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 10/44] arm64: RMI: Add support for SRO*
+
+On 19/05/2026 07:02, Aneesh Kumar K.V wrote:
+> Steven Price <steven.price@arm.com> writes:
+> 
+
+I'm split on this. The kernel makes use of "(unsigned) long" for a
+register sized value in quite a few places. Not least in struct
+arm_smccc_1_2_regs which is ultimately where most of the values are read
+from or written to.
+
+I'm not a great fan of the kernel's approach to using long like this -
+there's a good argument that uintptr_t is more correct. Equally when
+we're in arch code for a 64 bit architecture (i.e. "arm64") then we know
+the size is u64.
+
+The disadvantage here is that if I use u64 then there's a bunch of
+implicit conversions going on between unsigned long and u64 - which
+might come back to bite if anything changes. Hence my current view that
+"unsigned long" is the best option here in the kernel.
+
+Anyone else have any view on the best type here?
+
+Thanks,
+Steve
+
+---
+
+## [119] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 10/44] arm64: RMI: Add support for SRO*
+
+On 21/05/2026 05:38, Gavin Shan wrote:
+> Hi Steven,
+> 
+
+Generally it's best to let the compiler make the decision. A small
+static function like this is highly likely to be inlined by the compiler
+already.
+
+The exception of course is when the function is in a header and then
+it's necessary to use "static inline".
+
+> {P4D, PUD, PMD}_SIZE can be equal if there> are
+> no P4D and PUD, depending on CONFIG_PGTABLE_LEVELS. In this case, can the
+
+Technically yes. I think I can actually rewrite this more simply as:
+
+static unsigned long donate_req_to_size(unsigned long donatereq)
+{
+	unsigned long unit_size = RMI_DONATE_SIZE(donatereq);
+
+	return BIT(ARM64_HW_PGTABLE_LEVEL_SHIFT(3 - unit_size));
+}
+
+which neatly sidesteps the CONFIG_PGTABLE_LEVELS problem too.
+
+>> +static void rmi_smccc_invoke(struct arm_smccc_1_2_regs *regs_in,
+>> +                 struct arm_smccc_1_2_regs *regs_out)
+
+This is an area where to be honest I'm really not sure what to do.
+Technically the RMM is allowed to ask for a contiguous range of 512GB
+pages (on a 4K system - larger with larger page sizes) - but clearly no
+real OS is going to be able to provide anything like that.
+
+In practise we don't expect the RMM to do anything so crazy. It's not
+really clear to be whether even 2MB (PMD_SIZE) is needed. But the spec
+is written to be generic.
+
+So my current approach is to calculate the required size and pass it
+into alloc_pages_exact(). For "stupidly large" values this will fail and
+Linux just doesn't support an RMM which attempts this. If there is ever
+a usecase which needs this then we'd need to find a different method of
+providing the memory (most likely some form of carveout to avoid
+fragmentation). But my view is we should wait for that usecase to be
+identified first.
+
+>> +    if (state == RMI_OP_MEM_DELEGATED) {
+>> +        if (rmi_delegate_range(phys, size)) {
+
+Good spot - ret should be initialised to 0.
+
+Thanks,
+Steve
+
+>> +        case RMI_OP_MEM_REQ_DONATE:
+>> +            ret = rmi_sro_donate(sro, sro_handle, regs.a2, &regs,
+
+---
+
+## [120] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 10/44] arm64: RMI: Add support for SRO*
+
+On 21/05/2026 15:35, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:18 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+It doesn't work (as Gavin also pointed out). There's an existing macro
+to make this even cleaner:
+
+return BIT(ARM64_HW_PGTABLE_LEVEL_SHIFT(3 - unit_size));
+
+>> +	}
+>> +	unreachable();
+
+Happy to change to WARN_ON_ONCE(). I think we should keep a WARN of some
+sort as this is causing Linux to leak pages - it's definitely something
+the sysadmin would want to know about.
+
+>> +		/* Undelegate failed: leak the page */
+>> +		return -EBUSY;
+
+I'm not sure quite what you are suggesting. I already have a
+rmi_sro_ensure_capacity() helper. By this point we know there's space.
+
+>> +out:
+>> +	regs.a2 = virt_to_phys(&sro->addr_list[sro->addr_count]);
+
+That's a good point. SRO is a bit tricky because I wanted the actual SMC
+call to be done in one place so we can handle all the RMI_INCOMPLETE
+cases together. But I could certainly add some helpers to setup the
+registers rather than assigning directly to regs.a<n>.
+
+Thanks,
+Steve
+
+> 	M.
+>> +	rmi_smccc_invoke(&regs, out_regs);
+
+---
+
+## [121] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 13/44] arm64: RMI: Define the user ABI*
+
+On 26/05/2026 23:17, Wei-Lin Chang wrote:
+> On Wed, May 13, 2026 at 02:17:21PM +0100, Steven Price wrote:
+>> There is one CAP which identified the presence of CCA, and one ioctl.
+
+Thanks for the suggestions - yes I agree that would make it clearer.
+
+Thanks,
+Steve
+
+> Thanks,
+> Wei-Lin Chang
+
+---
+
+## [122] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 13/44] arm64: RMI: Define the user ABI*
+
+On 27/05/2026 16:21, Marc Zyngier wrote:
+> On Wed, 13 May 2026 14:17:21 +0100,
+> Steven Price <steven.price@arm.com> wrote:
+
+Ah, true I guess "KVM: arm64: Define the user ABI for CCA" is more accurate.
+
+>>
+>> diff --git a/Documentation/virt/kvm/api.rst b/Documentation/virt/kvm/api.rst
+
+It's stored within the RMM and retrieved by the guest (using the RSI
+interface). I'll update to:
+
+`flags` can be set to `KVM_ARM_RMI_POPULATE_FLAGS_MEASURE` to request
+that the populated data is hashed and added to the guest's Realm Initial
+Measurement (RIM) stored by the RMM. This can then be retrieved by the
+guest (using the RSI interface) to present to an attestation server.
+
+Thanks,
+
+Steve
+
+>> +
+>>  .. _kvm_run:
+
+---
+
+## [123] Steven Price — 2026-06-04
+*Subject: Re: [PATCH v14 14/44] arm64: RMI: Basic infrastructure for creating a
+ realm.*
+
+On 02/06/2026 15:49, Suzuki K Poulose wrote:
+> Hi Marc
+> 
+
+Indeed - "KVM: arm64: CCA" is a better prefix.
+
+>>>
+>>> Signed-off-by: Steven Price <steven.price@arm.com>
+
+I'll add a comment:
+
++ * Mirrors the RMM's Realm lifecycle states where they are meaningful to KVM,
++ * with REALM_STATE_DYING being a KVM-internal state used to prevent further
++ * requests while teardown is in progress. KVM does not track REALM_SYSTEM_OFF
++ * or REALM_ZOMBIE separately as they naturally lead to teardown.
+
+> 
+> 
+
+Sure
+
+>>>   };
+>>>     void kvm_init_rmi(void);
+
+Sounds good to me.
+
+> 
+>>
+
+Yes I'll move the check into kvm_stage2_destroy() instead with a comment
+explaining what's going on.
+
+>>
+>>>           kfree(pgt);
+
+I'll add a comment in kvm_destroy_realm().
+
+Thanks,
+Steve
+
+> 
+> Suzuki
+
+---
+
+## [124] Gavin Shan — 2026-06-05
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+Hi Steve,
+
+On 5/13/26 11:17 PM, Steven Price wrote:
+> At runtime if the realm guest accesses memory which hasn't yet been
+> mapped then KVM needs to either populate the region or fault the guest.
+
+I'm a bit concerned with this. We don't have KVM_PGTABLE_PROT_W set in @prot
+if the stage2 fault is raised due to memory read. With -EFAULT returned to VMM
+(e.g. QEMU), the vCPU continuous execution is stopped and system won't be
+working any more.
+
+> +	ipa = ALIGN_DOWN(ipa, PAGE_SIZE);
+> +	if (!kvm_realm_is_private_address(realm, ipa))
+
+For the case kvm_is_realm(), need we adjust 's2fd->fault_ipa' for the sake of
+huge pages. In kvm_s2_fault_map(), @gfn and @pfn may have been adjusted by
+transparent_hugepage_adjust() to be aligned with huge page size. If the
+adjustment happened in transparent_hugepage_adjust(), we need to align
+s2fd->fault_ipa down to the huge page size either.
+
+
+> @@ -2214,6 +2285,13 @@ int kvm_handle_guest_sea(struct kvm_vcpu *vcpu)
+>   	return 0;
+
+Thanks,
+Gavin
+
+---
+
+## [125] Lorenzo Pieralisi — 2026-06-05
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On Fri, Jun 05, 2026 at 04:23:15PM +1000, Gavin Shan wrote:
+
+[...]
+
+> > +static int realm_map_ipa(struct kvm *kvm, phys_addr_t ipa,
+> > +			 kvm_pfn_t pfn, unsigned long map_size,
+
+All of the above + some RMM changes are needed to get QEmu VMM going
+with anon pages guest memory backing - currently testing various
+configurations in the background.
+
+Thanks,
+Lorenzo
+
+> > @@ -2214,6 +2285,13 @@ int kvm_handle_guest_sea(struct kvm_vcpu *vcpu)
+> >   	return 0;
+
+---
+
+## [126] Gavin Shan — 2026-06-05
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 6/5/26 5:28 PM, Lorenzo Pieralisi wrote:
+> On Fri, Jun 05, 2026 at 04:23:15PM +1000, Gavin Shan wrote:
+> 
+
+I tried to rebase Jean's latest QEMU series [1] to upstream QEMU, and found
+that memory slots backed by THP are broken. With THP disabled on the host and
+other fixes (mentioned in my prevous replies) applied on the top of this (v14)
+series, I'm able to boot a realm guest with rebased QEMU series [2], plus more
+fxies on the top.
+
+[1] https://git.codelinaro.org/linaro/dcap/qemu.git  (branch: cca/latest)
+[2] https://git.qemu.org/git/qemu.git                (branch: cca/gavin)
+
+Lorenzo, You may be saying there is someone making QEMU to support ARM/CCA?
+If so, I'm not sure if there is a QEMU repository for me to try?
+
+Thanks,
+Gavin
+
+> Thanks,
+> Lorenzo
+
+---
+
+## [127] Gavin Shan — 2026-06-05
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+Hi Steve,
+
+On 5/13/26 11:17 PM, Steven Price wrote:
+> At runtime if the realm guest accesses memory which hasn't yet been
+> mapped then KVM needs to either populate the region or fault the guest.
+
+[...]
+
+> @@ -1604,27 +1641,52 @@ static int gmem_abort(const struct kvm_s2_fault_desc *s2fd)
+>   	bool write_fault, exec_fault;
+
+For a Realm, gmem_abort() is called by kvm_handle_guest_abort() only when
+we're faulting in the private (protected) space.
+
+     if (kvm_slot_has_gmem(memslot) && !shared_ipa_fault(vcpu->kvm, fault_ipa))
+         ret = gmem_abort(&s2fd);
+     else
+         ret = user_mem_abort(&s2fd);
+
+With the condition, this block of code can be simplied to handle conversion
+(shared -> private) instead of both directions.
+
+     /* Convert the shared address to the private adress for Realm */
+     if (kvm_is_realm(vcpu->kvm) &&
+         !kvm_mem_is_private(kvm, gpa >> PAGE_SHIFT)) {
+         /*
+          * KVM_EXIT_MEMORY_FAULT requires an return code of
+          * -EFAULT, see the API documentation
+          */
+         kvm_prepare_memory_fault_exit(vcpu, gpa, PAGE_SIZE,
+                                       kvm_is_write_fault(vcpu),
+                                       false, true);
+         return -EFAULT;
+     }
+
+
+[...]
+
+> @@ -2396,7 +2475,7 @@ int kvm_handle_guest_abort(struct kvm_vcpu *vcpu)
+>   				!write_fault &&
+gmem_abort() is only called for faults in the protected (private) space.
+
+Thanks,
+Gavin
+
+---
+
+## [128] Lorenzo Pieralisi — 2026-06-05
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On Fri, Jun 05, 2026 at 06:11:11PM +1000, Gavin Shan wrote:
+> On 6/5/26 5:28 PM, Lorenzo Pieralisi wrote:
+> > On Fri, Jun 05, 2026 at 04:23:15PM +1000, Gavin Shan wrote:
+
+Mathieu and I are working on that yes and with Steven/Suzuki to fix the THP
+issues you pointed out above.
+
+> If so, I'm not sure if there is a QEMU repository for me to try?
+
+We should be able to submit patches by end of June - we shall let you know
+whether we can make something available earlier.
+
+Thanks,
+Lorenzo
+
+> 
+> Thanks,
+
+---
+
+## [129] Steven Price — 2026-06-05
+*Subject: Re: [PATCH v14 17/44] arm64: RMI: RTT tear down*
+
+On 26/05/2026 23:27, Wei-Lin Chang wrote:
+> Hi,
+> 
+
+Thanks for spotting that. Yes that change shouldn't have sneaked in
+here. The original code before this series had the redundant assignment
+to NULL. But it's unrelated to this patch so I'll drop the change.
+
+Thanks,
+Steve
+
+> 
+>>
+
+---
+
+## [130] Steven Price — 2026-06-05
+*Subject: Re: [PATCH v14 17/44] arm64: RMI: RTT tear down*
+
+On 26/05/2026 23:32, Wei-Lin Chang wrote:
+> Hi,
+> 
+
+The issue here is there's a type conversion going on. rmi_rtt_destroy()
+takes an "unsigned long *" to match the general approach of using
+"unsigned long" for the inputs/outputs of SMCCC calls. But rtt_granule
+is a "phys_addr_t". While we know these are (currently) the same size,
+they are not the same type according to the compiler - phys_addr_t is
+"long long unsigned int".
+
+Thanks,
+Steve
+
+> [...]
+>
+
+---
+
+## [131] Steven Price — 2026-06-05
+*Subject: Re: [PATCH v14 19/44] arm64: RMI: Allocate/free RECs to match vCPUs*
+
+On 26/05/2026 23:39, Wei-Lin Chang wrote:
+> Hi,
+> 
+
+Yes it probably should - I'll update. Although IMHO get_zeroed_page()
+should really return void * - but I know that would be a contentious change.
+
+Thanks,
+Steve
+
+>> +	rec->sro = kmalloc_obj(*rec->sro);
+>> +	if (!params || !rec->rec_page || !rec->run || !rec->sro) {
+
+---
+
+## [132] Steven Price — 2026-06-05
+*Subject: Re: [PATCH v14 20/44] arm64: RMI: Support for the VGIC in realms*
+
+On 28/05/2026 05:07, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Good catch. Yes that's not quite right.
+
+Thanks,
+Steve
+
+>>       kvm_vcpu_put_debug(vcpu);
+>>       kvm_arch_vcpu_put_fp(vcpu);
+
+---
+
+## [133] Steven Price — 2026-06-05
+*Subject: Re: [PATCH v14 22/44] arm64: RMI: Handle realm enter/exit*
+
+On 28/05/2026 05:38, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Good point - I guess this wouldn't have shown up in testing because
+there's no harm (other than performance) in the ISB.
+
+>> @@ -1436,8 +1444,13 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
+>>             trace_kvm_exit(ret, kvm_vcpu_trap_get_class(vcpu),
+
+Ack
+
+>> +static int rec_exit_sync_dabt(struct kvm_vcpu *vcpu)
+>> +{
+
+Ack
+
+>> +static int rec_exit_sys_reg(struct kvm_vcpu *vcpu)
+>> +{
+
+It's perhaps a bit non-obvious but enter.flags is cleared on the exit.
+So even if we return to the VMM the flags will be kept for the next entry.
+
+I agree it is somewhat TBD exactly how this case should be handled -
+there's a bunch of "VM did something stupid" cases like this that are a
+bit problematic.
+
+Thanks,
+Steve
+
+>> +
+>> +    /* Exit to VMM, the actual RIPAS change is done on next entry */
+
+---
+
+## [134] Steven Price — 2026-06-05
+*Subject: Re: [PATCH v14 23/44] arm64: RMI: Handle RMI_EXIT_RIPAS_CHANGE*
+
+On 19/05/2026 10:40, Aneesh Kumar K.V wrote:
+> Steven Price <steven.price@arm.com> writes:
+> 
+
+Because we treat the private and shared spaces are aliasing we don't
+really support a "private-only" invalidation. So the shared space will
+be invalidated as well. Something has gone wrong if we've ended up with
+the 'same' IPA being used in both the private and shared spaces.
+
+Private has to be treated slightly specially because removing a private
+mapping is observable by the guest (the page can't be reinserted without
+the guest agreeing and the contents being wiped). For shared mappings
+the page can simply be refaulted.
+
+That said, I'll look into Wei-Lin's suggestion to use
+kvm_gfn_range_filter which would allow all three combinations of
+private-only, shared-only and private+shared.
+
+Thanks,
+Steve
 
 ---

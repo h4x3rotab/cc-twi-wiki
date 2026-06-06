@@ -1,9 +1,9 @@
 ---
 title: 'Extend KVM_HC_MAP_GPA_RANGE api to allow retry'
 date: 2026-03-05
-last_reply: 2026-03-05
-message_count: 3
-participants: ['Sagi Shahar']
+last_reply: 2026-05-29
+message_count: 4
+participants: ['Sagi Shahar', 'Sean Christopherson']
 ---
 
 ## [1] Sagi Shahar — 2026-03-05
@@ -204,5 +204,24 @@ index 3f9c1aa39a0a..04076262f087 100644
  		snp_complete_psc(svm, VMGEXIT_PSC_ERROR_GENERIC);
  		return 1; /* resume guest */
  	}
+
+---
+
+## [4] Sean Christopherson — 2026-05-29
+*Subject: Re: [PATCH v4 0/2] Extend KVM_HC_MAP_GPA_RANGE api to allow retry*
+
+On Thu, 05 Mar 2026 22:26:25 +0000, Sagi Shahar wrote:
+> In some cases, userspace might decide to split MAP_GPA requests and
+> retry them the next time the guest runs. One common case is MAP_GPA
+
+Applied to kvm-x86 misc, thanks!
+
+[1/2] KVM: TDX: Allow userspace to return errors to guest for MAPGPA
+      https://github.com/kvm-x86/linux/commit/3e2dec1ede0a
+[2/2] KVM: SEV: Restrict userspace return codes for KVM_HC_MAP_GPA_RANGE
+      https://github.com/kvm-x86/linux/commit/5d40e5b49442
+
+--
+https://github.com/kvm-x86/linux/tree/next
 
 ---

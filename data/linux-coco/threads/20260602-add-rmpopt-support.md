@@ -1,12 +1,12 @@
 ---
 title: 'Add RMPOPT support.'
-date: 2026-05-18
-last_reply: 2026-06-01
-message_count: 23
-participants: ['Ashish Kalra', 'Dave Hansen', 'Borislav Petkov', 'Ackerley Tng']
+date: 2026-06-02
+last_reply: 2026-06-02
+message_count: 7
+participants: ['Ashish Kalra']
 ---
 
-## [1] Ashish Kalra — 2026-05-18
+## [1] Ashish Kalra — 2026-06-02
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
@@ -64,6 +64,34 @@ in follow-on series.
 
 Additionally add debugfs interface to report per-CPU RMPOPT status
 across all system RAM.
+
+v6:
+- Drop wrmsrq_on_cpus() helper; use for_each_cpu() with wrmsrq_on_cpu()
+  instead, as RMPOPT_BASE MSR programming is not performance-critical.
+- Rewrite rmpopt_work_handler() leader selection to use a local
+  follower_mask copy instead of modifying the global rmpopt_cpumask.
+  This eliminates the current_cpu_cleared tracking and the restore at
+  the end, and removes the need for synchronization comments about
+  transient cpumask inconsistency.
+- Add three-way leader selection in rmpopt_work_handler():
+  1. Current CPU is a primary thread in cpumask: run leader locally.
+  2. Current CPU is a sibling thread whose primary is in cpumask:
+     run leader locally (RMPOPT_BASE MSR is per-core), remove the
+     primary from followers via cpumask_andnot(topology_sibling_cpumask).
+  3. Current CPU's core has no RMPOPT_BASE MSR programmed: pick an
+     explicit leader via cpumask_first() + smp_call_function_single()
+     to avoid #UD, with cpus_read_lock() around the IPI loop.
+- Add WARN_ON_ONCE guard for empty cpumask in the explicit leader
+  fallback path, with migrate_enable() before goto out.
+- Add .llseek = seq_lseek to rmpopt_table_fops for consistency with
+  other seq_file-based debugfs files and to support tools like "less".
+- Change debugfs file permissions from 0444 to 0400 to restrict access
+  to root only.
+- Add comment in rmpopt_table_seq_show() explaining why cpu_online_mask
+  is safe: RMPOPT_BASE MSR is per-core and snp_prepare() ensures all
+  CPUs are online when the MSR is programmed.
+
+  Sashiko AI code review identified several of the above issues.
 
 v5:
 - Introduce rmpopt_cleanup() to tear down workqueue, debugfs, cpumask,
@@ -155,9 +183,8 @@ v2:
 - Move debugfs directory for RMPOPT under architecuture specific
   parent directory.
 
-Ashish Kalra (7):
+Ashish Kalra (6):
   x86/cpufeatures: Add X86_FEATURE_AMD_RMPOPT feature flag
-  x86/msr: add wrmsrq_on_cpus helper
   x86/sev: Initialize RMPOPT configuration MSRs
   x86/sev: Add support to perform RMP optimizations asynchronously
   x86/sev: Add interface to re-enable RMP optimizations.
@@ -167,32 +194,31 @@ Ashish Kalra (7):
  arch/x86/coco/core.c               |   1 +
  arch/x86/include/asm/cpufeatures.h |   2 +-
  arch/x86/include/asm/msr-index.h   |   3 +
- arch/x86/include/asm/msr.h         |   5 +
  arch/x86/include/asm/sev.h         |   4 +
  arch/x86/kernel/cpu/scattered.c    |   1 +
  arch/x86/kvm/svm/sev.c             |   2 +
- arch/x86/lib/msr-smp.c             |  20 ++
- arch/x86/virt/svm/sev.c            | 356 ++++++++++++++++++++++++++++-
+ arch/x86/virt/svm/sev.c            | 398 ++++++++++++++++++++++++++++-
  drivers/crypto/ccp/sev-dev.c       |   3 +
- 10 files changed, 395 insertions(+), 2 deletions(-)
+ 8 files changed, 412 insertions(+), 2 deletions(-)
 
 ---
 
-## [2] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 1/7] x86/cpufeatures: Add X86_FEATURE_AMD_RMPOPT feature flag*
+## [2] Ashish Kalra — 2026-06-02
+*Subject: [PATCH v6 1/6] x86/cpufeatures: Add X86_FEATURE_AMD_RMPOPT feature flag*
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
 Add a flag indicating whether RMPOPT instruction is supported.
 
-RMPOPT is a new instruction designed to minimize the performance
-overhead of RMP checks on the hypervisor and on non-SNP guests by
-allowing RMP checks to be skipped when 1G regions of memory are known
-not to contain any SEV-SNP guest memory.
+RMPOPT is a new instruction that reduces the performance overhead of
+RMP checks for the hypervisor and non-SNP guests by allowing those
+checks to be skipped when 1-GB memory regions are known to contain no
+SEV-SNP guest memory.
 
 For more information on the RMPOPT instruction, see the AMD64 RMPOPT
 technical documentation.
 
+Suggested-by: Borislav Petkov (AMD) <bp@alien8.de>
 Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
 Reviewed-by: Ackerley Tng <ackerleytng@google.com>
 Signed-off-by: Ashish Kalra <ashish.kalra@amd.com>
@@ -229,88 +255,8 @@ index 937129ce6a96..021c0bf22de2 100644
 
 ---
 
-## [3] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-From: Ashish Kalra <ashish.kalra@amd.com>
-
-The existing wrmsr_on_cpus() takes a per-cpu struct msr array, requiring
-callers to allocate and populate per-cpu storage even when every CPU
-receives the same value. This is unnecessary overhead for the common
-case of writing a single uniform u64 to a per-CPU MSR across multiple
-CPUs.
-
-Add wrmsrq_on_cpus() which writes the same u64 value to the specified
-MSR on all CPUs in the given cpumask.
-
-Co-developed-by: Dave Hansen <dave.hansen@linux.intel.com>
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Reviewed-by: Ackerley Tng <ackerleytng@google.com>
-Signed-off-by: Ashish Kalra <ashish.kalra@amd.com>
----
- arch/x86/include/asm/msr.h |  5 +++++
- arch/x86/lib/msr-smp.c     | 20 ++++++++++++++++++++
- 2 files changed, 25 insertions(+)
-
-diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
-index 9c2ea29e12a9..f5f63b4115c8 100644
---- a/arch/x86/include/asm/msr.h
-+++ b/arch/x86/include/asm/msr.h
-@@ -260,6 +260,7 @@ int rdmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
- int wrmsr_on_cpu(unsigned int cpu, u32 msr_no, u32 l, u32 h);
- int rdmsrq_on_cpu(unsigned int cpu, u32 msr_no, u64 *q);
- int wrmsrq_on_cpu(unsigned int cpu, u32 msr_no, u64 q);
-+void wrmsrq_on_cpus(const struct cpumask *mask, u32 msr_no, u64 q);
- void rdmsr_on_cpus(const struct cpumask *mask, u32 msr_no, struct msr __percpu *msrs);
- void wrmsr_on_cpus(const struct cpumask *mask, u32 msr_no, struct msr __percpu *msrs);
- int rdmsr_safe_on_cpu(unsigned int cpu, u32 msr_no, u32 *l, u32 *h);
-@@ -289,6 +290,10 @@ static inline int wrmsrq_on_cpu(unsigned int cpu, u32 msr_no, u64 q)
- 	wrmsrq(msr_no, q);
- 	return 0;
- }
-+static inline void wrmsrq_on_cpus(const struct cpumask *mask, u32 msr_no, u64 q)
-+{
-+	wrmsrq_on_cpu(0, msr_no, q);
-+}
- static inline void rdmsr_on_cpus(const struct cpumask *m, u32 msr_no,
- 				struct msr __percpu *msrs)
- {
-diff --git a/arch/x86/lib/msr-smp.c b/arch/x86/lib/msr-smp.c
-index b8f63419e6ae..d2c91c9bb47b 100644
---- a/arch/x86/lib/msr-smp.c
-+++ b/arch/x86/lib/msr-smp.c
-@@ -94,6 +94,26 @@ int wrmsrq_on_cpu(unsigned int cpu, u32 msr_no, u64 q)
- }
- EXPORT_SYMBOL(wrmsrq_on_cpu);
- 
-+void wrmsrq_on_cpus(const struct cpumask *mask, u32 msr_no, u64 q)
-+{
-+	struct msr_info rv;
-+	int this_cpu;
-+
-+	memset(&rv, 0, sizeof(rv));
-+
-+	rv.msr_no = msr_no;
-+	rv.reg.q = q;
-+
-+	this_cpu = get_cpu();
-+
-+	if (cpumask_test_cpu(this_cpu, mask))
-+		__wrmsr_on_cpu(&rv);
-+
-+	smp_call_function_many(mask, __wrmsr_on_cpu, &rv, 1);
-+	put_cpu();
-+}
-+EXPORT_SYMBOL(wrmsrq_on_cpus);
-+
- static void __rwmsr_on_cpus(const struct cpumask *mask, u32 msr_no,
- 			    struct msr __percpu *msrs,
- 			    void (*msr_func) (void *info))
-
----
-
-## [4] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 3/7] x86/sev: Initialize RMPOPT configuration MSRs*
+## [3] Ashish Kalra — 2026-06-02
+*Subject: [PATCH v6 2/6] x86/sev: Initialize RMPOPT configuration MSRs*
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
@@ -336,10 +282,10 @@ Signed-off-by: Ashish Kalra <ashish.kalra@amd.com>
 ---
  arch/x86/coco/core.c             |  1 +
  arch/x86/include/asm/msr-index.h |  3 ++
- arch/x86/include/asm/sev.h       |  2 ++
- arch/x86/virt/svm/sev.c          | 59 +++++++++++++++++++++++++++++++-
+ arch/x86/include/asm/sev.h       |  2 +
+ arch/x86/virt/svm/sev.c          | 65 +++++++++++++++++++++++++++++++-
  drivers/crypto/ccp/sev-dev.c     |  3 ++
- 5 files changed, 67 insertions(+), 1 deletion(-)
+ 5 files changed, 73 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/coco/core.c b/arch/x86/coco/core.c
 index 989ca9f72ba3..7fdef00ca8f2 100644
@@ -388,7 +334,7 @@ index 594cfa19cbd4..6fd72a44a51e 100644
  #endif
  
 diff --git a/arch/x86/virt/svm/sev.c b/arch/x86/virt/svm/sev.c
-index 8bcdce98f6dc..82f9dc7a57c3 100644
+index 8bcdce98f6dc..089c9a14edc7 100644
 --- a/arch/x86/virt/svm/sev.c
 +++ b/arch/x86/virt/svm/sev.c
 @@ -124,6 +124,9 @@ static void *rmp_bookkeeping __ro_after_init;
@@ -416,14 +362,19 @@ index 8bcdce98f6dc..82f9dc7a57c3 100644
  		if (!setup_contiguous_rmptable())
  			return false;
  	}
-@@ -555,6 +562,16 @@ int snp_prepare(void)
+@@ -555,6 +562,21 @@ int snp_prepare(void)
  }
  EXPORT_SYMBOL_FOR_MODULES(snp_prepare, "ccp");
  
 +static void rmpopt_cleanup(void)
 +{
++	int cpu;
++
 +	cpus_read_lock();
-+	wrmsrq_on_cpus(&rmpopt_cpumask, MSR_AMD64_RMPOPT_BASE, 0);
++
++	for_each_cpu(cpu, &rmpopt_cpumask)
++		wrmsrq_on_cpu(cpu, MSR_AMD64_RMPOPT_BASE, 0);
++
 +	cpus_read_unlock();
 +
 +	cpumask_clear(&rmpopt_cpumask);
@@ -433,7 +384,7 @@ index 8bcdce98f6dc..82f9dc7a57c3 100644
  void snp_shutdown(void)
  {
  	u64 syscfg;
-@@ -563,11 +580,51 @@ void snp_shutdown(void)
+@@ -563,11 +585,52 @@ void snp_shutdown(void)
  	if (syscfg & MSR_AMD64_SYSCFG_SNP_EN)
  		return;
  
@@ -476,7 +427,8 @@ index 8bcdce98f6dc..82f9dc7a57c3 100644
 +	 * to the starting physical address to enable RMP optimizations for
 +	 * up to 2 TB of system RAM on all CPUs.
 +	 */
-+	wrmsrq_on_cpus(&rmpopt_cpumask, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
++	for_each_cpu(cpu, &rmpopt_cpumask)
++		wrmsrq_on_cpu(cpu, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
 +
 +	cpus_read_unlock();
 +}
@@ -502,8 +454,8 @@ index 78f98aee7a66..217b6b19802e 100644
 
 ---
 
-## [5] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 4/7] x86/sev: Add support to perform RMP optimizations asynchronously*
+## [4] Ashish Kalra — 2026-06-02
+*Subject: [PATCH v6 3/6] x86/sev: Add support to perform RMP optimizations asynchronously*
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
@@ -519,7 +471,8 @@ contain any SEV-SNP guest memory.
 Add support for performing RMP optimizations asynchronously using a
 dedicated workqueue.
 
-Enable RMPOPT optimizations globally for all system RAM up to 2TB at
+Enable RMPOPT optimizations for up to 2TB of system RAM starting from
+the lowest physical memory address aligned down to a 1GB boundary at
 RMP initialization time. RMP checks can initially be skipped for 1GB
 memory ranges that do not contain SEV-SNP guest memory (excluding
 preassigned pages such as the RMP table and firmware pages). As SNP
@@ -531,11 +484,11 @@ Suggested-by: Dave Hansen <dave.hansen@linux.intel.com>
 Reviewed-by: Ackerley Tng <ackerleytng@google.com>
 Signed-off-by: Ashish Kalra <ashish.kalra@amd.com>
 ---
- arch/x86/virt/svm/sev.c | 167 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 164 insertions(+), 3 deletions(-)
+ arch/x86/virt/svm/sev.c | 196 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 193 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/virt/svm/sev.c b/arch/x86/virt/svm/sev.c
-index 82f9dc7a57c3..8876cac052d5 100644
+index 089c9a14edc7..d7e40a5fe5ca 100644
 --- a/arch/x86/virt/svm/sev.c
 +++ b/arch/x86/virt/svm/sev.c
 @@ -19,6 +19,7 @@
@@ -566,10 +519,10 @@ index 82f9dc7a57c3..8876cac052d5 100644
  
  static LIST_HEAD(snp_leaked_pages_list);
  static DEFINE_SPINLOCK(snp_leaked_pages_list_lock);
-@@ -564,12 +576,21 @@ EXPORT_SYMBOL_FOR_MODULES(snp_prepare, "ccp");
- 
- static void rmpopt_cleanup(void)
+@@ -566,6 +578,14 @@ static void rmpopt_cleanup(void)
  {
+ 	int cpu;
+ 
 +	guard(mutex)(&rmpopt_wq_mutex);
 +
 +	if (!rmpopt_wq)
@@ -579,7 +532,9 @@ index 82f9dc7a57c3..8876cac052d5 100644
 +	destroy_workqueue(rmpopt_wq);
 +
  	cpus_read_lock();
- 	wrmsrq_on_cpus(&rmpopt_cpumask, MSR_AMD64_RMPOPT_BASE, 0);
+ 
+ 	for_each_cpu(cpu, &rmpopt_cpumask)
+@@ -574,7 +594,8 @@ static void rmpopt_cleanup(void)
  	cpus_read_unlock();
  
  	cpumask_clear(&rmpopt_cpumask);
@@ -589,17 +544,17 @@ index 82f9dc7a57c3..8876cac052d5 100644
  }
  
  void snp_shutdown(void)
-@@ -587,6 +608,105 @@ void snp_shutdown(void)
+@@ -592,6 +613,134 @@ void snp_shutdown(void)
  }
  EXPORT_SYMBOL_FOR_MODULES(snp_shutdown, "ccp");
  
-+static inline bool __rmpopt(u64 rax, u64 rcx)
++static inline bool __rmpopt(u64 pa_start, u64 op_type)
 +{
 +	bool optimized;
 +
 +	asm volatile(".byte 0xf2, 0x0f, 0x01, 0xfc"
 +		     : "=@ccc" (optimized)
-+		     : "a" (rax), "c" (rcx)
++		     : "a" (pa_start), "c" (op_type)
 +		     : "memory", "cc");
 +
 +	return optimized;
@@ -607,10 +562,10 @@ index 82f9dc7a57c3..8876cac052d5 100644
 +
 +static void rmpopt(u64 pa)
 +{
-+	u64 rax = ALIGN_DOWN(pa, SZ_1G);
-+	u64 rcx = RMPOPT_FUNC_VERIFY_AND_REPORT_STATUS;
++	u64 pa_start = ALIGN_DOWN(pa, SZ_1G);
++	u64 op_type = RMPOPT_FUNC_VERIFY_AND_REPORT_STATUS;
 +
-+	__rmpopt(rax, rcx);
++	__rmpopt(pa_start, op_type);
 +}
 +
 +/*
@@ -627,12 +582,15 @@ index 82f9dc7a57c3..8876cac052d5 100644
 + */
 +static void rmpopt_work_handler(struct work_struct *work)
 +{
-+	bool current_cpu_cleared = false;
++	cpumask_var_t follower_mask;
 +	phys_addr_t pa;
 +	int this_cpu;
 +
 +	pr_info("Attempt RMP optimizations on physical address range @1GB alignment [0x%016llx - 0x%016llx]\n",
 +		rmpopt_pa_start, rmpopt_pa_end);
++
++	if (!alloc_cpumask_var(&follower_mask, GFP_KERNEL))
++		return;
 +
 +	/*
 +	 * RMPOPT scans the RMP table, stores the result of the scan in the
@@ -641,46 +599,72 @@ index 82f9dc7a57c3..8876cac052d5 100644
 +	 * if they can see a cached result in the reserved processor memory.
 +	 *
 +	 * Do RMPOPT on one CPU alone. Then, follow that up with RMPOPT
-+	 * on every other primary thread. This potentially allows the
-+	 * followers to use the "cached" scan results to avoid repeating
-+	 * full scans.
++	 * on every other primary thread. Followers are "designed to"
++	 * skip the scan if they see the "cached" scan results.
 +	 */
++	cpumask_copy(follower_mask, &rmpopt_cpumask);
 +
 +	/*
 +	 * Pin the worker to the current CPU for the leader loop so that
 +	 * this_cpu remains valid and the RMPOPT instruction executes on
-+	 * the CPU that was cleared from the cpumask.  The workqueue is
-+	 * WQ_UNBOUND, so without pinning, the scheduler could migrate
-+	 * the worker between the cpumask manipulation and the leader
-+	 * loop, causing the leader to run on a different CPU while
-+	 * this_cpu's core is skipped entirely.
++	 * the correct CPU.
 +	 *
 +	 * Use migrate_disable() rather than get_cpu() to prevent
 +	 * migration while still allowing preemption.
-+	 *
-+	 * Note: rmpopt_cpumask is modified here without holding
-+	 * rmpopt_wq_mutex.  This is safe because the delayed_work
-+	 * mechanism guarantees single-threaded execution of this
-+	 * handler, and rmpopt_cleanup() calls cancel_delayed_work_sync()
-+	 * to ensure handler completion before tearing down the cpumask.
 +	 */
 +	migrate_disable();
 +	this_cpu = smp_processor_id();
-+	if (cpumask_test_cpu(this_cpu, &rmpopt_cpumask)) {
-+		cpumask_clear_cpu(this_cpu, &rmpopt_cpumask);
-+		current_cpu_cleared = true;
-+	}
 +
-+	/* Leader: prime the RMPOPT cache on this CPU */
-+	for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-+		rmpopt(pa);
++	if (cpumask_test_cpu(this_cpu, follower_mask)) {
++		/*
++		 * Current CPU is a primary thread in rmpopt_cpumask.
++		 * Run leader locally and remove from follower mask.
++		 */
++		cpumask_clear_cpu(this_cpu, follower_mask);
++
++		for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
++			rmpopt(pa);
++	} else if (cpumask_intersects(topology_sibling_cpumask(this_cpu),
++				      follower_mask)) {
++		/*
++		 * Current CPU is a sibling thread whose primary is in
++		 * rmpopt_cpumask.  RMPOPT_BASE MSR is per-core, so it
++		 * is safe to run the leader locally.  Remove the sibling's
++		 * primary from the follower mask as this core is already
++		 * covered by the leader.
++		 */
++		cpumask_andnot(follower_mask, follower_mask,
++			       topology_sibling_cpumask(this_cpu));
++
++		for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
++			rmpopt(pa);
++	} else {
++		/*
++		 * Current CPU does not have RMPOPT_BASE MSR programmed.
++		 * Pick an explicit leader from the cpumask to avoid #UD.
++		 */
++		int leader_cpu = cpumask_first(follower_mask);
++
++		if (WARN_ON_ONCE(leader_cpu >= nr_cpu_ids)) {
++			migrate_enable();
++			goto out;
++		}
++
++		cpumask_clear_cpu(leader_cpu, follower_mask);
++
++		cpus_read_lock();
++		for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
++			smp_call_function_single(leader_cpu, rmpopt_smp,
++						 (void *)pa, true);
++		cpus_read_unlock();
++	}
 +
 +	migrate_enable();
 +
-+	/* Followers: run RMPOPT on all other cores */
++	/* Followers: run RMPOPT on remaining cores */
 +	cpus_read_lock();
 +	for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G) {
-+		on_each_cpu_mask(&rmpopt_cpumask, rmpopt_smp,
++		on_each_cpu_mask(follower_mask, rmpopt_smp,
 +				 (void *)pa, true);
 +
 +		 /* Give a chance for other threads to run */
@@ -688,14 +672,14 @@ index 82f9dc7a57c3..8876cac052d5 100644
 +	}
 +	cpus_read_unlock();
 +
-+	if (current_cpu_cleared)
-+		cpumask_set_cpu(this_cpu, &rmpopt_cpumask);
++out:
++	free_cpumask_var(follower_mask);
 +}
 +
  void snp_setup_rmpopt(void)
  {
  	u64 rmpopt_base;
-@@ -595,11 +715,35 @@ void snp_setup_rmpopt(void)
+@@ -600,11 +749,35 @@ void snp_setup_rmpopt(void)
  	if (!cpu_feature_enabled(X86_FEATURE_RMPOPT))
  		return;
  
@@ -732,8 +716,8 @@ index 82f9dc7a57c3..8876cac052d5 100644
  	 *
  	 * Note: only online primary threads are included.  If a core's
  	 * primary thread is offline, that core is not covered.  CPU hotplug
-@@ -622,6 +766,23 @@ void snp_setup_rmpopt(void)
- 	wrmsrq_on_cpus(&rmpopt_cpumask, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
+@@ -628,6 +801,23 @@ void snp_setup_rmpopt(void)
+ 		wrmsrq_on_cpu(cpu, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
  
  	cpus_read_unlock();
 +
@@ -758,8 +742,8 @@ index 82f9dc7a57c3..8876cac052d5 100644
 
 ---
 
-## [6] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 5/7] x86/sev: Add interface to re-enable RMP optimizations.*
+## [5] Ashish Kalra — 2026-06-02
+*Subject: [PATCH v6 4/6] x86/sev: Add interface to re-enable RMP optimizations.*
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
@@ -801,11 +785,11 @@ index 6fd72a44a51e..09b1c5d33790 100644
  static inline void snp_shutdown(void) {}
  #endif
 diff --git a/arch/x86/virt/svm/sev.c b/arch/x86/virt/svm/sev.c
-index 8876cac052d5..7f8bb09844c1 100644
+index d7e40a5fe5ca..4442ecae3d18 100644
 --- a/arch/x86/virt/svm/sev.c
 +++ b/arch/x86/virt/svm/sev.c
-@@ -707,6 +707,21 @@ static void rmpopt_work_handler(struct work_struct *work)
- 		cpumask_set_cpu(this_cpu, &rmpopt_cpumask);
+@@ -741,6 +741,21 @@ static void rmpopt_work_handler(struct work_struct *work)
+ 	free_cpumask_var(follower_mask);
  }
  
 +void snp_rmpopt_all_physmem(void)
@@ -829,8 +813,8 @@ index 8876cac052d5..7f8bb09844c1 100644
 
 ---
 
-## [7] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 6/7] KVM: SEV: Perform RMP optimizations on SNP guest shutdown*
+## [6] Ashish Kalra — 2026-06-02
+*Subject: [PATCH v6 5/6] KVM: SEV: Perform RMP optimizations on SNP guest shutdown*
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
@@ -869,8 +853,8 @@ index e107f368ed2d..29af6f6e603c 100644
 
 ---
 
-## [8] Ashish Kalra — 2026-05-18
-*Subject: [PATCH v5 7/7] x86/sev: Add debugfs support for RMPOPT*
+## [7] Ashish Kalra — 2026-06-02
+*Subject: [PATCH v6 6/6] x86/sev: Add debugfs support for RMPOPT*
 
 From: Ashish Kalra <ashish.kalra@amd.com>
 
@@ -908,11 +892,11 @@ Memory @1038GB: CPU(s): none
 Suggested-by: Thomas Lendacky <thomas.lendacky@amd.com>
 Signed-off-by: Ashish Kalra <ashish.kalra@amd.com>
 ---
- arch/x86/virt/svm/sev.c | 121 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 121 insertions(+)
+ arch/x86/virt/svm/sev.c | 128 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 128 insertions(+)
 
 diff --git a/arch/x86/virt/svm/sev.c b/arch/x86/virt/svm/sev.c
-index 7f8bb09844c1..ac414143feed 100644
+index 4442ecae3d18..29695bb18991 100644
 --- a/arch/x86/virt/svm/sev.c
 +++ b/arch/x86/virt/svm/sev.c
 @@ -20,6 +20,8 @@
@@ -940,7 +924,7 @@ index 7f8bb09844c1..ac414143feed 100644
  #undef pr_fmt
  #define pr_fmt(fmt)	"SEV-SNP: " fmt
  
-@@ -583,6 +594,8 @@ static void rmpopt_cleanup(void)
+@@ -585,6 +596,8 @@ static void rmpopt_cleanup(void)
  
  	cancel_delayed_work_sync(&rmpopt_delayed_work);
  	destroy_workqueue(rmpopt_wq);
@@ -948,19 +932,19 @@ index 7f8bb09844c1..ac414143feed 100644
 +	rmpopt_debugfs = NULL;
  
  	cpus_read_lock();
- 	wrmsrq_on_cpus(&rmpopt_cpumask, MSR_AMD64_RMPOPT_BASE, 0);
-@@ -617,6 +630,10 @@ static inline bool __rmpopt(u64 rax, u64 rcx)
- 		     : "a" (rax), "c" (rcx)
+ 
+@@ -622,6 +635,10 @@ static inline bool __rmpopt(u64 pa_start, u64 op_type)
+ 		     : "a" (pa_start), "c" (op_type)
  		     : "memory", "cc");
  
-+	if (rcx == RMPOPT_FUNC_REPORT_STATUS)
++	if (op_type == RMPOPT_FUNC_REPORT_STATUS)
 +		assign_cpu(smp_processor_id(), &rmpopt_report_cpumask,
 +			   optimized);
 +
  	return optimized;
  }
  
-@@ -636,6 +653,108 @@ static void rmpopt_smp(void *val)
+@@ -641,6 +658,115 @@ static void rmpopt_smp(void *val)
  	rmpopt((u64)val);
  }
  
@@ -969,10 +953,10 @@ index 7f8bb09844c1..ac414143feed 100644
 + */
 +static void rmpopt_report_status(void *val)
 +{
-+	u64 rax = ALIGN_DOWN((u64)val, SZ_1G);
-+	u64 rcx = RMPOPT_FUNC_REPORT_STATUS;
++	u64 pa_start = ALIGN_DOWN((u64)val, SZ_1G);
++	u64 op_type = RMPOPT_FUNC_REPORT_STATUS;
 +
-+	__rmpopt(rax, rcx);
++	__rmpopt(pa_start, op_type);
 +}
 +
 +/*
@@ -986,10 +970,12 @@ index 7f8bb09844c1..ac414143feed 100644
 +
 +	if (*pos == 0) {
 +		p->next_seq_paddr = rmpopt_pa_start;
++		if (p->next_seq_paddr >= end_paddr)
++			return NULL;
 +		return &p->next_seq_paddr;
 +	}
 +
-+	if (p->next_seq_paddr == end_paddr)
++	if (p->next_seq_paddr >= end_paddr)
 +		return NULL;
 +
 +	return &p->next_seq_paddr;
@@ -1027,6 +1013,10 @@ index 7f8bb09844c1..ac414143feed 100644
 +	 * thread per core for the optimization to take effect, but debugfs
 +	 * reporting requires the RMPOPT status across all CPUs.
 +	 * Performance is not a concern for this diagnostic interface.
++	 *
++	 * This is safe because RMPOPT_BASE MSR is per-core and
++	 * snp_prepare() ensures all CPUs are online when the MSR is
++	 * programmed during snp_setup_rmpopt().
 +	 */
 +	cpumask_clear(&rmpopt_report_cpumask);
 +	on_each_cpu_mask(cpu_online_mask, rmpopt_report_status,
@@ -1055,6 +1045,7 @@ index 7f8bb09844c1..ac414143feed 100644
 +static const struct file_operations rmpopt_table_fops = {
 +	.open = rmpopt_table_open,
 +	.read = seq_read,
++	.llseek = seq_lseek,
 +	.release = seq_release_private,
 +};
 +
@@ -1062,14 +1053,14 @@ index 7f8bb09844c1..ac414143feed 100644
 +{
 +	rmpopt_debugfs = debugfs_create_dir("rmpopt", arch_debugfs_dir);
 +
-+	debugfs_create_file("rmpopt-table", 0444, rmpopt_debugfs,
++	debugfs_create_file("rmpopt-table", 0400, rmpopt_debugfs,
 +			    NULL, &rmpopt_table_fops);
 +}
 +
  /*
   * RMPOPT optimizations skip RMP checks at 1GB granularity if this
   * range of memory does not contain any SNP guest memory.
-@@ -798,6 +917,8 @@ void snp_setup_rmpopt(void)
+@@ -833,6 +959,8 @@ void snp_setup_rmpopt(void)
  	 * optimizations on all physical memory.
  	 */
  	queue_delayed_work(rmpopt_wq, &rmpopt_delayed_work, 0);
@@ -1077,606 +1068,5 @@ index 7f8bb09844c1..ac414143feed 100644
 +	rmpopt_debugfs_setup();
  }
  EXPORT_SYMBOL_FOR_MODULES(snp_setup_rmpopt, "ccp");
-
----
-
-## [9] Dave Hansen — 2026-05-18
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On 5/18/26 14:42, Ashish Kalra wrote:
-> Co-developed-by: Dave Hansen <dave.hansen@linux.intel.com>
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-
-Hi Ashish,
-
-Sorry if my memory fails me, but I don't remember signing off on this.
-Could you point me to the place where I gave you my Signed-off-by?
-
----
-
-## [10] Kalra, Ashish — 2026-05-18
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-Hello Dave,
-
-On 5/18/2026 5:04 PM, Dave Hansen wrote:
-> On 5/18/26 14:42, Ashish Kalra wrote:
->> Co-developed-by: Dave Hansen <dave.hansen@linux.intel.com>
-
-Sorry about this, added this accidentally. 
-
-You had suggested the code change, i accidentally took it as a Signed-off.
-
-Thanks,
-Ashish
-
----
-
-## [11] Dave Hansen — 2026-05-18
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On 5/18/26 15:09, Kalra, Ashish wrote:
-> On 5/18/2026 5:04 PM, Dave Hansen wrote:
->> On 5/18/26 14:42, Ashish Kalra wrote:
-
-Hi Ashish,
-
-First, please do me a favor and go back and re-read:
-
-	Documentation/process/submitting-patches.rst
-
-I recommend that everyone do this every once in a while so they remember
-what they are constantly signing off on. It's important.
-
-My personal rule for SoB lines is that I don't add them unless I've
-explicitly talked to the person. Even then, I vastly prefer that the
-person provides it to me *explicitly* (so I just copy and paste
-directly) and on a public mailing list. That way, the avenues for
-accidents to occur are very narrow.
-
----
-
-## [12] Borislav Petkov — 2026-05-27
-*Subject: Re: [PATCH v5 1/7] x86/cpufeatures: Add X86_FEATURE_AMD_RMPOPT
- feature flag*
-
-On Mon, May 18, 2026 at 09:41:53PM +0000, Ashish Kalra wrote:
-> From: Ashish Kalra <ashish.kalra@amd.com>
-> 
-
-Streamline:
-
-"RMPOPT is a new instruction that reduces the performance overhead of RMP
-checks for the hypervisor and non‑SNP guests by allowing those checks to be
-skipped when 1‑GB memory regions are known to contain no SEV‑SNP guest
-memory."
-
----
-
-## [13] Borislav Petkov — 2026-05-27
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On Mon, May 18, 2026 at 09:42:15PM +0000, Ashish Kalra wrote:
-> From: Ashish Kalra <ashish.kalra@amd.com>
-> 
-
-So let's add yet another function which name differs from the other one by
-a single letter and have people go look at the implementation to know which is
-which...?
-
-Instead of unifying what's there and extending this one to do what you want it
-to do?
-
-And now you have a wrmsrQ_on_cpus() but no rdmsrQ_on_cpus()?
-
-Because if you look at the code, you'll see how those are used: first you
-rdmsr on CPUs, modify each value and then wrmsr on same CPUs.
-
-So no, try again pls.
-
----
-
-## [14] Dave Hansen — 2026-05-27
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On 5/27/26 14:06, Borislav Petkov wrote:
-> On Mon, May 18, 2026 at 09:42:15PM +0000, Ashish Kalra wrote:
->> From: Ashish Kalra <ashish.kalra@amd.com>
-
-This one is my doing.
-
-wrmsr_on_cpus() is kinda a mess. I think it only has a single user. It's
-also not very flexible because it needs a 'struct msr __percpu *msrs'
-argument where each MSR has a value in memory.
-
-The use case for RMPOPT is that all CPUs get the same value. It'd be a
-little awkward to go create a percpu data structure to duplcate the same
-value to call wrmsr_on_cpus(). The RMPOPT case is also arguably
-performance sensitive since it's done during boot. It should do the IPIs
-in parallel.
-
-toggle_ecc_err_reporting(), on the other hand, is done at module init
-time. It's not really performance sensitive. It's probably pretty easy
-to zap wrmsr_on_cpus() and just have toggle_ecc_err_reporting() do
-something slightly less efficient.
-
-Yeah, the
-
-	wrmsr_on_cpus()
-	wrmsrq_on_cpus()
-
-naming pain is real. There's little chance of bugs coming from it
-because the function signatures are *SO* different. But, it certainly
-could confuse humans for a minute.
-
-But the real solution to this is axing wrmsr_on_cpus(). Which I think we
-could do after killing its one user which the attached (completely
-untested) patch does. The only downside of the patch is that it does
-RDMSR via IPIs one CPU at a time. But, looking at the code, I'm not sure
-anyone would care. If anyone did, I _think_ all those MSRs have the same
-value and the code could be simplified further. But that would take more
-than 3 minutes.
-
-It's also possible that my grepping was bad or I'm completely
-misunderstanding amd64_edac.c. Cluebat welcome if I'm being dense.
-
-BTW, I also don't feel the need to make Ashish go do any of this edac
-cleanup. I think it can just be done in parallel. But I wouldn't stop
-him if he volunteered.
-
----
-
-## [15] Borislav Petkov — 2026-05-27
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On Wed, May 27, 2026 at 02:38:05PM -0700, Dave Hansen wrote:
-> This one is my doing.
-
-I know.
-
-But hey, maybe we should not disagree on the public ML because the submitter
-might disappear like the last one. :-P
-
-> wrmsr_on_cpus() is kinda a mess. I think it only has a single user. It's
-> also not very flexible because it needs a 'struct msr __percpu *msrs'
-
-Right, we did that a looong time ago.
-
-The only reason I'd have for per-CPU MSR structs is reading different MSR
-values on different cores, modifying only the bits you need and then *keeping*
-the remaining values as they were. And that interface allows you to do that
-while this new thing won't.
-
-And I'm going to venture a guess here that adding a simpler interface which
-simply forces a new value ontop of a whole MSR could cause a lot of subtle
-bugs when people don't pay attention to keep the old values.
-
-> The use case for RMPOPT is that all CPUs get the same value. It'd be a
-> little awkward to go create a percpu data structure to duplcate the same
-
-Oh sure, my meaning was to create something that serves both purposes.
-
-> toggle_ecc_err_reporting(), on the other hand, is done at module init
-> time. It's not really performance sensitive. It's probably pretty easy
-
-Sure. That's fine.
-
-> Yeah, the
-> 
-
-Yap.
-
-> But the real solution to this is axing wrmsr_on_cpus(). 
-
-Yap, for example. Basically reingeneering the whole
-write-MSRs-on-multiple-CPUs functionality is what I meant.
-
-> Which I think we could do after killing its one user which the attached
-> (completely untested) patch does. The only downside of the patch is that it
-
-Looks ok to me, we can surely do that. I even hw to test it. I think...
-
-> BTW, I also don't feel the need to make Ashish go do any of this edac
-> cleanup. I think it can just be done in parallel. But I wouldn't stop
-
-Why not?
-
-It has always been the case: cleanups and bug fixes first, new features ontop.
-
-So yeah, modulo figuring out how to redefine the *msr_on_cpus() interface,
-I think this all makes sense.
-
-Thx.
-
----
-
-## [16] Ackerley Tng — 2026-05-28
-*Subject: Re: [PATCH v5 4/7] x86/sev: Add support to perform RMP optimizations asynchronously*
-
-Ashish Kalra <Ashish.Kalra@amd.com> writes:
-
-Thank you Ashish!
-
-> From: Ashish Kalra <ashish.kalra@amd.com>
->
-
-This should also be updated to say "Enable RMPOPT optimizations for up
-to 2TB worth of system RAM at..."
-
-The current phrasing sounds like only addresses [0, 2TB) are allowed to
-be optimized, but actually any address [start, start + 2TB) can be
-optimized?
-
-> RMP initialization time. RMP checks can initially be skipped for 1GB
-> memory ranges that do not contain SEV-SNP guest memory (excluding
-
-Perhaps use pa_start instead of rax and op_type for rcx?
-
-> +{
-> +	bool optimized;
-
-And pa_start and op_type here too.
-
-> +	__rmpopt(rax, rcx);
-> +}
-
-I like the leader and follower comments below, thanks! With this
-leader/follower setup, will the followers definitely see the cached scan
-results, or might the followers still potentially not benefit from the
-caching? If it's still only "potentially", why?
-
-> +	 * followers to use the "cached" scan results to avoid repeating
-> +	 * full scans.
-
-Instead of reusing the global rmpopt_cpumask, why not make a copy of
-rmpopt_cpumask for this function? Then this function won't have to
-figure out current_cpu_cleared or restore rmpopt_cpumask at the end.
-
-I'm thinking to also drop the test and clear, this function can just
-always clear, like
-
-  cpumask_clear_cpu(smp_processor_id(), followers_cpumask);
-
-and later
-
-  on_each_cpu_mask(&followers_cpumask, ...);
-
-Actually, if for whatever reason cpumask_test_cpu(this_cpu,
-&rmpopt_cpumask) above returns false, would that mean somehow some cpu
-exists that wasn't enabled right when rmpopt was initialized? If yes,
-what happens if we call rmpopt() on a cpu where it wasn't initialized?
-
-> +	/* Leader: prime the RMPOPT cache on this CPU */
-> +	for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-
----
-
-## [17] Kalra, Ashish — 2026-05-28
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-Hello Boris and Dave,
-
-On 5/27/2026 7:43 PM, Borislav Petkov wrote:
-> On Wed, May 27, 2026 at 02:38:05PM -0700, Dave Hansen wrote:
->> This one is my doing.
-
-snp_setup_rmpopt() runs once during init and rmpopt_cleanup() runs once during shutdown. The batch IPI optimization
-is irrelevant here. This RMPOPT_BASE MSR setup/programming is not in a performance critical path.
-
-A simple loop would be perfectly fine and avoids the need for the wrmsrq_on_cpus() helper entirely:
-
-  for_each_cpu(cpu, &rmpopt_cpumask)
-      wrmsrq_on_cpu(cpu, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
-
-Calling wrmsrq_on_cpus() here for programming RMPOPT_BASE MSR:
-
--       wrmsrq_on_cpus(&rmpopt_cpumask, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
-+       for_each_cpu(cpu, &rmpopt_cpumask)
-+               wrmsrq_on_cpu(cpu, MSR_AMD64_RMPOPT_BASE, rmpopt_base);
-
-So i will drop this helper patch.
-
-Thanks,
-Ashish
-
-> 
-> Thx.
-
----
-
-## [18] Dave Hansen — 2026-05-28
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On 5/28/26 12:37, Kalra, Ashish wrote:
-> A simple loop would be perfectly fine and avoids the need for the wrmsrq_on_cpus() helper entirely:
-> 
-
-I'm glad we're on the same page finally. I just hope we can get to this
-point more quickly next time. I started off with exactly this
-suggestion, but someone chimed in to the thread and said it was "slower":
-
-> https://lore.kernel.org/lkml/6a50d050-f602-43fd-a44a-cecedd9823eb@amd.com/
-
----
-
-## [19] Kalra, Ashish — 2026-05-28
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-Hello Dave,
-
-On 5/28/2026 2:50 PM, Dave Hansen wrote:
-> On 5/28/26 12:37, Kalra, Ashish wrote:
->> A simple loop would be perfectly fine and avoids the need for the wrmsrq_on_cpus() helper entirely:
-
-Yes, actually i should have made it explicitly clear that we need to do it in
-parallel especially for issuing the RMPOPT instruction itself, as that is
-in a performance critical path (and for that we are using on_each_cpu_mask()).
-
-Thanks,
-Ashish
-
----
-
-## [20] Kalra, Ashish — 2026-05-28
-*Subject: Re: [PATCH v5 4/7] x86/sev: Add support to perform RMP optimizations
- asynchronously*
-
-Hello Ackerley,
-
-On 5/28/2026 9:45 AM, Ackerley Tng wrote:
-> Ashish Kalra <Ashish.Kalra@amd.com> writes:
-> 
-
-Yes, i will update it.
-
-> 
->> RMP initialization time. RMP checks can initially be skipped for 1GB
-
-I used these parameters to align with the RMPOPT specifications (rax and rcx)
-which i think makes more sense.
-
->> +{
->> +	bool optimized;
-
-I am verifying with the H/W architects if this is always going to be true or not,
-will the followers always benefit from the scan results cached by the leader (first CPU)
-or there is a possibility that the followers cannot see/access/get the cached results
-and instead do full RMP scanning ?
-
-> 
->> +	 * followers to use the "cached" scan results to avoid repeating
-
-That's surely a much cleaner approach. Instead of modifying global
-rmpopt_cpumask and using a local copy:
-
-  cpumask_var_t follower_mask;
-  alloc_cpumask_var(&follower_mask, GFP_KERNEL);
-  cpumask_copy(follower_mask, &rmpopt_cpumask);
-
-  migrate_disable();
-  this_cpu = smp_processor_id();
-  cpumask_clear_cpu(this_cpu, follower_mask);  // modify local only
-
-  // leader loop on this_cpu...
-  migrate_enable();
-
-  // follower loop with follower_mask...
-  on_each_cpu_mask(follower_mask, rmpopt_smp, ...);
-
-  free_cpumask_var(follower_mask);
-
-This eliminates:
-- current_cpu_cleared variable
-- The restore at the end
-  
-Additionally, the global rmpopt_cpumask is never modified, so no concurrency concerns with debugfs or other readers.
-
-> 
-> Actually, if for whatever reason cpumask_test_cpu(this_cpu,
-
-The work handler can always execute on a cpu which is not in the rmpopt_cpumask, so i believe the
-cpumask_test_cpu() needs to be there.
-
-The leader loop must only run on a CPU that has RMPOPT_BASE MSR programmed. If the WQ_UNBOUND scheduler puts the
-handler on a CPU not in rmpopt_cpumask, that CPU's core never had RMPOPT enabled -> RMPOPT instruction causes #UD.
-
-  So the leader should be conditional:
-
-  cpumask_copy(follower_mask, &rmpopt_cpumask);
-
-  migrate_disable();
-  this_cpu = smp_processor_id();
-
-  if (cpumask_test_cpu(this_cpu, follower_mask)) {
-      cpumask_clear_cpu(this_cpu, follower_mask);
-
-      /* Leader: prime the RMPOPT cache on this CPU */
-      for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-          rmpopt(pa);
-  }
-
-  migrate_enable();
-
-  /* Followers: run RMPOPT on remaining cores */
-  cpus_read_lock();
-  for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G) {
-      on_each_cpu_mask(follower_mask, rmpopt_smp, (void *)pa, true);
-      cond_resched();
-  }
-  cpus_read_unlock();
-
-If the current CPU isn't in rmpopt_cpumask, the leader is skipped and all cores run as followers — they lose the caching
-optimization from a leader priming pass, but correctness is maintained.
-
-Alternatively, i could pick the first CPU from rmpopt_cpumask as the explicit leader instead of relying on whichever CPU the
-scheduler chose.
-
- 	cpumask_copy(follower_mask, &rmpopt_cpumask);
-
-        migrate_disable();
-        this_cpu = smp_processor_id();
-
-        if (cpumask_test_cpu(this_cpu, follower_mask)) {
-                /* Fast path: leader runs locally, no IPIs */
-                cpumask_clear_cpu(this_cpu, follower_mask);
-
-                for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-                        rmpopt(pa);
-        } else {
-                /*
-                 * Current CPU does not have RMPOPT_BASE MSR programmed.
-                 * Pick an explicit leader from the cpumask to avoid #UD.
-                 */
-                int leader_cpu = cpumask_first(follower_mask);
-
-                cpumask_clear_cpu(leader_cpu, follower_mask);
-
-                for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-                        smp_call_function_single(leader_cpu, rmpopt_smp,
-                                                 (void *)pa, true);
-        }
-
-        migrate_enable();
-
-        /* Followers: run RMPOPT on remaining cores */
-        cpus_read_lock();
-        for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G) {
-                on_each_cpu_mask(follower_mask, rmpopt_smp,
-                                 (void *)pa, true);
-
-                /* Give a chance for other threads to run */
-                cond_resched();
-        }
-        cpus_read_unlock();
-
-        free_cpumask_var(follower_mask);
-  }
-
-> If yes, what happens if we call rmpopt() on a cpu where it wasn't initialized?
-
-That will cause a #UD exception, if RMPOPT instruction is issued on 
-a CPU where RMPOPT is not enabled (RMPOPT_BASE.RMPOPT_EN==0), so
-it is essential to issue RMPOPT instruction only on the cpumask (covers both
-primary and secondary threads) which was setup initially when rmpopt was
-initialized and on which the RMPOPT_BASE MSR was setup and RMPOPT enabled.
-
-I believe, there are actually three cases to be considered here: 
-
-  1. Current CPU is in rmpopt_cpumask -> primary thread, run leader locally, remove from followers
-  2. Current CPU's sibling is in rmpopt_cpumask -> sibling thread, RMPOPT_BASE per-core is programmed, run leader locally, 
-     remove the sibling's primary from the follower mask
-  3. Neither -> new/unknown CPU, RMPOPT_BASE never programmed on this core, fall back to explicit leader via IPI.
-
-So this seems to the *correct* implementation of the RMPOPT loop: 
-
-   	cpumask_copy(follower_mask, &rmpopt_cpumask);
-
-        migrate_disable();
-        this_cpu = smp_processor_id();
-
-        if (cpumask_test_cpu(this_cpu, follower_mask)) {
-                /*
-                 * Current CPU is a primary thread in rmpopt_cpumask.
-                 * Run leader locally and remove from follower mask.
-                 */
-                cpumask_clear_cpu(this_cpu, follower_mask);
-
-                for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-                        rmpopt(pa);
-        } else if (cpumask_intersects(topology_sibling_cpumask(this_cpu),
-                                      follower_mask)) {
-                /*
-                 * Current CPU is a sibling thread whose primary is in
-                 * rmpopt_cpumask.  RMPOPT_BASE MSR is per-core, so it
-                 * is safe to run the leader locally.  Remove the sibling's
-                 * primary from the follower mask as this core is already
-                 * covered by the leader.
-                 */
-                cpumask_andnot(follower_mask, follower_mask,
-                               topology_sibling_cpumask(this_cpu));
-
-                for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-                        rmpopt(pa);
-        } else {
-                /*
-                 * Current CPU's core does not have RMPOPT_BASE MSR
-                 * programmed.  Pick an explicit leader from the cpumask
-                 * to avoid #UD.
-                 */
-                int leader_cpu = cpumask_first(follower_mask);
-
-                cpumask_clear_cpu(leader_cpu, follower_mask);
-
-                for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G)
-                        smp_call_function_single(leader_cpu, rmpopt_smp,
-                                                 (void *)pa, true);
-        }
-
-        migrate_enable();
-
-        /* Followers: run RMPOPT on remaining cores */
-        cpus_read_lock();
-        for (pa = rmpopt_pa_start; pa < rmpopt_pa_end; pa += SZ_1G) {
-                on_each_cpu_mask(follower_mask, rmpopt_smp,
-                                 (void *)pa, true);
-
-                /* Give a chance for other threads to run */
-                cond_resched();
-        }
-        cpus_read_unlock();
-
-        free_cpumask_var(follower_mask);
-  }
-
-Thanks,
-Ashish
-
-> 
->> +	/* Leader: prime the RMPOPT cache on this CPU */
-
----
-
-## [21] Borislav Petkov — 2026-05-28
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On Thu, May 28, 2026 at 02:55:44PM -0500, Kalra, Ashish wrote:
-> Hello Dave,
-> 
-
-So which is it? Do we need the wrmsrq_on_cpus() helper or not?
-
-I'm confused.
-
----
-
-## [22] Kalra, Ashish — 2026-05-28
-*Subject: Re: [PATCH v5 2/7] x86/msr: add wrmsrq_on_cpus helper*
-
-On 5/28/2026 7:26 PM, Borislav Petkov wrote:
-> On Thu, May 28, 2026 at 02:55:44PM -0500, Kalra, Ashish wrote:
->> Hello Dave,
-
-No, we don't need it, i will drop this helper function patch.
-
-Thanks,
-Ashish
-
----
-
-## [23] Kalra, Ashish — 2026-06-01
-*Subject: Re: [PATCH v5 4/7] x86/sev: Add support to perform RMP optimizations
- asynchronously*
-
-On 5/28/2026 6:52 PM, Kalra, Ashish wrote:
-> Hello Ackerley,
-
->>> +	/*
->>> +	 * RMPOPT scans the RMP table, stores the result of the scan in the
-
-Following up on this, i have checked with the H/W architects, and the feedback is that
-the: followers are "designed to" skip the scan if they see a cached result.
-
-Thanks,
-Ashish
 
 ---

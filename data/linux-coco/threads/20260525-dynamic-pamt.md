@@ -1,9 +1,9 @@
 ---
 title: 'Dynamic PAMT'
 date: 2026-05-25
-last_reply: 2026-05-26
-message_count: 14
-participants: ['Rick Edgecombe', 'Chao Gao']
+last_reply: 2026-06-05
+message_count: 23
+participants: ['Rick Edgecombe', 'Chao Gao', 'Kiryl Shutsemau', 'Dave Hansen']
 ---
 
 ## [1] Rick Edgecombe — 2026-05-25
@@ -2208,5 +2208,164 @@ On Tue, 2026-05-26 at 16:57 +0800, Chao Gao wrote:
 Yea, it's a good point. I actually debated doing it, but decided not to because
 the scoped version is cleaner for the non-optimized version. But for
 reviewability, never doing the scoped version is probably better.
+
+---
+
+## [15] Kiryl Shutsemau — 2026-06-04
+*Subject: Re: [PATCH v6 01/11] x86/virt/tdx: Simplify tdmr_get_pamt_sz()*
+
+On Mon, May 25, 2026 at 07:35:05PM -0700, Rick Edgecombe wrote:
+> For each memory region that the TDX module might use (called TDMR), three
+> separate traditional PAMT allocations are needed. One for each supported
+
+Reviewed-by: Kiryl Shutsemau (Meta) <kas@kernel.org>
+
+Couple of nits below.
+
+> ---
+> v6:
+
+Add a newline here?
+
+>  	nid = tdmr_get_nid(tdmr, tmb_list);
+>  
+
+Looks like unrelated whitespace change. Is it intentional?
+
+> +	/*
+> +	 * tdmr->pamt_4k_base is still zero so the error
+
+---
+
+## [16] Kiryl Shutsemau — 2026-06-04
+*Subject: Re: [PATCH v6 02/11] x86/virt/tdx: Allocate page bitmap for Dynamic
+ PAMT*
+
+On Mon, May 25, 2026 at 07:35:06PM -0700, Rick Edgecombe wrote:
+> @@ -579,7 +591,12 @@ static __init int tdmr_set_up_pamt(struct tdmr_info *tdmr,
+>  	 * Calculate the PAMT size for each TDX supported page size
+
+Maybe it would more readable if we reverse the size order:
+
+	/*
+	 * Calculate the PAMT size for each TDX supported page size
+	 * and the total PAMT size.
+	 */
+  	tdmr->pamt_1g_size = tdmr_get_pamt_sz(tdmr, TDX_PS_1G);
+  	tdmr->pamt_2m_size = tdmr_get_pamt_sz(tdmr, TDX_PS_2M);
+
+	if (tdx_supports_dynamic_pamt(&tdx_sysinfo)) {
+		/* With Dynamic PAMT, PAMT_4K is replaced with a bitmap */
+		tdmr->pamt_4k_size = tdmr_get_pamt_bitmap_sz(tdmr);
+	} else {
+		tdmr->pamt_4k_size = tdmr_get_pamt_sz(tdmr, TDX_PS_4K);
+	}
+
+  	tdmr_pamt_size = tdmr->pamt_1g_size + tdmr->pamt_2m_size + tdmr->pamt_4k_size;
+
+It allows split it into logical blocks while keeping the comment attached.
+
+---
+
+## [17] Kiryl Shutsemau — 2026-06-04
+*Subject: Re: [PATCH v6 06/11] x86/virt/tdx: Optimize tdx_pamt_get/put()*
+
+On Tue, May 26, 2026 at 04:42:24PM +0000, Edgecombe, Rick P wrote:
+> On Tue, 2026-05-26 at 16:57 +0800, Chao Gao wrote:
+> > > -	scoped_guard(spinlock, &pamt_lock) {
+
+I don't see a reason why we can't keep the scoped_guard() on get side.
+
+On put side, we cannot get atomic_get_and_lock() semantics without
+dropping the scoped_guard().
+
+Maybe we should keep it for get?
+
+---
+
+## [18] Kiryl Shutsemau — 2026-06-04
+*Subject: Re: [PATCH v6 08/11] x86/tdx: Add APIs to support Dynamic PAMT ops
+ from KVM's fault path*
+
+On Mon, May 25, 2026 at 07:35:12PM -0700, Rick Edgecombe wrote:
+> When handling an EPT violation, KVM holds a spinlock while manipulating
+> the EPT. Before entering the spinlock it doesn't know how many EPT page
+
+Reviewed-by: Kiryl Shutsemau (Meta) <kas@kernel.org>
+
+---
+
+## [19] Kiryl Shutsemau — 2026-06-04
+*Subject: Re: [PATCH v6 10/11] x86/virt/tdx: Enable Dynamic PAMT*
+
+On Mon, May 25, 2026 at 07:35:14PM -0700, Rick Edgecombe wrote:
+> @@ -152,7 +156,12 @@ const struct tdx_sys_info *tdx_get_sysinfo(void);
+>  
+
+Should we warn for >48?
+
+---
+
+## [20] Chao Gao — 2026-06-05
+*Subject: Re: [PATCH v6 10/11] x86/virt/tdx: Enable Dynamic PAMT*
+
+On Thu, Jun 04, 2026 at 06:14:17PM +0100, Kiryl Shutsemau wrote:
+>On Mon, May 25, 2026 at 07:35:14PM -0700, Rick Edgecombe wrote:
+>> @@ -152,7 +156,12 @@ const struct tdx_sys_info *tdx_get_sysinfo(void);
+
+Maybe we should drop this check. If the TDX module cannot handle that case,
+advertising TDX_FEATURES0_DYNAMIC_PAMT is a bug and should be fixed by the
+module.
+
+---
+
+## [21] Chao Gao — 2026-06-05
+*Subject: Re: [PATCH v6 06/11] x86/virt/tdx: Optimize tdx_pamt_get/put()*
+
+On Thu, Jun 04, 2026 at 05:59:02PM +0100, Kiryl Shutsemau wrote:
+>On Tue, May 26, 2026 at 04:42:24PM +0000, Edgecombe, Rick P wrote:
+>> On Tue, 2026-05-26 at 16:57 +0800, Chao Gao wrote:
+
+One additional reason to drop scoped_guard() is that it mixes cleanup helpers
+with goto, which is discouraged. See [*]
+
+ :Lastly, given that the benefit of cleanup helpers is removal of “goto”, and
+ :that the “goto” statement can jump between scopes, the expectation is that
+ :usage of “goto” and cleanup helpers is never mixed in the same function.
+
+Removing scoped_guard() here also reduces indentation.
+
+*: https://www.kernel.org/doc/html/v7.1-rc6/core-api/cleanup.html
+
+>
+>On put side, we cannot get atomic_get_and_lock() semantics without
+
+---
+
+## [22] Kiryl Shutsemau — 2026-06-05
+*Subject: Re: [PATCH v6 06/11] x86/virt/tdx: Optimize tdx_pamt_get/put()*
+
+On Fri, Jun 05, 2026 at 01:40:25PM +0800, Chao Gao wrote:
+> On Thu, Jun 04, 2026 at 05:59:02PM +0100, Kiryl Shutsemau wrote:
+> >On Tue, May 26, 2026 at 04:42:24PM +0000, Edgecombe, Rick P wrote:
+
+Fair enough.
+
+But it can also be address if we free the PAMT page array with the guard
+too :P
+
+---
+
+## [23] Dave Hansen — 2026-06-05
+*Subject: Re: [PATCH v6 06/11] x86/virt/tdx: Optimize tdx_pamt_get/put()*
+
+On 6/5/26 04:42, Kiryl Shutsemau wrote:
+>>> I don't see a reason why we can't keep the scoped_guard() on get side.
+>> One additional reason to drop scoped_guard() is that it mixes cleanup helpers
+
+How important is this patch? I see "Optimize" but I read "Optional".
+
+If we're arguing about it, maybe we should just kick it out and focus on
+the more important bits.
 
 ---

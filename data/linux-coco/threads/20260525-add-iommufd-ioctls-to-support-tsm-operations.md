@@ -1,8 +1,8 @@
 ---
 title: 'Add iommufd ioctls to support TSM operations'
 date: 2026-05-25
-last_reply: 2026-05-27
-message_count: 14
+last_reply: 2026-06-02
+message_count: 16
 participants: ['Aneesh Kumar K.V (Arm)', 'Anthony Krowiak', 'Alexey Kardashevskiy', 'Dan Williams (nvidia)', 'Tian, Kevin', 'Jason Gunthorpe']
 ---
 
@@ -1610,5 +1610,481 @@ requests.
 
 I think we can wait to move it to its own IOMMU operation unless/until
 there is a need to set RUN outside of an explicit guest request, right?
+
+---
+
+## [15] Aneesh Kumar K.V — 2026-06-02
+*Subject: Re: [PATCH v5 5/5] iommufd/vdevice: add TSM request ioctl*
+
+"Dan Williams (nvidia)" <djbw@kernel.org> writes:
+
+> Aneesh Kumar K.V wrote:
+>> >> I am leaning towards the latter at this point.
+
+Something like the below? (the diff against this series)
+
+I have not yet integrated this into the full CCA patchset for testing,
+but I wanted to make sure we are aligned on the UAPI.
+
+diff --git a/drivers/iommu/iommufd/tsm.c b/drivers/iommu/iommufd/tsm.c
+index 56bb499ba7a9..345efba2e66e 100644
+--- a/drivers/iommu/iommufd/tsm.c
++++ b/drivers/iommu/iommufd/tsm.c
+@@ -61,17 +61,30 @@ int iommufd_vdevice_tsm_op_ioctl(struct iommufd_ucmd *ucmd)
+ 	return ret;
+ }
+ 
+-static bool iommufd_vdevice_tsm_req_scope_valid(u32 scope)
++static bool iommufd_vdevice_tsm_req_arch_valid(u32 tvm_arch)
+ {
+-	if (scope > IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_LAST)
++	switch (tvm_arch) {
++	case IOMMU_VDEVICE_TSM_TVM_ARCH_CCA:
++	case IOMMU_VDEVICE_TSM_TVM_ARCH_SEV:
++	case IOMMU_VDEVICE_TSM_TVM_ARCH_TDX:
++		return true;
++	default:
+ 		return false;
++	}
++}
+ 
+-	switch (scope) {
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_INFO:
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_STATE_CHANGE:
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_READ:
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_WRITE:
++static bool iommufd_vdevice_tsm_req_op_valid(u32 op, u32 tvm_arch)
++{
++	switch (op) {
++	case TSM_REQ_READ_OBJECT:
++	case TSM_REQ_REGEN_OBJECT:
++	case TSM_REQ_OBJECT_INFO:
++	case TSM_REQ_VALIDATE_MMIO:
++	case TSM_REQ_SET_TDI_STATE:
+ 		return true;
++	case TSM_REQ_SEV_ENABLE_DMA:
++	case TSM_REQ_SEV_DISABLE_DMA:
++		return tvm_arch == IOMMU_VDEVICE_TSM_TVM_ARCH_SEV;
+ 	default:
+ 		return false;
+ 	}
+@@ -99,7 +112,8 @@ int iommufd_vdevice_tsm_req_ioctl(struct iommufd_ucmd *ucmd)
+ 	struct iommufd_vdevice *vdev;
+ 	struct iommu_vdevice_tsm_req *cmd = ucmd->cmd;
+ 	struct tsm_guest_req_info info = {
+-		.scope = cmd->scope,
++		.op = cmd->op,
++		.tvm_arch = cmd->tvm_arch,
+ 		.req   = {
+ 			.user = u64_to_user_ptr(cmd->req_uptr),
+ 			.is_kernel = false,
+@@ -112,10 +126,10 @@ int iommufd_vdevice_tsm_req_ioctl(struct iommufd_ucmd *ucmd)
+ 		.resp_len = cmd->resp_len,
+ 	};
+ 
+-	if (cmd->__reserved)
+-		return -EOPNOTSUPP;
++	if (!iommufd_vdevice_tsm_req_arch_valid(cmd->tvm_arch))
++		return -EINVAL;
+ 
+-	if (!iommufd_vdevice_tsm_req_scope_valid(cmd->scope))
++	if (!iommufd_vdevice_tsm_req_op_valid(cmd->op, cmd->tvm_arch))
+ 		return -EINVAL;
+ 
+ 	vdev = iommufd_get_vdevice(ucmd->ictx, cmd->vdevice_id);
+diff --git a/drivers/pci/tsm.c b/drivers/pci/tsm.c
+index 5fdcd7f2e820..439241c756fd 100644
+--- a/drivers/pci/tsm.c
++++ b/drivers/pci/tsm.c
+@@ -378,7 +378,8 @@ EXPORT_SYMBOL_GPL(pci_tsm_bind);
+ /**
+  * pci_tsm_guest_req() - helper to marshal guest requests to the TSM driver
+  * @pdev: @pdev representing a bound tdi
+- * @scope: caller asserts this passthrough request is limited to TDISP operations
++ * @op: guest-initiated request operation
++ * @tvm_arch: guest TVM architecture
+  * @req_in: Input payload forwarded from the guest
+  * @in_len: Length of @req_in
+  * @req_out: Output payload buffer response to the guest
+@@ -387,7 +388,7 @@ EXPORT_SYMBOL_GPL(pci_tsm_bind);
+  *
+  * This is a common entry point for requests triggered by userspace KVM-exit
+  * service handlers responding to TDI information or state change requests. The
+- * scope parameter limits requests to TDISP state management, or limited debug.
++ * operation parameter limits requests to guest-initiated TSM operations.
+  * This path is only suitable for commands and results that are the host kernel
+  * has no use, the host is only facilitating guest to TSM communication.
+  *
+@@ -400,7 +401,9 @@ EXPORT_SYMBOL_GPL(pci_tsm_bind);
+  * Context: Caller is responsible for calling this within the pci_tsm_bind()
+  * state of the TDI.
+  */
+-ssize_t pci_tsm_guest_req(struct pci_dev *pdev, enum pci_tsm_req_scope scope,
++ssize_t pci_tsm_guest_req(struct pci_dev *pdev,
++			  enum iommu_vdevice_tsm_guest_req_op op,
++			  enum iommu_vdevice_tsm_guest_tvm_arch tvm_arch,
+ 			  sockptr_t req_in, size_t in_len, sockptr_t req_out,
+ 			  size_t out_len, u64 *tsm_code)
+ {
+@@ -408,9 +411,30 @@ ssize_t pci_tsm_guest_req(struct pci_dev *pdev, enum pci_tsm_req_scope scope,
+ 	struct pci_tdi *tdi;
+ 	int rc;
+ 
+-	/* Forbid requests that are not directly related to TDISP operations */
+-	if (scope > PCI_TSM_REQ_STATE_CHANGE)
++	switch (tvm_arch) {
++	case IOMMU_VDEVICE_TSM_TVM_ARCH_CCA:
++	case IOMMU_VDEVICE_TSM_TVM_ARCH_SEV:
++	case IOMMU_VDEVICE_TSM_TVM_ARCH_TDX:
++		break;
++	default:
+ 		return -EINVAL;
++	}
++
++	switch (op) {
++	case TSM_REQ_READ_OBJECT:
++	case TSM_REQ_REGEN_OBJECT:
++	case TSM_REQ_OBJECT_INFO:
++	case TSM_REQ_VALIDATE_MMIO:
++	case TSM_REQ_SET_TDI_STATE:
++		break;
++	case TSM_REQ_SEV_ENABLE_DMA:
++	case TSM_REQ_SEV_DISABLE_DMA:
++		if (tvm_arch == IOMMU_VDEVICE_TSM_TVM_ARCH_SEV)
++			break;
++		fallthrough;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	ACQUIRE(rwsem_read_intr, lock)(&pci_tsm_rwsem);
+ 	if ((rc = ACQUIRE_ERR(rwsem_read_intr, &lock)))
+@@ -430,8 +454,9 @@ ssize_t pci_tsm_guest_req(struct pci_dev *pdev, enum pci_tsm_req_scope scope,
+ 	tdi = pdev->tsm->tdi;
+ 	if (!tdi)
+ 		return -ENXIO;
+-	return to_pci_tsm_ops(pdev->tsm)->guest_req(tdi, scope, req_in, in_len,
+-						    req_out, out_len, tsm_code);
++	return to_pci_tsm_ops(pdev->tsm)->guest_req(tdi, op, tvm_arch, req_in,
++						    in_len, req_out, out_len,
++						    tsm_code);
+ }
+ EXPORT_SYMBOL_GPL(pci_tsm_guest_req);
+ 
+diff --git a/drivers/virt/coco/tsm-core.c b/drivers/virt/coco/tsm-core.c
+index ce01b19990f5..88cb168d8120 100644
+--- a/drivers/virt/coco/tsm-core.c
++++ b/drivers/virt/coco/tsm-core.c
+@@ -128,42 +128,15 @@ int tsm_unbind(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(tsm_unbind);
+ 
+-static int tsm_pci_req_scope(u32 scope, enum pci_tsm_req_scope *pci_scope)
+-{
+-	switch (scope) {
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_INFO:
+-		*pci_scope = PCI_TSM_REQ_INFO;
+-		return 0;
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_STATE_CHANGE:
+-		*pci_scope = PCI_TSM_REQ_STATE_CHANGE;
+-		return 0;
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_READ:
+-		*pci_scope = PCI_TSM_REQ_DEBUG_READ;
+-		return 0;
+-	case IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_WRITE:
+-		*pci_scope = PCI_TSM_REQ_DEBUG_WRITE;
+-		return 0;
+-	default:
+-		return -EINVAL;
+-	}
+-}
+-
+ ssize_t tsm_guest_req(struct device *dev,
+ 		struct tsm_guest_req_info *info, u64 *tsm_code)
+ {
+-	int ret;
+-	enum pci_tsm_req_scope pci_scope;
+-
+ 	if (!dev_is_pci(dev))
+ 		return -EINVAL;
+ 
+-	ret = tsm_pci_req_scope(info->scope, &pci_scope);
+-	if (ret)
+-		return ret;
+-
+-	return pci_tsm_guest_req(to_pci_dev(dev), pci_scope, info->req,
+-				 info->req_len, info->resp, info->resp_len,
+-				 tsm_code);
++	return pci_tsm_guest_req(to_pci_dev(dev), info->op, info->tvm_arch,
++				 info->req, info->req_len, info->resp,
++				 info->resp_len, tsm_code);
+ }
+ EXPORT_SYMBOL_GPL(tsm_guest_req);
+ 
+diff --git a/include/linux/pci-tsm.h b/include/linux/pci-tsm.h
+index ec2236a7a279..30a60551fcf5 100644
+--- a/include/linux/pci-tsm.h
++++ b/include/linux/pci-tsm.h
+@@ -9,7 +9,6 @@
+ struct pci_tsm;
+ struct tsm_dev;
+ struct kvm;
+-enum pci_tsm_req_scope;
+ 
+ /*
+  * struct pci_tsm_ops - manage confidential links and security state
+@@ -55,7 +54,8 @@ struct pci_tsm_ops {
+ 					struct kvm *kvm, u32 tdi_id);
+ 		void (*unbind)(struct pci_tdi *tdi);
+ 		ssize_t (*guest_req)(struct pci_tdi *tdi,
+-				     enum pci_tsm_req_scope scope,
++				     enum iommu_vdevice_tsm_guest_req_op op,
++				     enum iommu_vdevice_tsm_guest_tvm_arch tvm_arch,
+ 				     sockptr_t req_in, size_t in_len,
+ 				     sockptr_t req_out, size_t out_len,
+ 				     u64 *tsm_code);
+@@ -160,46 +160,6 @@ static inline bool is_pci_tsm_pf0(struct pci_dev *pdev)
+ 	return PCI_FUNC(pdev->devfn) == 0;
+ }
+ 
+-/**
+- * enum pci_tsm_req_scope - Scope of guest requests to be validated by TSM
+- *
+- * Guest requests are a transport for a TVM to communicate with a TSM + DSM for
+- * a given TDI. A TSM driver is responsible for maintaining the kernel security
+- * model and limit commands that may affect the host, or are otherwise outside
+- * the typical TDISP operational model.
+- */
+-enum pci_tsm_req_scope {
+-	/**
+-	 * @PCI_TSM_REQ_INFO: Read-only, without side effects, request for
+-	 * typical TDISP collateral information like Device Interface Reports.
+-	 * No device secrets are permitted, and no device state is changed.
+-	 */
+-	PCI_TSM_REQ_INFO = IOMMU_VDEVICE_TSM_REQ_PCI_INFO,
+-	/**
+-	 * @PCI_TSM_REQ_STATE_CHANGE: Request to change the TDISP state from
+-	 * UNLOCKED->LOCKED, LOCKED->RUN, or other architecture specific state
+-	 * changes to support those transitions for a TDI. No other (unrelated
+-	 * to TDISP) device / host state, configuration, or data change is
+-	 * permitted.
+-	 */
+-	PCI_TSM_REQ_STATE_CHANGE = IOMMU_VDEVICE_TSM_REQ_PCI_STATE_CHANGE,
+-	/**
+-	 * @PCI_TSM_REQ_DEBUG_READ: Read-only request for debug information
+-	 *
+-	 * A method to facilitate TVM information retrieval outside of typical
+-	 * TDISP operational requirements. No device secrets are permitted.
+-	 */
+-	PCI_TSM_REQ_DEBUG_READ = IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_READ,
+-	/**
+-	 * @PCI_TSM_REQ_DEBUG_WRITE: Device state changes for debug purposes
+-	 *
+-	 * The request may affect the operational state of the device outside of
+-	 * the TDISP operational model. If allowed, requires CAP_SYS_RAW_IO, and
+-	 * will taint the kernel.
+-	 */
+-	PCI_TSM_REQ_DEBUG_WRITE = IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_WRITE,
+-};
+-
+ #ifdef CONFIG_PCI_TSM
+ int pci_tsm_register(struct tsm_dev *tsm_dev);
+ void pci_tsm_unregister(struct tsm_dev *tsm_dev);
+@@ -214,7 +174,9 @@ int pci_tsm_bind(struct pci_dev *pdev, struct kvm *kvm, u32 tdi_id);
+ void pci_tsm_unbind(struct pci_dev *pdev);
+ void pci_tsm_tdi_constructor(struct pci_dev *pdev, struct pci_tdi *tdi,
+ 			     struct kvm *kvm, u32 tdi_id);
+-ssize_t pci_tsm_guest_req(struct pci_dev *pdev, enum pci_tsm_req_scope scope,
++ssize_t pci_tsm_guest_req(struct pci_dev *pdev,
++			  enum iommu_vdevice_tsm_guest_req_op op,
++			  enum iommu_vdevice_tsm_guest_tvm_arch tvm_arch,
+ 			  sockptr_t req_in, size_t in_len, sockptr_t req_out,
+ 			  size_t out_len, u64 *tsm_code);
+ #else
+@@ -233,7 +195,8 @@ static inline void pci_tsm_unbind(struct pci_dev *pdev)
+ {
+ }
+ static inline ssize_t pci_tsm_guest_req(struct pci_dev *pdev,
+-					enum pci_tsm_req_scope scope,
++					enum iommu_vdevice_tsm_guest_req_op op,
++					enum iommu_vdevice_tsm_guest_tvm_arch tvm_arch,
+ 					sockptr_t req_in, size_t in_len,
+ 					sockptr_t req_out, size_t out_len,
+ 					u64 *tsm_code)
+diff --git a/include/linux/tsm.h b/include/linux/tsm.h
+index b83b72bbf5e3..cba0ada5f4cb 100644
+--- a/include/linux/tsm.h
++++ b/include/linux/tsm.h
+@@ -7,6 +7,7 @@
+ #include <linux/uuid.h>
+ #include <linux/device.h>
+ #include <linux/sockptr.h>
++#include <uapi/linux/iommufd.h>
+ 
+ #define TSM_REPORT_INBLOB_MAX 64
+ #define TSM_REPORT_OUTBLOB_MAX SZ_16M
+@@ -132,14 +133,16 @@ int tsm_unbind(struct device *dev);
+ 
+ /**
+  * struct tsm_guest_req_info - parameter for tsm_guest_req()
+- * @scope: iommufd allocated scope for tsm guest request
++ * @op: operation for the guest-initiated request
++ * @tvm_arch: guest TVM architecture
+  * @req: request data buffer filled by guest
+  * @req_len: the size of @req filled by guest
+  * @resp: response data buffer filled by host
+  * @resp_len: the size of @resp buffer filled by guest
+  */
+ struct tsm_guest_req_info {
+-	u32 scope;
++	enum iommu_vdevice_tsm_guest_req_op op;
++	enum iommu_vdevice_tsm_guest_tvm_arch tvm_arch;
+ 	sockptr_t req;
+ 	size_t req_len;
+ 	sockptr_t resp;
+diff --git a/include/uapi/linux/iommufd.h b/include/uapi/linux/iommufd.h
+index 70c2927c18bc..0789a705bb07 100644
+--- a/include/uapi/linux/iommufd.h
++++ b/include/uapi/linux/iommufd.h
+@@ -1375,54 +1375,46 @@ struct iommu_hw_queue_alloc {
+ };
+ #define IOMMU_HW_QUEUE_ALLOC _IO(IOMMUFD_TYPE, IOMMUFD_CMD_HW_QUEUE_ALLOC)
+ 
+-/*
+- * TSM request scope values are allocated by iommufd. Each device-bus transport
+- * gets a range from this number space.
++/**
++ * enum iommu_vdevice_tsm_guest_tvm_arch - guest TVM architecture
++ * @IOMMU_VDEVICE_TSM_TVM_ARCH_CCA: Arm CCA TVM
++ * @IOMMU_VDEVICE_TSM_TVM_ARCH_SEV: AMD SEV TVM
++ * @IOMMU_VDEVICE_TSM_TVM_ARCH_TDX: Intel TDX TVM
+  */
+-#define IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_BASE	0
++enum iommu_vdevice_tsm_guest_tvm_arch {
++	IOMMU_VDEVICE_TSM_TVM_ARCH_CCA = 1,
++	IOMMU_VDEVICE_TSM_TVM_ARCH_SEV,
++	IOMMU_VDEVICE_TSM_TVM_ARCH_TDX,
++};
+ 
+-enum iommu_vdevice_tsm_req_scope {
+-	/*
+-	 * Read-only, without side effects, request for typical TDISP
+-	 * collateral information like Device Interface Reports. No device
+-	 * secrets are permitted, and no device state is changed.
+-	 */
+-	IOMMU_VDEVICE_TSM_REQ_PCI_INFO =
+-		IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_BASE,
+-	/*
+-	 * Request to change the TDISP state from UNLOCKED->LOCKED,
+-	 * LOCKED->RUN, or other architecture specific state changes to
+-	 * support those transitions for a TDI. No other device or host state,
+-	 * configuration, or data change is permitted.
+-	 */
+-	IOMMU_VDEVICE_TSM_REQ_PCI_STATE_CHANGE =
+-		IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_BASE + 1,
+-	/*
+-	 * Read-only request for debug information outside of typical TDISP
+-	 * operational requirements. No device secrets are permitted.
+-	 */
+-	IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_READ =
+-		IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_BASE + 2,
+-	/*
+-	 * Device state changes for debug purposes. The request may affect the
+-	 * operational state of the device outside of the TDISP operational
+-	 * model. If allowed, this requires CAP_SYS_RAW_IO and taints the
+-	 * kernel.
+-	 */
+-	IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_WRITE =
+-		IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_BASE + 3,
+-	IOMMU_VDEVICE_TSM_REQ_SCOPE_PCI_LAST =
+-		IOMMU_VDEVICE_TSM_REQ_PCI_DEBUG_WRITE,
++/**
++ * enum iommu_vdevice_tsm_guest_req_op - operation for guest TSM requests
++ * @TSM_REQ_READ_OBJECT: Read a TSM object
++ * @TSM_REQ_REGEN_OBJECT: Regenerate a TSM object
++ * @TSM_REQ_OBJECT_INFO: Read TSM object information
++ * @TSM_REQ_VALIDATE_MMIO: Validate MMIO for the TDI
++ * @TSM_REQ_SET_TDI_STATE: Set TDI state
++ * @TSM_REQ_SEV_ENABLE_DMA: Enable SEV DMA
++ * @TSM_REQ_SEV_DISABLE_DMA: Disable SEV DMA
++ */
++enum iommu_vdevice_tsm_guest_req_op {
++	TSM_REQ_READ_OBJECT = 1,
++	TSM_REQ_REGEN_OBJECT,
++	TSM_REQ_OBJECT_INFO,
++	TSM_REQ_VALIDATE_MMIO,
++	TSM_REQ_SET_TDI_STATE,
++	TSM_REQ_SEV_ENABLE_DMA,
++	TSM_REQ_SEV_DISABLE_DMA,
+ };
+ 
+ /**
+  * struct iommu_vdevice_tsm_req - ioctl(IOMMU_VDEVICE_TSM_REQ)
+  * @size: sizeof(struct iommu_vdevice_tsm_req)
+  * @vdevice_id: vDevice ID the guest request is for
+- * @scope: One of enum iommu_vdevice_tsm_req_scope
++ * @op: One of enum iommu_vdevice_tsm_guest_req_op
++ * @tvm_arch: One of enum iommu_vdevice_tsm_guest_tvm_arch
+  * @req_len: Size in bytes of the input payload at @req_uptr
+  * @resp_len: Size in bytes of the output buffer at @resp_uptr
+- * @__reserved: Must be 0
+  * @req_uptr: Userspace pointer to the guest-provided request payload
+  * @resp_uptr: Userspace pointer to the guest response buffer
+  * @tsm_code: TSM-specific result code returned by the TSM implementation
+@@ -1431,9 +1423,9 @@ enum iommu_vdevice_tsm_req_scope {
+  * guest TSM/TDISP message transport where the host kernel only marshals
+  * bytes between userspace and the TSM implementation.
+  *
+- * Requests outside the iommufd allocated scope values are rejected. Lower
+- * layers may reject scope values that are valid in the global iommufd
+- * namespace, but not permitted for a specific bus.
++ * The request operation is guest initiated. Operations that may also be host
++ * initiated are handled through IOMMU_VDEVICE_TSM_OP instead. The TSM backend
++ * validates @tvm_arch against its bound TVM architecture assumptions.
+  *
+  * The request payload is read from @req_uptr/@req_len. If a response is
+  * expected, userspace provides @resp_uptr/@resp_len as writable storage for
+@@ -1445,10 +1437,10 @@ enum iommu_vdevice_tsm_req_scope {
+ struct iommu_vdevice_tsm_req {
+ 	__u32 size;
+ 	__u32 vdevice_id;
+-	__u32 scope;
++	__u32 op;
++	__u32 tvm_arch;
+ 	__u32 req_len;
+ 	__u32 resp_len;
+-	__u32 __reserved;
+ 	__aligned_u64 req_uptr;
+ 	__aligned_u64 resp_uptr;
+ 	__aligned_u64 tsm_code;
+
+---
+
+## [16] Alexey Kardashevskiy — 2026-06-02
+*Subject: Re: [PATCH v5 5/5] iommufd/vdevice: add TSM request ioctl*
+
+On 27/5/26 16:17, Dan Williams (nvidia) wrote:
+> [You don't often get email from djbw@kernel.org. Learn why this is important at https://aka.ms/LearnAboutSenderIdentification ]
+> 
+
+These 3 are already in that netlink interface of the TSM (so common for all arches), right?
+
+> TSM_REQ_VALIDATE_MMIO
+
+SEV handles this in the KVM as this is where RMP and NPT are managed + opaque guest request to the TSM, I'd think it is the same for others.
+
+> TSM_REQ_SET_TDI_STATE
+
+This is a common one.
+
+> TSM_REQ_TYPE_SEV: Commands only SEV needs
+> TSM_REQ_SEV_ENABLE_DMA
+
+No change to host owned part of the IOMMU when TDX or CCA moves the device to secure? Or it is packed into those opaque requests to the TSM?
+
+> ...or just observe that per CC arch commands are needed to setup the VM
+> so per CC arch commands are needed to marshal device assignment support
+
+Dunno, besides the DMA thing, these CCA/SEV/TDX types will only appear in WARN_ON of the arch TSM drivers and will not really be seen. If a wrong TSM driver is loaded (say, TDX on AMD), then something just went terribly wrong. Thanks,
 
 ---

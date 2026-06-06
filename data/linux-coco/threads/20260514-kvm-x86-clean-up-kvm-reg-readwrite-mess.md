@@ -1,8 +1,8 @@
 ---
 title: 'KVM: x86: Clean up kvm_<reg>_{read,write}() mess'
 date: 2026-05-14
-last_reply: 2026-05-21
-message_count: 51
+last_reply: 2026-06-04
+message_count: 52
 participants: ['Sean Christopherson', 'Yosry Ahmed', 'Binbin Wu', 'David Woodhouse', 'Huang, Kai']
 ---
 
@@ -5051,5 +5051,25 @@ On Wed, May 20, 2026, Kai Huang wrote:
 > > On Wed, May 20, 2026, Kai Huang wrote:
 
 Oh, yes, the KVM-internal pieces of linuy/kvm_host.h would live in virt/kvm.
+
+---
+
+## [52] David Woodhouse — 2026-06-04
+*Subject: Re: [PATCH v2 03/15] KVM: x86/xen: Don't truncate RAX when handling
+ hypercall from protected guest*
+
+On Mon, 2026-05-18 at 17:55 +0800, Binbin Wu wrote:
+>  
+> > I'm suggesting that you clean up longmode→is_64bit for the *hypercalls*
+
+If you did this, I'm not sure I saw it? 
+
+In response to https://lore.kernel.org/all/aiHPPUk5DY7rH-zL@v4bel/#r I
+now find myself with both 'longmode' (current vCPU mode, should be
+called is_64bit), and 'long_mode' (latched VM-wide mode) in the *same*
+function.
+
+I cannot live with that; I'm going to do the longmode→is_64bit change
+locally.
 
 ---

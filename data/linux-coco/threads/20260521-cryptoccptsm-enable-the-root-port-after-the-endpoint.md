@@ -1,9 +1,9 @@
 ---
 title: 'crypto/ccp/tsm: Enable the root port after the endpoint'
 date: 2026-05-21
-last_reply: 2026-05-21
-message_count: 1
-participants: ['Alexey Kardashevskiy']
+last_reply: 2026-05-29
+message_count: 2
+participants: ['Alexey Kardashevskiy', 'Herbert Xu']
 ---
 
 ## [1] Alexey Kardashevskiy — 2026-05-21
@@ -51,5 +51,17 @@ index b07ae529b591..10549a2cc2ae 100644
  
  	return ret;
  }
+
+---
+
+## [2] Herbert Xu — 2026-05-29
+*Subject: Re: [PATCH kernel] crypto/ccp/tsm: Enable the root port after the
+ endpoint*
+
+On Thu, May 21, 2026 at 05:43:01PM +1000, Alexey Kardashevskiy wrote:
+> The PCIe r7.0, chapter "6.33.8 Other IDE Rules" mandates if selective IDE
+> is enabled for config requersts, a stream must be enabled on the endpoint
+
+Patch applied.  Thanks.
 
 ---

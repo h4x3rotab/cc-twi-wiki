@@ -1,9 +1,9 @@
 ---
 title: 'Enable TDX Module Extensions and DICE-based TDX Quoting'
 date: 2026-05-22
-last_reply: 2026-05-28
-message_count: 46
-participants: ['Xu Yilun', 'Tony Lindgren', 'Xiaoyao Li', 'Sohil Mehta', 'Kiryl Shutsemau']
+last_reply: 2026-06-05
+message_count: 61
+participants: ['Xu Yilun', 'Tony Lindgren', 'Xiaoyao Li', 'Sohil Mehta', 'Kiryl Shutsemau', 'Edgecombe, Rick P']
 ---
 
 ## [1] Xu Yilun — 2026-05-22
@@ -2649,5 +2649,415 @@ Yes I can drop the percentage, just state the amount in MB.
 > 
 
 Yes.
+
+---
+
+## [47] Sohil Mehta — 2026-05-28
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On 5/27/2026 9:52 PM, Xu Yilun wrote:
+
+> No the memory needed varies depends on the feature or the number of
+> features. But currently I see the total requirement is ~50MB.
+This is important consideration when defining the default policy. Could
+you please elaborate on how this will scale in the future?
+
+How are the memory requirements expected to grow with additional features?
+
+Let's say a future platform has a lot more features and needs
+significantly more memory. Wouldn't loading a legacy kernel with this
+default policy lead to excessive wastage?
+
+Maybe I am missing something obvious. The struct in patch 1,
+memory_pool_required_pages is u16. So, will the Extensions support never
+require more than 256MB?
+
+---
+
+## [48] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> +struct tdx_sys_info_ext {
+> +	u16 memory_pool_required_pages;
+
+> +	u8 ext_required;
+
+The docs say this is a bool.
+
+> +};
+> +
+
+---
+
+## [49] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+On Thu, 2026-05-28 at 12:25 +0800, Xu Yilun wrote:
+> > > 
+> > > If I read the TDX module base spec correctly, the amount of memory for
+
+Yea It is going to get confusing as to which metadata is populated at which
+step. And if anything updates it.
+
+I'm not sure we need to have all the metadata stored permanently. Some of the
+metadata is needed for KVM and someday TSM. But a lot of it is onetime internal
+use. There is some handiness in referring to a global var, but also those
+reference add confusion as to when it got populated.
+
+We only use ext_required, max_quote_size and memory_pool_required_pages each
+once. So why not just read them to the stack and leave them out of struct
+tdx_sys_info? Making it so there is not confusion of when it was read. And also
+saving a global var that is never used again is a bit wrong.
+
+How about for struct tdx_sys_info_ext read it to the stack in init_tdx_ext() and
+pass it into init_tdx_ext_features(). For max_quote_size read it where it is
+already read, but not into the global struct.
+
+Do you see a problem?
+
+---
+
+## [50] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> The detailed initialization flow for TDX Module Extensions has been
+> fully implemented.
+
+I'm not sure what this means exactly. Why "detailed". Is that important?
+
+>  Enable the flow after basic TDX Module
+> initialization.
+
+The Linux decision is whatever this patch turns out to be after community
+review. So for the patch log we just need to justify why it's a good idea, not
+not make an argument to defer to authority.
+
+> 
+> Note that the Extensions initialization flow will still not start if no
+
+Hmm, this patch reads like we are finally doing the initialization up until this
+point. Then it turns out we don't actually light up the new code yet... 
+
+A lot of this diff is adding __init to the function added in the earlier
+patches. Do we need to do this? Why not add them as __init in the original
+patches?
+
+
+I think we maybe want to say instead that we are setting up to enable extensions
+at TDX module init time, and do the explanation of why. Then without the __init
+stuff, the patch is just about the init time decision. Which seems about right
+sized.
+
+---
+
+## [51] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [RFC PATCH 05/15] x86/virt/tdx: Move tdx_tdr_pa() up in the file*
+
+On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Rick Edgecombe <rick.p.edgecombe@intel.com>
+
+---
+
+## [52] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Don't say "this patch" in tip logs. The patch is a temporary format, and some
+x86 maintainers hate the term in logs.
+
+>  does not include the opt-in portion of the initialization.
+> It mainly lays the groundwork for TDX Quoting support. Opt-in will be
+
+This could be imperative mood.
+
+> 
+> Signed-off-by: Peter Fang <peter.fang@intel.com>
+
+---
+
+## [53] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [RFC PATCH 07/15] x86/virt/tdx: Prepare Quote buffer during
+ extension bringup*
+
+On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Can this be put in common terms. This is going to mean nothing to someone
+reading this that doesn't already know the feature.
+
+>  Because the Quote buffer is shared with TDX guests,
+
+Why capitalize "Quote"?
+
+> prepare the required metadata during Quoting extension bringup.
+
+What does prepare the required metadata mean?
+
+How does it being shared with TDX guest suggest this? Just that TDX guests will
+need them? Is the reason just that only one is needed, so do it during global
+init? 
+
+> 
+> This mostly involves determining the physical addresses of the Quote
+
+Hmm, I think this should separate the type and variable declaration. It's not a
+common pattern. I don't think there is an official rule.
+
+> +
+>  typedef void (*sc_err_func_t)(u64 fn, u64 err, struct tdx_module_args *args);
+
+Just return ENOMEM here. vfree() doesn't do any work if passed NULL, but it's
+weird flow.
+
+> +	}
+> +
+
+Huh?
+
+> +	 * Only the last page needs to be filled. All the other pages will be
+> +	 * fully populated.
+
+What are the entries? And what is a -1 in u8? Or is it supposed to be u64?
+Please make this a lot clearer.
+
+> +
+> +	qbuf = vcalloc(nr_pages, PAGE_SIZE);
+
+Can you maybe just explain this format that you are building in like one
+sentence at the beginning of the function? "The quote buffer is passed to the
+tdx module in a format that like... (some common terms that have no TDX
+jargon)."
+
+> +			pfn = vmalloc_to_pfn(&qlist[i + 1]);
+> +			qlist[i] = PFN_PHYS(pfn);
+
+Do we need a vmalloc_to_pa() helper? Maybe put it in terms of tdx format. Like
+vmalloc_pfn_to_tdxpa() and keep it here? The tdx update stuff does this a bunch
+too.
+
+> +	qdata->hpa_list_pa = PFN_PHYS(pfn);
+> +
+
+It only returns -ENOMEM, so do we need the err var?
+
+> +}
+> +
+
+How come this patch gets error handling? Why is it needed now when it wasn't
+before?
+
+> +
+> +	nr_quote_pages = PAGE_ALIGN(tdx_sysinfo.quote.max_quote_size) /
+
+Err... what happens in ENOMEM scenario? NULL pointer later?
+
+>  }
+>
+
+---
+
+## [54] Edgecombe, Rick P — 2026-05-28
+*Subject: Re: [RFC PATCH 09/15] x86/virt/tdx: Add interface to generate a Quote*
+
+On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> +void *tdx_quote_generate(struct tdx_td *td, void *in_data, u32 in_data_len,
+> +			 u32 *quote_len)
+
+Do we really need this check? We can't trust the caller to pass the right size?
+
+> +
+> +	mutex_lock(&tdx_quote_lock);
+
+
+How do these various error conditions happen?
+
+> +		goto out;
+> +
+
+So at init time we allocate a vmalloc for the quote and pre-populate the
+hpa_list. Then we use it every time and copy the contents to a new vmalloc.
+Would it really be that hard to keep the hpa list allocation around, do a
+vmalloc here and update the pfn list. Then do get quote on that and pass back
+the vmalloc we just allocated? Just feels like global reuse way has extra pieces
+in it. Compared to the whole quoting operation, this vmalloc_to_pfn() loop is
+probably not very expensive.
+
+> +
+> +out:
+
+---
+
+## [55] Xu Yilun — 2026-05-29
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+> Yea It is going to get confusing as to which metadata is populated at which
+> step. And if anything updates it.
+
+I think you mean "pass it into tdx_ext_mem_setup(). Yes, good to me.
+
+> already read, but not into the global struct.
+
+---
+
+## [56] Xu Yilun — 2026-05-30
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+On Thu, May 28, 2026 at 09:00:12PM +0000, Edgecombe, Rick P wrote:
+> On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> > +struct tdx_sys_info_ext {
+
+mm.. OK.  We don't have to follow the auto-generated format now, so bool
+is good to me.
+
+> 
+> > +};
+
+---
+
+## [57] Xu Yilun — 2026-05-30
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+On Thu, May 28, 2026 at 09:32:08PM +0000, Edgecombe, Rick P wrote:
+> On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> > The detailed initialization flow for TDX Module Extensions has been
+
+It's not important. I should re-phrase, The entire initialization flow...
+
+> 
+> >  Enable the flow after basic TDX Module
+
+Understood. I'll re-phrase this paragraph according to all the comments,
+especially the last sentence.
+
+> 
+> > 
+
+Yes. Since the patch doesn't actually light up anything new, I think it
+could just be the first patch of Extensions so add __init at the first
+place.
+
+---
+
+## [58] Xu Yilun — 2026-06-01
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On Thu, May 28, 2026 at 12:50:34PM -0700, Sohil Mehta wrote:
+> On 5/27/2026 9:52 PM, Xu Yilun wrote:
+> 
+
+I queried the TDX module team, and the answer is they almost grow
+linear. I measured the only feature - PCIe Link encryption (SPDM) - on
+my hand again, the precise memory consumption is now 35M.
+
+In the foreseeable future, the features are SPDM, DICE & TD Migration,
+so will cost ~105M at most. I think the number still works with the
+default policy.
+
+> 
+> Let's say a future platform has a lot more features and needs
+
+A legacy kernel won't consume Extensions memory. The Extensions memory
+is only required by TDX module when add-ons features are explicitly
+configured via TDH.SYS.CONFIG [1]. For legacy kernel, no add-on features
+configured so no memory consumption.
+
+But yes, if the features grow rapidly out of expectation, may need new
+options to switch something off. I think if we discuss later when the
+need actually arises.
+
+[1]: https://lore.kernel.org/all/20260522034128.3144354-16-yilun.xu@linux.intel.com/
+
+> 
+> Maybe I am missing something obvious. The struct in patch 1,
+
+Good catch. TDX module team admitted this is an issue. They want to
+increase the size to 4 bytes for future.
+
+---
+
+## [59] Sohil Mehta — 2026-06-01
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+>>
+>> Let's say a future platform has a lot more features and needs
+
+So, the TDX module will only report memory_pool_required_pages for
+add-on features that have been configured by the kernel? This would be
+good to clarify in the cover letter.
+
+> For legacy kernel, no add-on features configured so no memory
+> consumption.
+
+I was referring to the first kernel that has support for one TDX
+extension. I am mainly trying to ensure that a kernel with support for
+one TDX extension only consumes memory for that feature (even when it is
+loaded on a hardware platform that supports multiple TDX extensions).
+
+> But yes, if the features grow rapidly out of expectation, may need new
+> options to switch something off. I think if we discuss later when the
+
+---
+
+## [60] Xu Yilun — 2026-06-02
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On Mon, Jun 01, 2026 at 01:17:59PM -0700, Sohil Mehta wrote:
+> 
+> >>
+
+Correct.
+
+> good to clarify in the cover letter.
+
+Will do.
+
+> 
+> > For legacy kernel, no add-on features configured so no memory
+
+Yes. The first kernel that supports for one add-on feature will only
+consume memory for that feature. The other HW/FW supported features
+will not be configured so will not consume extra memory.
+
+I think I should refactor the cover-letter and changelogs based on all
+these comments. Thanks for all the inputs that help me see what missed.
+
+> 
+> > But yes, if the features grow rapidly out of expectation, may need new
+
+---
+
+## [61] Tony Lindgren — 2026-06-05
+*Subject: Re: [PATCH 03/15] x86/virt/tdx: Make TDX Module initialize Extensions*
+
+On Fri, May 22, 2026 at 11:41:16AM +0800, Xu Yilun wrote:
+> --- a/arch/x86/virt/vmx/tdx/tdx.c
+> +++ b/arch/x86/virt/vmx/tdx/tdx.c
+
+How about "Initialize the TDX Module Extensions for Extension-SEAMCALLs"
+above for the comment?
+
+Other than that:
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
 
 ---
