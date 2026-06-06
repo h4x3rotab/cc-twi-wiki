@@ -109,6 +109,22 @@ This patch series adds proper IBPB-on-entry support for SEV guests, aligning wit
 
 Patch series: `KVM: SEV: Disable SEV-SNP support on initialization failure`. If SNP initialization fails (e.g., firmware version mismatch, ASID exhaustion), KVM now disables SNP for all subsequent VMs rather than silently creating VMs in an undefined state[^snpinit].
 
+## June 2026 Updates
+
+### RMPOPT — v2
+
+Ashish Kalra posted RMPOPT v2 (Jun 2, 7 messages)[^rmpopt-v2], incorporating review feedback on v1. The core design is unchanged — RMPOPT instruction marks 1GB regions as hypervisor-owned in the RMPOPT table, enabling hardware to skip RMP checks for writes into those regions. v2 addresses reviewer comments on the implementation details.
+
+[^rmpopt-v2]: [20260602-add-rmpopt-support.md](../threads/20260602-add-rmpopt-support.md)
+
+### PV Clocks vs. TSC — Security Fix for CoCo Guests
+
+Sean Christopherson posted a large series (May 29, 66 messages, v4 with 47 patches)[^pvclocks] fixing a **security flaw affecting SNP and TDX guests**: these guests were using a PV clock (kvmclock, Xen PV) provided by the untrusted hypervisor for timekeeping instead of the hardware TSC protected by trusted firmware. A malicious or compromised hypervisor could manipulate guest time via PV clocks.
+
+The series enforces that SNP and TDX guests always derive time from the secure hardware TSC, and as a secondary goal modernizes KVM guest PV clock enumeration (TSC/APIC frequencies via CPUID 0x40000010). The series also deduplicates PV clock logic across hypervisors (KVM, Xen, VMware). Needed acks from VMware and Xen maintainers due to prior fatal NULL pointer deref bugs in earlier revisions.
+
+[^pvclocks]: [20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md](../threads/20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md)
+
 ## May 2026 Updates
 
 ### RMPOPT — v1

@@ -215,6 +215,20 @@ Three major RFCs land simultaneously[^pci-rfc][^tdrfc][^gmemfd-rfc][^cca-rfc]. �
 [^dpamt-v6]: [20260525-dynamic-pamt.md](threads/20260525-dynamic-pamt.md)
 [^tdxmaintainer]: [20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md](threads/20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md)
 
+## June 2026 — Security Fixes and New RFCs
+
+- **PV Clocks vs. TSC** (Sean Christopherson, 66 msgs): SNP/TDX guests must use hardware TSC, not hypervisor-provided PV clocks — security fix covering both architectures[^pvclocks].
+- **COCONUT-SVSM v2026.05-devel**: 91 commits, new `bldr` boot loader replaces stage2, vsock attestation transport[^coconut-may26].
+- **RMPOPT v2** (Ashish Kalra): review iteration on AMD's 1GB RMP bypass instruction[^rmpopt-v2].
+- **virtio-mem TDX hotplug RFC** (Zhenzhong Duan): start-private approach using `TDG.MEM.PAGE.RELEASE` for re-plug semantics[^virtio-mem-tdx].
+- **TDX port I/O bug fixes** (Kiryl Shutsemau): off-by-one in value mask and 32-bit IN zero-extension[^tdx-pio-fix].
+
+[^pvclocks]: [20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md](threads/20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md)
+[^coconut-may26]: [20260528-coconut-svsm-development-release-v202605-devel.md](threads/20260528-coconut-svsm-development-release-v202605-devel.md)
+[^rmpopt-v2]: [20260602-add-rmpopt-support.md](threads/20260602-add-rmpopt-support.md)
+[^virtio-mem-tdx]: [20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md](threads/20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md)
+[^tdx-pio-fix]: [20260604-x86tdx-fix-port-io-handling-bugs.md](threads/20260604-x86tdx-fix-port-io-handling-bugs.md)
+
 ## May 2026 — Acceleration Toward 7.2
 
 The May 2026 burst reflects the kernel 7.2 merge window approaching. Multiple long-running series posted rapid new revisions simultaneously.

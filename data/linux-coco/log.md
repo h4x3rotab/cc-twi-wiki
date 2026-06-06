@@ -5,6 +5,18 @@ date: 2026-05-08
 tags: [log, meta]
 ---
 
+## 2026-06-06 — Incremental update (May 28 – Jun 5, 2026)
+
+- Fetched new mail and reindexed; scraper produced 373 threads (13 new).
+- Noise filtered (7 skipped): SVSM dev call, LPC CFP, KVM MSR cleanup, single-message review comments.
+- Signal incorporated (6 threads):
+  - `concepts/svsm.md` — COCONUT-SVSM v2026.05-devel release (91 commits, bldr boot loader, vsock attestation)
+  - `concepts/sev-snp.md` — RMPOPT v2, PV clocks vs. TSC security fix
+  - `concepts/tdx.md` — virtio-mem TDX hotplug RFC, TDX port I/O bug fixes, PV clocks cross-ref
+  - `concepts/tsm-framework.md` — DMA_ATTR_CC_SHARED v3
+  - `overview.md` — corpus updated to 644 threads / ~10,000 messages through 2026-06-05
+  - `timeline.md` — June 2026 section added
+
 ## 2026-05-11 — Incremental update (May 11–27, 2026)
 
 - Fetched new mail: `git fetch origin` in `linux-coco/git/0.git`.

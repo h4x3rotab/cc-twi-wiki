@@ -7,7 +7,7 @@ tags: [linux-coco, confidential-computing, tdx, sev-snp, arm-cca, hub]
 
 This wiki covers the **linux-coco** mailing list (`linux-coco@lists.linux.dev`), the central coordination point for confidential computing support in the Linux kernel. The archive mirrors at [lore.kernel.org/linux-coco](https://lore.kernel.org/linux-coco).
 
-The corpus indexed here: **631 threads / ~9,800 messages**, from **2024-05-08** through **2026-05-27**[^src].
+The corpus indexed here: **644 threads / ~10,000 messages**, from **2024-05-08** through **2026-06-05**[^src].
 
 [^src]: Source: public-inbox git mirror at `https://lore.kernel.org/linux-coco/git/0.git`, indexed with public-inbox 1.9.0.
 

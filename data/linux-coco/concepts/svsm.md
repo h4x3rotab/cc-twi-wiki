@@ -106,6 +106,18 @@ The SVSM specification is developed publicly. Draft #3 of v1.01 was posted for c
 [^vtpm]: [20250625-svsm-devel-vtpm-service-attestation-format-update.md](../threads/20250625-svsm-devel-vtpm-service-attestation-format-update.md)
 [^svsm-carve]: [20251204-x86sev-carve-out-the-svsm-support-code.md](../threads/20251204-x86sev-carve-out-the-svsm-support-code.md)
 
+## June 2026 Updates
+
+### COCONUT-SVSM Development Release v2026.05-devel
+
+Jörg Rödel announced the May 2026 COCONUT-SVSM development release (May 28)[^coconut-may26], the largest monthly release yet: **33 merges, 91 non-merge commits, 9 contributors**. Key areas:
+
+- **Boot flow**: stage2 removed and replaced by the new simpler `boot/bldr` loader. Build, xbuild, IGVM builder, configs, and launch paths now use `bldr`.
+- **Platform/CPU feature model**: CPUID handling routed through the platform abstraction; feature lookup table added for x2APIC, physical address size, Hyper-V discovery, CET, FPU/SSE, INVLPGB, C-bit, and SNP features.
+- **Attestation**: vsock transport support added with serial fallback; refactored aproxy transport handling; added `read_exact`/`write_all` helpers; vsock transport documented.
+
+[^coconut-may26]: [20260528-coconut-svsm-development-release-v202605-devel.md](../threads/20260528-coconut-svsm-development-release-v202605-devel.md)
+
 ## See Also
 
 - [AMD SEV-SNP](sev-snp.md)

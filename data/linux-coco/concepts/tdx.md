@@ -73,6 +73,27 @@ A data-leak fix for MMIO reads was also posted (August 2024)[^mmio-leak], tighte
 [^ucall]: [20240703-support-userspace-hypercalls-for-tdx.md](../threads/20240703-support-userspace-hypercalls-for-tdx.md)
 [^tdboot]: [20240512-x86tdx-adjust-td-settings-on-boot.md](../threads/20240512-x86tdx-adjust-td-settings-on-boot.md)
 
+## June 2026 Updates
+
+### virtio-mem Memory Hotplug in TDX Guests
+
+Zhenzhong Duan posted an RFC (Jun 4, 7 messages)[^virtio-mem-tdx] exploring **virtio-mem memory hotplug for TDX guests** using a "start-private" memory approach via `TDG.MEM.PAGE.RELEASE`. The challenge: TDX guests must accept (`TDG.MEM.PAGE.ACCEPT`) newly added memory before use, but re-accepting already-accepted pages on re-plug returns errors. The series proposes tracking accepted/unaccepted state separately from plugged/unplugged to handle the re-plug case cleanly. Seeking feedback from Kiryl (CoCo guest implementation), MM experts (callback infrastructure), and the virtio-mem community; not yet seeking x86 maintainer review.
+
+### TDX Port I/O Bug Fixes
+
+Kiryl Shutsemau (Meta) fixed two bugs in TDX guest port I/O `#VE` emulation (Jun 4, 7 messages)[^tdx-pio-fix]:
+
+1. **Off-by-one in value mask**: `GENMASK(BITS_PER_BYTE * size, 0)` was one bit too wide — should be `GENMASK(BITS_PER_BYTE * size - 1, 0)`.
+2. **32-bit IN zero-extension**: `inl` should zero-extend into the full RAX (clearing bits 63:32), but the old mask-based path preserved them. Fixed by extracting KVM's `assign_register()` helper into `<asm/insn-eval.h>` as `insn_assign_reg()` — rewritten using plain arithmetic to avoid aliasing and endian assumptions.
+
+### PV Clocks vs. TSC — Security Fix
+
+TDX guests were vulnerable to the same PV clock issue as SNP guests — see [AMD SEV-SNP](sev-snp.md) for the full write-up of Sean Christopherson's 47-patch series[^pvclocks-tdx].
+
+[^virtio-mem-tdx]: [20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md](../threads/20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md)
+[^tdx-pio-fix]: [20260604-x86tdx-fix-port-io-handling-bugs.md](../threads/20260604-x86tdx-fix-port-io-handling-bugs.md)
+[^pvclocks-tdx]: [20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md](../threads/20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md)
+
 ## May 2026 Updates
 
 ### Runtime TDX Module Update — v9/v10

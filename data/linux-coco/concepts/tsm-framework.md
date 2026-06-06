@@ -79,6 +79,14 @@ Supported backends: TDX TDREPORT, SEV-SNP attestation report, ARM CCA token.
 
 `sample/tsm-mr: Use SHA-2 library APIs` / `sample/tsm-mr: Fix missing static for sample_report`[^tsm-sha2] — maintenance patches to the TSM sample code, converting it from deprecated hash interfaces to the new SHA-2 library.
 
+## June 2026 Updates
+
+### DMA_ATTR_CC_SHARED Propagation — v3
+
+Aneesh Kumar K.V posted v3 (Jun 4, 22 messages)[^dma-cc-v3] of the DMA_ATTR_CC_SHARED series with review feedback from JAEHOON KIM incorporated. Design unchanged from v2 — see [May 2026 Updates](#may-2026-updates) below for the full description.
+
+[^dma-cc-v3]: [20260604-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md](../threads/20260604-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md)
+
 ## May 2026 Updates
 
 ### DMA_ATTR_CC_SHARED Propagation
