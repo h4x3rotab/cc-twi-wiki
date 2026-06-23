@@ -61,6 +61,15 @@ timeline
                      : PCI/TSM PCIe Link Encryption (140 msgs)
                      : GIT PULL TSM for 7.1
         May 2026 : guest_memfd in-place v6 (out of RFC)
+    section June 2026 — PQC, SMCCC Bus, DICE v2
+        Jun 6-14 2026 : RMPOPT v3 iteration
+                      : ARM SMCCC bus v7 (stable /sys/firmware/cca/realm_guest)
+                      : guest_memfd folio migration for non-CoCo VMs
+                      : TDX dynamic quote buffer (PQC readiness)
+        Jun 15-23 2026 : RMPOPT CPU feature flag (heavy x86 maintainer review)
+                       : DICE TDX Quoting v2 — drops RFC tag
+                       : guest_memfd in-place v8 (87 msgs)
+                       : PCI/TSM D0 resume fix for CMA-SPDM
 ```
 
 ## May–June 2024 — Foundations
@@ -215,19 +224,43 @@ Three major RFCs land simultaneously[^pci-rfc][^tdrfc][^gmemfd-rfc][^cca-rfc]. �
 [^dpamt-v6]: [20260525-dynamic-pamt.md](threads/20260525-dynamic-pamt.md)
 [^tdxmaintainer]: [20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md](threads/20260527-maintainers-move-rick-edgecombe-to-tdx-maintainer.md)
 
-## June 2026 — Security Fixes and New RFCs
+## June 2026 — DICE v2, SMCCC Bus, PQC Readiness
 
+The month falls into two halves. The first two weeks are dominated by RMPOPT iteration and infrastructure work; the second half brings DICE quoting out of RFC and guest_memfd v8.
+
+**Week 1 (Jun 1–8):**
 - **PV Clocks vs. TSC** (Sean Christopherson, 66 msgs): SNP/TDX guests must use hardware TSC, not hypervisor-provided PV clocks — security fix covering both architectures[^pvclocks].
 - **COCONUT-SVSM v2026.05-devel**: 91 commits, new `bldr` boot loader replaces stage2, vsock attestation transport[^coconut-may26].
-- **RMPOPT v2** (Ashish Kalra): review iteration on AMD's 1GB RMP bypass instruction[^rmpopt-v2].
+- **RMPOPT v2/v3** (Ashish Kalra): successive review iterations on AMD's 1GB RMP bypass instruction[^rmpopt-v2][^rmpopt-v3].
 - **virtio-mem TDX hotplug RFC** (Zhenzhong Duan): start-private approach using `TDG.MEM.PAGE.RELEASE` for re-plug semantics[^virtio-mem-tdx].
 - **TDX port I/O bug fixes** (Kiryl Shutsemau): off-by-one in value mask and 32-bit IN zero-extension[^tdx-pio-fix].
+- **vmalloc_decrypted() RFC** (Catalin Marinas): cross-arch decrypted vmalloc allocation API for CoCo environments; design questions remain open[^vmalloc-dec].
+
+**Week 2 (Jun 9–15):**
+- **ARM SMCCC bus v7** (Aneesh Kumar, 14 msgs): proper SMCCC bus type for firmware-discovered services; CCA TSM provider migrates off the dummy platform device; `/sys/firmware/cca/realm_guest` becomes the stable Realm guest indicator[^smccc-bus-v7].
+- **guest_memfd folio migration** (Shivank Garg, 13 msgs): enable NUMA-balancing for non-CoCo VMs using guest_memfd; CoCo VMs remain unmovable pending firmware-assisted copy support[^folio-migrate].
+- **TDX dynamic quote buffer** (Peter Fang, 9 msgs): quote buffer size queried from TDX module metadata instead of fixed 128 KB; addresses post-quantum cryptography certificate chain size growth[^tdx-quote-buf].
+- **RMPOPT CPU feature flag** (Ashish Kalra, 33 msgs): heavy review from Borislav Petkov, Dave Hansen, Thomas Gleixner; confirmed detection approach for `X86_FEATURE_RMPOPT` in `scattered.c`[^rmpopt-cpu-flag].
+- **PCI/TSM D0 resume fix** (Lukas Wunner): CMA-SPDM operations now unconditionally resume device to D0; targeting v7.3[^d0-resume].
+
+**Week 3 (Jun 16–22):**
+- **DICE TDX Quoting Extension v2** (Xu Yilun, 22 msgs): drops RFC tag for the quoting portion; Extension SEAMCALL infrastructure (patches 1–6) + DICE quoting for x86/KVM (patches 7+); Quote generation moves into the TDX Module, eliminating the userspace Quoting Engine dependency[^tdxext-v2].
+- **guest_memfd in-place conversion v8** (Ackerley Tng, 87 msgs): VM memory attributes no longer deprecated; both the legacy VM-fd path and the new guest_memfd-native ioctl coexist; broadest review participation yet[^inplace-v8].
 
 [^pvclocks]: [20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md](threads/20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md)
 [^coconut-may26]: [20260528-coconut-svsm-development-release-v202605-devel.md](threads/20260528-coconut-svsm-development-release-v202605-devel.md)
 [^rmpopt-v2]: [20260602-add-rmpopt-support.md](threads/20260602-add-rmpopt-support.md)
+[^rmpopt-v3]: [20260608-add-rmpopt-support.md](threads/20260608-add-rmpopt-support.md)
 [^virtio-mem-tdx]: [20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md](threads/20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md)
 [^tdx-pio-fix]: [20260604-x86tdx-fix-port-io-handling-bugs.md](threads/20260604-x86tdx-fix-port-io-handling-bugs.md)
+[^vmalloc-dec]: [20260608-rfc-patch-mmvmalloc-add-vmalloc-decrypted-and-vzalloc-decryp.md](threads/20260608-rfc-patch-mmvmalloc-add-vmalloc-decrypted-and-vzalloc-decryp.md)
+[^smccc-bus-v7]: [20260611-switch-arm-smccc-firmware-services-to-an-smccc-bus.md](threads/20260611-switch-arm-smccc-firmware-services-to-an-smccc-bus.md)
+[^folio-migrate]: [20260611-kvm-guest-memfd-folio-migration-for-non-confidential-vms.md](threads/20260611-kvm-guest-memfd-folio-migration-for-non-confidential-vms.md)
+[^tdx-quote-buf]: [20260612-tdx-guest-make-quote-buffer-size-dynamic.md](threads/20260612-tdx-guest-make-quote-buffer-size-dynamic.md)
+[^rmpopt-cpu-flag]: [20260615-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md](threads/20260615-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md)
+[^d0-resume]: [20260615-pcitsm-resume-device-to-d0-for-cma-spdm-operation.md](threads/20260615-pcitsm-resume-device-to-d0-for-cma-spdm-operation.md)
+[^tdxext-v2]: [20260618-enable-dice-based-tdx-quoting-extension.md](threads/20260618-enable-dice-based-tdx-quoting-extension.md)
+[^inplace-v8]: [20260618-guest-memfd-in-place-conversion-support.md](threads/20260618-guest-memfd-in-place-conversion-support.md)
 
 ## May 2026 — Acceleration Toward 7.2
 

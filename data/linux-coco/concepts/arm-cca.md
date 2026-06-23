@@ -70,6 +70,26 @@ This is distinct from the KVM host work — one series makes KVM able to *create
 [^cca-guest-nov24]: [20241017-arm64-support-for-running-as-a-guest-in-arm-cca.md](../threads/20241017-arm64-support-for-running-as-a-guest-in-arm-cca.md)
 [^pkvm-guest]: [20240730-support-for-running-as-a-pkvm-protected-guest.md](../threads/20240730-support-for-running-as-a-pkvm-protected-guest.md)
 
+## June 2026 Updates
+
+### ARM SMCCC Bus for CCA TSM — v7
+
+Aneesh Kumar K.V (Arm) posted v7 (Jun 11, 14 messages)[^smccc-bus-v7] of a series that replaces the `arm-cca-dev` **platform device** with a proper **ARM SMCCC bus**. The problem: the original approach created a platform device solely to anchor the TSM sysfs entry — not backed by any DT/ACPI resource, MMIO range, or interrupt. The auxiliary device approach (seen in v4–v6) was also not quite right.
+
+v7 introduces a dedicated `arm_smccc_bus` type where the SMCCC core registers devices for discovered firmware services. Key outcomes:
+
+| Change | Detail |
+|---|---|
+| SMCCC bus | New bus type for SMCCC-discovered services; name-based matching, uevent modalias, sysfs modalias attribute |
+| Module alias | `MODULE_DEVICE_TABLE(arm_smccc, ...)` emits `arm_smccc:<name>` aliases for autoloading |
+| smccc_trng | Converted from platform driver to SMCCC driver |
+| CCA TSM provider | Now binds to the SMCCC-discovered RSI service device, not a dummy platform device |
+| Stable realm ABI | `/sys/firmware/cca/realm_guest` — new arch-provided sysfs path for detecting Realm guest; replaces dependency on internal `arm-cca-dev` device |
+
+The `/sys/firmware/cca/realm_guest` addition is notable: removing the old platform device without a replacement would break userspace tools that use it as a Realm guest indicator.
+
+[^smccc-bus-v7]: [20260611-switch-arm-smccc-firmware-services-to-an-smccc-bus.md](../threads/20260611-switch-arm-smccc-firmware-services-to-an-smccc-bus.md)
+
 ## May 2026 Updates
 
 ### ARM CCA in KVM — v14

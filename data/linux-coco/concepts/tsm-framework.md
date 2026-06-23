@@ -87,6 +87,12 @@ Aneesh Kumar K.V posted v3 (Jun 4, 22 messages)[^dma-cc-v3] of the DMA_ATTR_CC_S
 
 [^dma-cc-v3]: [20260604-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md](../threads/20260604-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md)
 
+### vmalloc_decrypted() / vzalloc_decrypted() RFC
+
+Catalin Marinas (Arm) reviewed an RFC (Jun 8, 8 messages)[^vmalloc-dec] proposing `vmalloc_decrypted()` and `vzalloc_decrypted()` — vmalloc variants that allocate memory in the "decrypted" (shared/unencrypted) state for use in CoCo environments (ARM CCA, x86 SEV/TDX). Cross-list discussion with Jason Gunthorpe raised the question of whether this API is the right level of abstraction vs. `dma_alloc_coherent()`. Key findings from review: the re-encryption path must call `vm_unmap_aliases()` before `vm_pages_encrypt()` to flush lazy vmalloc aliases; the zeroing window between `set_memory_decrypted()` and `memset()` is safe on ARM CCA (memory is scrubbed). Status: RFC with open design questions.
+
+[^vmalloc-dec]: [20260608-rfc-patch-mmvmalloc-add-vmalloc-decrypted-and-vzalloc-decryp.md](../threads/20260608-rfc-patch-mmvmalloc-add-vmalloc-decrypted-and-vzalloc-decryp.md)
+
 ## May 2026 Updates
 
 ### DMA_ATTR_CC_SHARED Propagation

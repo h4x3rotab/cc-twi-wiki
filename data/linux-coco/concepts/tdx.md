@@ -75,6 +75,22 @@ A data-leak fix for MMIO reads was also posted (August 2024)[^mmio-leak], tighte
 
 ## June 2026 Updates
 
+### DICE-Based TDX Quoting Extension — v2
+
+Xu Yilun posted v2 of the TDX Module Extensions + DICE Quoting series (Jun 18, 22 messages)[^tdxext-v2]. The major change from the RFC (v1, May 22): **the quoting part drops its RFC tag** and is promoted to a patch requiring initial review, rather than being an illustrative example. The series now has a clear partition:
+
+- Patches 1–6: Enable TDX module extensions infrastructure (preemptible Extension SEAMCALLs, `TDH.EXT.MEM.ADD`, `TDH.EXT.INIT`).
+- Patches 7–14: DICE-based TDX Quoting, x86/tdx part.
+- Patches 15+: DICE-based TDX Quoting, KVM part.
+
+The Extension SEAMCALL mechanism is analogous to ARM CCA's Stateful RMI Operations (SROs): give the service environment memory, invoke the API, resume until completion. All protocol state is inside the extension. This architecture enables future TDISP and live-migration flows without kernel complexity, in addition to DICE quoting. Quote generation moves out of userspace (no discrete Quoting Engine needed) and into the TDX Module directly — KVM no longer exits to userspace for quotes.
+
+DICE replaces SGX-based attestation with a standards-based certificate chain. All evidence is embedded in the Quote itself; no Intel service needs to be contacted first to obtain a certificate.
+
+### TDX Guest: Dynamic Quote Buffer
+
+Peter Fang (Meta) posted a 2-patch series (Jun 12, 9 messages)[^tdx-quote-buf] making the TDX attestation driver's Quote buffer size dynamic. The fixed 128 KB buffer, introduced to accommodate DICE Quotes, is not future-proof: post-quantum cryptography (PQC) certificate chains are 10–15× larger than conventional ones, potentially growing Quote sizes to several megabytes. The fix: query `QUOTE_MAX_SIZE` from TDX module metadata and use that value when available; older modules fall back to 128 KB.
+
 ### virtio-mem Memory Hotplug in TDX Guests
 
 Zhenzhong Duan posted an RFC (Jun 4, 7 messages)[^virtio-mem-tdx] exploring **virtio-mem memory hotplug for TDX guests** using a "start-private" memory approach via `TDG.MEM.PAGE.RELEASE`. The challenge: TDX guests must accept (`TDG.MEM.PAGE.ACCEPT`) newly added memory before use, but re-accepting already-accepted pages on re-plug returns errors. The series proposes tracking accepted/unaccepted state separately from plugged/unplugged to handle the re-plug case cleanly. Seeking feedback from Kiryl (CoCo guest implementation), MM experts (callback infrastructure), and the virtio-mem community; not yet seeking x86 maintainer review.
@@ -93,6 +109,8 @@ TDX guests were vulnerable to the same PV clock issue as SNP guests — see [AMD
 [^virtio-mem-tdx]: [20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md](../threads/20260604-rfc-patch-06-support-virtio-mem-memory-hotplug-in-tdx-guests.md)
 [^tdx-pio-fix]: [20260604-x86tdx-fix-port-io-handling-bugs.md](../threads/20260604-x86tdx-fix-port-io-handling-bugs.md)
 [^pvclocks-tdx]: [20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md](../threads/20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md)
+[^tdxext-v2]: [20260618-enable-dice-based-tdx-quoting-extension.md](../threads/20260618-enable-dice-based-tdx-quoting-extension.md)
+[^tdx-quote-buf]: [20260612-tdx-guest-make-quote-buffer-size-dynamic.md](../threads/20260612-tdx-guest-make-quote-buffer-size-dynamic.md)
 
 ## May 2026 Updates
 

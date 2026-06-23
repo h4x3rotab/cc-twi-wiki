@@ -133,6 +133,17 @@ v3 key additions:
 
 → See [ARM CCA](arm-cca.md) for the RFC v1/v4 ARM-side TDISP implementation.
 
+## June 2026 Updates
+
+### PCI/TSM: D0 Resume for CMA-SPDM
+
+Lukas Wunner posted a 2-patch series (Jun 15, 5 messages)[^d0-resume] requiring devices to be in D0 state before CMA-SPDM operations. Per PCIe r7.0 §6.31.3, CMA-SPDM in non-D0 states is optional with no discovery mechanism, so the fix unconditionally resumes to D0 for the duration of a CMA-SPDM exchange — matching the Windows behavior confirmed by Vivaik. Targeting v7.3 via `tsm.git/next`.
+
+**Notable: LLM-generated bug report rejected.** A one-patch `use-after-free` fix for `find_dsm_dev()` (Jun 16)[^llm-reject] was dismissed by Lukas Wunner as an LLM-hallucinated bug: the code comment explicitly states the returned device's lifetime is managed by its registration, not by the `__free(pci_dev_put)` annotation on the local variable. Wunner asked the submitter to add an `Assisted-by:` tag per `Documentation/process/coding-assistants.rst` for future AI-assisted patches.
+
+[^d0-resume]: [20260615-pcitsm-resume-device-to-d0-for-cma-spdm-operation.md](../threads/20260615-pcitsm-resume-device-to-d0-for-cma-spdm-operation.md)
+[^llm-reject]: [20260616-pcitsm-fix-use-after-free-in-find-dsm-dev.md](../threads/20260616-pcitsm-fix-use-after-free-in-find-dsm-dev.md)
+
 ## May 2026 Updates
 
 ### IOMMUFD Ioctls for TSM Operations — v5

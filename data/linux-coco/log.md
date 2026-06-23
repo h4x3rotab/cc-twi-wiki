@@ -5,6 +5,20 @@ date: 2026-05-08
 tags: [log, meta]
 ---
 
+## 2026-06-23 — Incremental update (Jun 6–22, 2026)
+
+- Fetched new mail and reindexed; scraper produced 388 threads (15 new since last sync).
+- Noise filtered (4 skipped): 2× SVSM dev call notices, bi-weekly guest_memfd call invite, MSR cleanup.
+- Signal incorporated (11 threads):
+  - `concepts/tdx.md` — DICE TDX Quoting Extension v2 (non-RFC), TDX dynamic quote buffer (PQC readiness)
+  - `concepts/sev-snp.md` — RMPOPT v3/v4 iterations, RMPOPT CPU feature flag (heavy x86 maintainer review)
+  - `concepts/arm-cca.md` — ARM SMCCC bus v7 (CCA TSM migrates off platform device, /sys/firmware/cca/realm_guest added)
+  - `concepts/guest-memfd.md` — in-place conversion v8 (87 msgs, no VM attr deprecation), folio migration for non-CoCo VMs
+  - `concepts/pci-tdisp.md` — CMA-SPDM D0 resume fix, notable LLM-hallucination patch rejection
+  - `concepts/tsm-framework.md` — vmalloc_decrypted() RFC (cross-arch decrypted allocation)
+  - `overview.md` — corpus updated to 659 threads / ~10,200 messages through 2026-06-22
+  - `timeline.md` — June 2026 narrative rewritten as week-by-week; Mermaid extended
+
 ## 2026-06-06 — Incremental update (May 28 – Jun 5, 2026)
 
 - Fetched new mail and reindexed; scraper produced 373 threads (13 new).

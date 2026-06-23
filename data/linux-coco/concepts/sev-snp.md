@@ -111,11 +111,16 @@ Patch series: `KVM: SEV: Disable SEV-SNP support on initialization failure`. If 
 
 ## June 2026 Updates
 
-### RMPOPT — v2
+### RMPOPT — Continued Iteration (v2–v4 + CPU Feature Flag)
 
-Ashish Kalra posted RMPOPT v2 (Jun 2, 7 messages)[^rmpopt-v2], incorporating review feedback on v1. The core design is unchanged — RMPOPT instruction marks 1GB regions as hypervisor-owned in the RMPOPT table, enabling hardware to skip RMP checks for writes into those regions. v2 addresses reviewer comments on the implementation details.
+RMPOPT iteration accelerated through June 2026. **v2** (Jun 2, 7 messages) and **v3** (Jun 8, 7 messages)[^rmpopt-v2][^rmpopt-v3] incorporated successive rounds of review feedback with the core design stable. **v4** was posted Jun 15 (1 message) alongside a companion patch[^rmpopt-v4].
+
+Separately, the `X86_FEATURE_RMPOPT` CPU feature flag series (Jun 15, 33 messages)[^rmpopt-cpu-flag] attracted heavyweight review from **Borislav Petkov**, **Dave Hansen**, and **Thomas Gleixner** — the x86 maintainers — confirming the instruction detection approach via `scattered.c` and `cpufeatures.h`. The series received `Reviewed-by: Dave Hansen` and `Reviewed-by: Ackerley Tng` in the thread.
 
 [^rmpopt-v2]: [20260602-add-rmpopt-support.md](../threads/20260602-add-rmpopt-support.md)
+[^rmpopt-v3]: [20260608-add-rmpopt-support.md](../threads/20260608-add-rmpopt-support.md)
+[^rmpopt-v4]: [20260615-add-rmpopt-support.md](../threads/20260615-add-rmpopt-support.md)
+[^rmpopt-cpu-flag]: [20260615-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md](../threads/20260615-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md)
 
 ### PV Clocks vs. TSC — Security Fix for CoCo Guests
 

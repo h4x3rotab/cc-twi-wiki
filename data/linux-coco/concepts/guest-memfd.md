@@ -111,6 +111,28 @@ This separation is necessary for in-place conversion: when a page converts from 
 
 `[RFC PATCH] arm64/kernel: iommufd: Allow mapping from KVM's guest_memfd`[^iommufd] — explores using IOMMUFD (the kernel's IOMMU management interface) to map guest_memfd pages through the IOMMU for device DMA, enabling secure DMA for confidential VMs without copying.
 
+## June 2026 Updates
+
+### In-Place Conversion — v8
+
+Ackerley Tng posted v8 (Jun 18, 87 messages — largest single guest_memfd thread yet)[^inplace-v8] of guest_memfd in-place conversion. Key change from v7: **VM memory attributes are not deprecated**. Earlier revisions signaled intent to remove `KVM_CAP_MEMORY_ATTRIBUTES` (the old VM fd interface); v8 walks this back, keeping both the legacy VM-fd path and the new guest_memfd-native per-page ioctl. Both paths remain available for the conversion cycle.
+
+The v8 thread has broad participation — Ackerley Tng, Fuad Tabba, Suzuki K Poulose, Sean Christopherson, Xiaoyao Li — indicating this is close to review consensus.
+
+### Folio Migration for Non-Confidential VMs
+
+Shivank Garg (AMD) posted a 3-patch series (Jun 11, 13 messages)[^folio-migrate] enabling **folio migration for non-CoCo guest_memfd**. Currently guest_memfd folios are marked `AS_UNMOVABLE` — the kernel cannot NUMA-balance or compact them. For CoCo VMs this is unavoidable (encrypted memory requires firmware assistance to copy). For non-CoCo VMs using guest_memfd (e.g. Firecracker for secret hiding), ordinary migration is safe.
+
+The series:
+- Splits `AS_UNMOVABLE` back out of `AS_INACCESSIBLE` in the page mapping flags.
+- Adds migration support in `kvm/guest_memfd.c` for the non-confidential case.
+- Provides a KVM selftest exercising the full migrate-and-verify cycle.
+
+Tested with Firecracker on a 2-NUMA-node host via `migratepages(8)` and `move_pages(2)`.
+
+[^inplace-v8]: [20260618-guest-memfd-in-place-conversion-support.md](../threads/20260618-guest-memfd-in-place-conversion-support.md)
+[^folio-migrate]: [20260611-kvm-guest-memfd-folio-migration-for-non-confidential-vms.md](../threads/20260611-kvm-guest-memfd-folio-migration-for-non-confidential-vms.md)
+
 ## May 2026 Updates
 
 ### In-Place Conversion — v7
