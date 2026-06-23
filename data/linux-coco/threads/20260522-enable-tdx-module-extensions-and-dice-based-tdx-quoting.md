@@ -1,9 +1,9 @@
 ---
 title: 'Enable TDX Module Extensions and DICE-based TDX Quoting'
 date: 2026-05-22
-last_reply: 2026-06-05
-message_count: 61
-participants: ['Xu Yilun', 'Tony Lindgren', 'Xiaoyao Li', 'Sohil Mehta', 'Kiryl Shutsemau', 'Edgecombe, Rick P']
+last_reply: 2026-06-16
+message_count: 113
+participants: ['Xu Yilun', 'Tony Lindgren', 'Xiaoyao Li', 'Sohil Mehta', 'Kiryl Shutsemau', 'Edgecombe, Rick P', 'Kishen Maloor', 'Adrian Hunter', 'Dan Williams (nvidia)', 'Peter Fang', 'Dave Hansen']
 ---
 
 ## [1] Xu Yilun — 2026-05-22
@@ -3059,5 +3059,1430 @@ above for the comment?
 Other than that:
 
 Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [62] Kishen Maloor — 2026-06-06
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On 5/21/26 8:41 PM, Xu Yilun wrote:
+> ...
+> This series has 2 distinct parts:
+Perhaps the extensions enabling patches could be organized more simply as
+these three?
+
+1. Add TDX extensions metadata structure and accessor
+2. Add TDH.EXT.MEM.ADD
+3. Add TDH.EXT.INIT and wire extensions init into init_tdx_module()
+
+This introduces the SEAMCALLs and lets the wiring land with the patch
+that completes the init flow, avoiding a separate "enable" patch.
+
+---
+
+## [63] Kishen Maloor — 2026-06-06
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+On 5/21/26 8:41 PM, Xu Yilun wrote:
+> TDX Module introduces a new concept called "TDX Module Extensions" to
+> support long running / hard-irq preemptible flows inside. This makes TDX
+
+The retry loop compares the full return value against TDX_INTERRUPTED_RESUMABLE. Should
+it mask with TDX_SEAMCALL_STATUS_MASK first, in case the module sets any
+lower detail bits?
+
+Ditto for TDH.EXT.INIT in patch 3.
+
+> +
+> +	if (r != TDX_SUCCESS)
+
+The SEAMCALL takes a scatter list (HPA_LIST_INFO), so the module
+doesn't require contiguity. If the goal is just to avoid scattering
+pages across many 2MB regions, maybe dense, 2MB-aligned allocations should
+achieve that without a single pool-wide contiguous block.
+
+> +	if (!page) {
+> +		ret = -ENOMEM;
+
+Would it be better to allocate per-batch (i.e. one root page's worth
+at a time) rather than the whole pool up front?
+
+That way an intermediate TDH.EXT.MEM.ADD failure wouldn't leak
+all nr_pages. Also, a batch is up to 512 pages (= 2MB) and its allocation
+could be 2MB-aligned, addressing your fragmentation concern.
+
+> +
+> +		ret = tdx_ext_mem_add(virt_to_page(root), nents);
+
+Could this be named init_tdx_extensions() instead to disambiguate
+from tdx_ext_init() in patch 3?
+
+> +{
+> +	if (!(tdx_sysinfo.features.tdx_features0 & TDX_FEATURES0_EXT))
+
+---
+
+## [64] Kishen Maloor — 2026-06-06
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+On 5/21/26 8:41 PM, Xu Yilun wrote:
+> The detailed initialization flow for TDX Module Extensions has been
+> fully implemented. Enable the flow after basic TDX Module
+
+Is it a reasonable policy to fail TDX bringup entirely upon failing
+initialization of extensions (which are "add-on features")?
+
+The handling of tdx_quote_init() in Patch 6 suggests a more
+best-effort approach.
+
+> +
+>   	pr_info("%lu KB allocated for PAMT\n", tdmrs_count_pamt_kb(&tdx_tdmr_list));
+
+---
+
+## [65] Kishen Maloor — 2026-06-06
+*Subject: Re: [RFC PATCH 15/15] x86/virt/tdx: Enable TDX Quoting extension*
+
+On 5/21/26 8:41 PM, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Is it necessary to add _Vx macros when multiple versions can co-exist?
+
+Just wondering if it would be cleaner in the following way?
+
+- Leave the macros set at the current (non-deprecated) baseline version.
+- Select vX using SEAMCALL_LEAF_VER() in config_tdx_module() when a vX feature
+   is enabled.
+
+u64 seamcall_fn = TDH_SYS_CONFIG;
+...
+if (tdx_sysinfo.features.tdx_features0 & TDX_FEATURES0_QUOTE) {
+...
+     seamcall_fn = SEAMCALL_LEAF_VER(TDH_SYS_CONFIG, 1);
+
+> +#define TDH_SYS_CONFIG			SEAMCALL_LEAF_VER(TDH_SYS_CONFIG_V0, 1)
+>   #define TDH_EXT_INIT			60
+
+---
+
+## [66] Xu Yilun — 2026-06-08
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On Sat, Jun 06, 2026 at 09:36:41PM -0700, Kishen Maloor wrote:
+> On 5/21/26 8:41 PM, Xu Yilun wrote:
+> > ...
+
+Yes, several comments point to a same concern for patch organization - no
+need a separate "enable" patch. Also a more sound justfication to me is,
+the Extension will not actually been enabled until an add-on feature is
+explicitly configured (See patch #15). So we could add steps in nature
+order without worrying the incomplete flow breaks the kernel.
+
+My reordering is:
+
+ 1. Add a placeholder for Extension initialization to hook into
+    init_tdx_module(). Give a chance to explain the considerations of
+    the enable-at-boot-up policy.
+
+ 2. Detect if Extension is required based on the metadata, if no, skip.
+    So no side effect for following steps.
+
+ 3. Add TDH.EXT.MEM.ADD
+
+ 4. Add TDH.EXT.INIT
+>
+
+---
+
+## [67] Xu Yilun — 2026-06-08
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+> > +static int tdx_ext_mem_add(struct page *root, unsigned int nr_pages)
+> > +{
+
+mm.. there is an existing case for TDX_INTERRUPTED_RESUMABLE which
+doesn't do the mask:
+
+  err = tdh_phymem_cache_wb(resume);
+  switch (err) {
+	case TDX_INTERRUPTED_RESUMABLE:
+		continue;
+
+I believe we don't mask it. TDX_INTERRUPTED_RESUMABLE should not carry
+any lower bits according to its bit definition, if it does it's a
+problem we should not skip.
+
+> 
+> Ditto for TDH.EXT.INIT in patch 3.
+
+So IIUC allocating 2MB by 2MB has the pros:
+
+  - Larger chance to get the memory.
+  - Less memory waste when TDH.EXT.MEM.ADD failed.
+
+and the cons:
+
+  - Still fragment 4M & 1G memory region.
+
+
+I think first of all we should focus on the normal path when Extension is
+successfully initialized and memory is added, note these memory can
+never be reclaimed in this case, so memory fragmentation becomes the
+primary considration.
+
+And in TDX platform, the TDH.EXT.MEM.ADD failure is not expected to
+happen, which means the TDX module is buggy and from Confidential
+Computing POV we should not continue, we should change to a new module
+and reboot. So less memory waste doesn't matter much actually.
+
+Then, the Extension initialization is done at bootup time. We can get
+the memory in big chance. If we really can't, it is a signal that the
+system is not well configured for TDX, and failing earlier isn't such
+a bad thing to me.
+
+So for now I still think alloc_contig_pages() is better than 2M-by-2M
+allocation.
+
+> 
+> > +
+
+Yes, good to me.
+
+I'm changing all Extensions to Extension, cause the SPEC says "TDX
+Module Extension". So I'll use init_tdx_extension().
+
+Thanks,
+Yilun
+
+---
+
+## [68] Xu Yilun — 2026-06-08
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+> > +static __init int init_tdx_ext(void)
+> >   {
+
+mm.. I think TDX Extension is not strictly an add-on feature from OS
+POV. It is still a fundamental TDX infrastructure. Host should not
+look into the Module and create substates like Base-good-Extension-bad or
+both-good. There are some considerations:
+
+ - Extension cannot be explicitly configured by TDH.SYS.CONFIG, it is
+   implicitly configured by TDX Module if an add-on feature requires it.
+
+ - There is no enumeration of which SEAMCALLs are Extension-SEAMCALLs so
+   Base-good-Extension-bad actually brings more chaos later.
+
+So the series is making all effort to make TDX bringup a stateless
+process, no intermediate state.
+
+> 
+> The handling of tdx_quote_init() in Patch 6 suggests a more
+
+TDX Quoting is however a clear self-contained add-on feature from OS POV.
+Though I'm not sure if a TDX platform is still a safe TCB with DICE
+available but failed, and good for "best-effort" policy? Maybe Peter
+could answer.
+>
+
+---
+
+## [69] Xu Yilun — 2026-06-08
+*Subject: Re: [RFC PATCH 15/15] x86/virt/tdx: Enable TDX Quoting extension*
+
+> > diff --git a/arch/x86/virt/vmx/tdx/tdx.h b/arch/x86/virt/vmx/tdx/tdx.h
+> > index 10aff23cd01f..524a14c01aa6 100644
+
+My perference is to have the most simple rule for the unversioned macro.
+And leave all workarounds to _Vx macros, they will eventually been
+removed or deprecated.
+
+Anyway this patch is not expected to merge with this series, maybe we
+will have a public release with V1 supported when it is to be merged,
+then we don't have to make such a hard choice.
+
+> 
+> u64 seamcall_fn = TDH_SYS_CONFIG;
+
+---
+
+## [70] Adrian Hunter — 2026-06-08
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> This posting is just to collect initial review.
+> 
+
+For me it would be easier to understand by starting higher level,
+like:
+
+"TDX Module Extensions enables optional but important TDX features
+ - such as DICE-based attestation quoting, TDX Connect, and live
+migration - that require substantially more processing time than
+core TDX operations, and also additional memory."
+
+Also I would find it helpful to clarify how "TDX Module Extensions"
+enhances interruptibility for Extension SEAMCALLs compared with
+regular SEAMCALLs, since "hard-irq preemptible flows" had me
+initially thinking along the wrong lines.
+
+> 
+> TDX Module allows some add-on features to use the Extension. The first
+
+---
+
+## [71] Adrian Hunter — 2026-06-09
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> Add reading of the global metadata for TDX Module Extensions.
+
+For tip, isn't the expectation to explain the context first.  The
+very first patch, might be a good place to explain a bit about
+TDX Module Extensions in general.
+
+> 
+> TDX Module Extensions is an add-on feature enumerated by TDX_FEATURES0.
+
+---
+
+## [72] Adrian Hunter — 2026-06-09
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> +static int tdx_ext_mem_add(struct page *root, unsigned int nr_pages)
+> +{
+
+Kishon already mentioned checking only the status
+
+> +
+> +	if (r != TDX_SUCCESS)
+
+Similarly could this also be TDX_EXT_MEMORY_POOL_FULL?
+
+> +		return -EFAULT;
+> +
+
+---
+
+## [73] Adrian Hunter — 2026-06-09
+*Subject: Re: [PATCH 03/15] x86/virt/tdx: Make TDX Module initialize Extensions*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> +/* Initialize the TDX Module Extensions then Extension-SEAMCALLs can be used */
+
+Reads slightly better without "the", so taking Tony's suggestion
+one word less:
+
+"Initialize TDX Module Extensions for Extension-SEAMCALLs"
+
+> +static int tdx_ext_init(void)
+> +{
+
+There seems to be TDX_PREV_FEATURES_ENABLED which is unused,
+but could it turn up here?
+
+> +		return -EFAULT;
+> +
+Otherwise:
+
+Reviewed-by: Adrian Hunter <adrian.hunter@intel.com>
+
+---
+
+## [74] Xu Yilun — 2026-06-10
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+On Tue, Jun 09, 2026 at 04:06:50PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > Add reading of the global metadata for TDX Module Extensions.
+
+Yes. I'm trying to add a long context for the first patch but was
+suggested to move to cover-letter. I think I can add a brief
+introduction at the beginning:
+
+  TDX module introduces a new concept caled "TDX module Extension" to
+  support long running / hard-irq preemptible flows inside. ...
+
+---
+
+## [75] Xu Yilun — 2026-06-10
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+On Tue, Jun 09, 2026 at 04:38:31PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > +static int tdx_ext_mem_add(struct page *root, unsigned int nr_pages)
+
+Could you elaborate on why we should mask? I assume the mask is only
+needed when the lower bits ([31:0]) are defined to contain extra
+information. TDX_INTERRUPTED_RESUMABLE is not the case so we could make
+the code change simpler.
+
+And if some non-zero bits appears there, it is a Module bug that we
+should not skip.
+
+> 
+> > +
+
+I don't think we should pass the case. The Module provides the number of
+required pages via metadata, host follows and feeds pages but the Module
+said "Sorry, I'm already full". This is inconsistent behavior that we
+should call out.
+
+> 
+> > +		return -EFAULT;
+
+---
+
+## [76] Adrian Hunter — 2026-06-10
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+On 10/06/2026 08:13, Xu Yilun wrote:
+> On Tue, Jun 09, 2026 at 04:38:31PM +0300, Adrian Hunter wrote:
+>> On 22/05/2026 06:41, Xu Yilun wrote:
+
+Agreed
+
+> 
+>>
+
+TDX_EXT_MEMORY_POOL_FULL is not an error code. It is a success code,
+so the question is whether it will ever show up on, say, the very last
+TDH_EXT_MEM_ADD.
+
+> 
+>>
+
+---
+
+## [77] Xu Yilun — 2026-06-10
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+> >>> +	if (r != TDX_SUCCESS)
+> >>
+
+It will not show up. I got from Module team that it shows up when the
+poll is already full and host still adds more pages.
+
+---
+
+## [78] Xu Yilun — 2026-06-10
+*Subject: Re: [PATCH 03/15] x86/virt/tdx: Make TDX Module initialize Extensions*
+
+On Tue, Jun 09, 2026 at 06:14:22PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > +/* Initialize the TDX Module Extensions then Extension-SEAMCALLs can be used */
+
+OK, included.
+
+> 
+> > +static int tdx_ext_init(void)
+
+“Yes, but not now.” from Module team. It is some future thing
+under discussion.
+
+---
+
+## [79] Adrian Hunter — 2026-06-11
+*Subject: Re: [RFC PATCH 05/15] x86/virt/tdx: Move tdx_tdr_pa() up in the file*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+them -> it
+
+---
+
+## [80] Adrian Hunter — 2026-06-11
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Is there a reason Linux needs to support TDX with failed Quote
+extension initialization?
+
+> +static void tdx_quote_init(void)
+> +{
+
+Elsewhere it tends to be:
+
+	if (r != TDX_SUCCESS)
+
+> +		return;
+> +
+
+---
+
+## [81] Adrian Hunter — 2026-06-11
+*Subject: Re: [RFC PATCH 09/15] x86/virt/tdx: Add interface to generate a Quote*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Isn't the concurrency configurable, so supporting only 1 instance
+is a decision of the software implementation, not a TDX limitation?
+
+> +static u64 tdx_quote_get(struct tdx_td *td, u64 in_data_pa, u64 in_data_len,
+> +			 u64 hpa_list_pa, u64 total_len, u64 *quote_len)
+
+Need to explain why
+
+> +		.rdx = QUOTE_ID_MASK & (u64)-1,
+> +		.r8 = in_data_pa,
+
+...
+
+> +	r = tdx_quote_get(td, quote_data.hpa_list[0], (u64)in_data_len,
+> +			  quote_data.hpa_list_pa, quote_data.buf_len, &out_len);
+
+Is r != TDX_SUCCESS more consistent
+
+> +		goto out;
+
+---
+
+## [82] Adrian Hunter — 2026-06-11
+*Subject: Re: [RFC PATCH 10/15] x86/tdx: Move and rename Quote request
+ structure*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Seems inconsistent to rename the struct but not the variable names
+
+>  {
+>  	int i = 0;
+
+Please note, the timeout condition in wait_for_quote_completion() is
+broken, in that the final value of i is timeout + 1 not timeout.
+Since you are in the same area, that needs fixing that too.
+
+>  
+> @@ -269,7 +250,7 @@ static int wait_for_quote_completion(struct tdx_quote_buf *quote_buf, u32 timeou
+
+---
+
+## [83] Adrian Hunter — 2026-06-11
+*Subject: Re: [RFC PATCH 13/15] KVM: TDX: Support event-notify interrupts only
+ with userspace quoting*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Breaks how exactly?
+
+Seems like a TDX guest has no way to know whether the VMM will use
+the Event Notify Interrupt anyway, so it cannot rely upon it, so
+it should already handle the case when the interrupt does not fire.
+
+> 
+> No known guest currently requires event-notify interrupt support, so
+
+If no guest is using it, then why does it need special treatment?
+
+> 
+> Update the KVM API Documentation to reflect the change.
+
+There is an Attestation section in Documentation/virt/kvm/x86/intel-tdx.rst
+that could be updated too.
+
+> +                  KVM only supports version 1 of the GetQuote request.
+
+Is that relevant here?
+
+>  
+>   * ``TDVMCALL_GET_TD_VM_CALL_INFO``: the guest has requested the support
+
+Is that really necessary?
+
+>  
+>  KVM may add support for more values in the future that may cause a userspace
+
+---
+
+## [84] Adrian Hunter — 2026-06-12
+*Subject: Re: [RFC PATCH 14/15] x86/virt/tdx: Embed version info in SEAMCALL
+ leaf function definitions*
+
+On 22/05/2026 06:41, Xu Yilun wrote:
+> Embed version information in SEAMCALL leaf function definitions rather
+> than let the caller open code them. For now, only TDH.VP.INIT is
+
+> @@ -31,7 +44,7 @@
+>  #define TDH_VP_CREATE			10
+
+FWIW I find the macro a bit ugly, and hiding the version number in
+the leaf number macro a little counter-intuitive compared with setting
+it at the call site.  It anyway needs some explanation at the call site.
+
+> @@ -2217,8 +2217,8 @@ u64 tdh_vp_init(struct tdx_vp *vp, u64 initial_rcx, u32 x2apicid)
+>  		.r8 = x2apicid,
+
+Now the reader has to go look at TDH_VP_INIT.
+
+---
+
+## [85] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+Xu Yilun wrote:
+> This posting is just to collect initial review.
+> 
+
+The internal implementation details of extension seamcalls buries the
+lead on why this mechanism is important, why Linux should care, and why
+this brings TDX in line with the other major CC architectures. Something
+like:
+
+===
+To date, SEAMCALLs have been short lived routines that monopolize the
+CPU for their duration. This limits their utility for implementing
+higher order security protocols or pushes complexity into Linux. The
+Linux appetite for ingesting complexity is low, so TDX now adds a new
+class of SEAMCALLs that are preemptible and resumable. This capability
+enables higher order service APIs to carry out a security protocol like
+"establish an SPDM session".
+
+The TDX "Extension SEAMCALL" capability is akin to ARM CCA's "Stateful
+RMI Operations (SRO)", and achieves similar externalized complexity
+relief as a dedicated hardware coprocessor like AMD SEV-SNP. The
+mechanism is "give the service environment some memory", "invoke the
+service API", and "continue invoking until complete". All protocol state
+is internal the service API.
+
+The simplest class of extension SEAMCALLs to support are in support of
+"DICE-based TDX Quoting", a service to turn guest launch attestation
+reports into a document that can be externally verified.
+===
+
+> TDX Module allows some add-on features to use the Extension. The first
+> feature to use Extensions is DICE-based TDX Quoting [1]. DICE is an
+
+This confuses the TDX design with the Linux design, and sets up "50MB" as
+something to be quibbled with. The Linux design is turn on all the
+features that Linux knows about all the time. Unless and until the "any
+available, all the time" becomes untenable it just simplifies the init
+flow to not play piecemeal games. Await evidence to change the simple
+policy. Suffice to say the cost of this policy will burn 10s of
+megabytes.
+
+> It must be enabled after basic TDX
+> Module initialization and when add-on features require it. To enable
+
+No need to talk about details not in this series. I would maybe just
+note that quoting is the simplest first consumer and was chosen as the
+lead vehicle over TDX Connect previously posted in case anyone asks.
+
+---
+
+## [86] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+Xu Yilun wrote:
+> Add reading of the global metadata for TDX Module Extensions.
+> 
+
+Others already commented on the patch ordering, so I will just comment
+on the changelog to recommend referring back to the "any available
+extension, all the time" implementation policy rather than saying "Linux
+requires" which is ambiguous.
+
+The patch reordering will make it more clear that
+memory_pool_required_pages scales based on the number of features that
+Linux grows enabling for at configuration time.
+
+---
+
+## [87] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+Xu Yilun wrote:
+> TDX Module introduces a new concept called "TDX Module Extensions" to
+> support long running / hard-irq preemptible flows inside. This makes TDX
+
+Like I said on the cover, I think "long running hard-irq preemptible"
+invites more questions that it answers. The service calls are not "long
+running" on their own. I think it is sufficient to say they are
+resumable unlike typical calls that run to completion while monopolizing
+the CPU.
+
+> Currently, TDX Module memory use is relatively static. But, the
+> Extensions need to use memory more dynamically. While 'static' here
+
+Rick commented on this as well, but a simpler way to say it is
+extensions receive a one time memory pool allocation at init time.  The
+extension uses that pool as its baseline for its own internal state and
+data for the service APIs it offers.
+
+> The process is mostly the same as adding PAMT. The kernel queries TDX
+> Module how much memory needed, allocates it, hands it over, and never
+
+I mention below, but I do not think the reader cares that the TDX Module
+calls an array of physical addresses a "root" page.
+
+> 
+> Introduce a tdx_clflush_hpa_list() helper to flush shared cache before
+
+To be clear I believe there is a low chance of fragmentation given this
+allocation happening early. However, at 10s of MB the benefit of
+isolating blocks of PFNs that will never be returned, it makes to not
+use the buddy allocator for that.
+
+> Co-developed-by: Zhenzhong Duan <zhenzhong.duan@intel.com>
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@intel.com>
+
+I think this "root" term is a holdover from the complicated TDX Connect
+case where it might sometimes be this odd "singleton" object? You could
+just make it this for actual type safety.
+
+struct tdx_hpa_list {
+	u64 phys[PAGE_SIZE/sizeof(u64)];
+}
+
+> +
+> +	page = alloc_contig_pages(nr_pages, GFP_KERNEL, numa_mem_id(),
+
+This looks wrong, sizeof(struct page)?, or size of physical address?
+
+Becomes less error prone if you do:
+
+min(nr_pages - i, ARRAY_SIZE(hpa_list->phys))
+
+> +		int j;
+> +
+
+You can declare j in the for loop.
+
+> +			root[j] = page_to_phys(page + i + j);
+> +
+
+Perhaps to be friendlier to folks without the source code in front of
+them drop the comment and do:
+
+WARN(ret, "Fatal: TDX Module failed (%d) to accept memory, stranded %ld pages\n", ret, nr_pages)
+
+...the once flavor not needed, right? It's toast at this point.
+
+---
+
+## [88] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Is this micro-optimization worth it? What are the classes of quote-init
+failures vs just make the policy be anything in the module must init.
+
+> This patch does not include the opt-in portion of the initialization.
+> It mainly lays the groundwork for TDX Quoting support. Opt-in will be
+
+It is unconditionally calling quote init even if the feature is not
+present. Is that not a problem?
+
+---
+
+## [89] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [RFC PATCH 10/15] x86/tdx: Move and rename Quote request
+ structure*
+
+Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Drop the ifdef guards.
+
+There is no cost to allowing a data structure to be defined
+unconditionally. Usually the ifdef guards are to prevent compilation
+errors when symbols do not resolve.
+
+Otherwise looks ok.
+
+Reviewed-by: Dan Williams <djbw@kernel.org>
+
+---
+
+## [90] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+Xu Yilun wrote:
+> The detailed initialization flow for TDX Module Extensions has been
+> fully implemented. Enable the flow after basic TDX Module
+
+No real point in rehashing the rationale for the "any available, all the
+time" policy yet again especially when this directly conflicts with the
+"relatively large amount" comment in the original cover letter.
+
+Otherwise I agree with the proposed reordering of this initial series.
+
+In general though, no big showstoppers for me in this first 4.
+
+---
+
+## [91] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [RFC PATCH 12/15] KVM: TDX: Add in-kernel Quote generation*
+
+Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+[..]
+> +static u64 __get_quote_kernel(struct kvm_vcpu *vcpu, struct tdx_quote_req *req,
+> +			      size_t req_len, gpa_t req_gpa, size_t total_len)
+
+No, it is freed by cleanup as far as I can see
+
+> +	void *quote_data __free(kvfree) =
+
+...this shadows the global "quote_data". A global really should be
+properly namespaced.
+
+---
+
+## [92] Xu Yilun — 2026-06-13
+*Subject: Re: [RFC PATCH 14/15] x86/virt/tdx: Embed version info in SEAMCALL
+ leaf function definitions*
+
+On Fri, Jun 12, 2026 at 08:47:26AM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > Embed version information in SEAMCALL leaf function definitions rather
+
+We actually discussed about this and realized we don't need to keep
+version. This is because:
+
+  1. Newer version SEAMCALLs are always compatible with older ones.
+  2. System security requires us to stop using an older TDX module when
+     there is a newer one. So don't try to support an older TDX module
+     which doesn't understand newer version SEAMCALLs.
+
+https://lore.kernel.org/all/ca331aa3-6304-4e07-9ed9-94dc69726382@intel.com/
+
+> 
+> > @@ -2217,8 +2217,8 @@ u64 tdh_vp_init(struct tdx_vp *vp, u64 initial_rcx, u32 x2apicid)
+
+mm.. I think I should just delete the comment.
+
+---
+
+## [93] Peter Fang — 2026-06-14
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+On Mon, Jun 08, 2026 at 06:12:35PM +0800, Xu Yilun wrote:
+> 
+> > 
+
+The DICE extension is just one of the ways to generate a Quote for the
+guest. If DICE is not available, TDX can fall back to the existing
+userspace SGX Quoting flow. So I think a best-effort approach makes
+sense here.
+
+> >
+
+---
+
+## [94] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 05/15] x86/virt/tdx: Move tdx_tdr_pa() up in the file*
+
+On Thu, Jun 11, 2026 at 07:21:17PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Ack. Thanks for catching this.
+
+>
+
+---
+
+## [95] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+On Thu, May 28, 2026 at 02:35:49PM -0700, Edgecombe, Rick P wrote:
+> On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Thanks, will fix in the next revision.
+
+> 
+> >  does not include the opt-in portion of the initialization.
+
+Will fix this as well.
+
+> 
+> >
+
+---
+
+## [96] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+On Thu, Jun 11, 2026 at 07:22:18PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+The Quoting extension is not the only way to get TD Quotes. If this
+extension fails, the host can still fall back to the legacy SGX-based
+Quoting in userspace. I think the decision to actually fall back can be
+left to userspace at that point.
+
+> 
+> > +static void tdx_quote_init(void)
+
+Good catch. I'll fix this. Thanks!
+
+>
+
+---
+
+## [97] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+On Fri, Jun 12, 2026 at 05:00:11PM -0700, Dan Williams (nvidia) wrote:
+> Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Since there is a fallback option to do the Quoting in userspace, I think
+it is probably not worth shooting down TDX entirely over quote-init
+failures.
+
+The quote-init failures can come from:
+
+  1. Quoting init SEAMCALL failures, which look pretty opaque to the
+     kernel and there's not much it can do about it.
+  2. Quoting buffer allocation failures, which *are* understood by the
+     kernel, and it could maybe try something else. Right now, we just
+     treat it the same as 1.
+
+This is helpful because I think the question of "what if the Quoting
+extension fails" has come up enough times that it warrants some
+explanation in the patch log. Thanks.
+
+> 
+> > This patch does not include the opt-in portion of the initialization.
+
+Good question... I should reorder the patches so this looks more
+straightforward. I enable everything in patch 15 (including the check
+for the Quoting feature) and I think that just creates confusion for
+folks looking at this patch.
+
+>
+
+---
+
+## [98] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 07/15] x86/virt/tdx: Prepare Quote buffer during
+ extension bringup*
+
+On Thu, May 28, 2026 at 03:30:36PM -0700, Edgecombe, Rick P wrote:
+> On Fri, 2026-05-22 at 11:41 +0800, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+I'll add more background in common terms here.
+
+> 
+> >  Because the Quote buffer is shared with TDX guests,
+
+This is again the balance between using common terms vs TDX language. In
+general, TDX docs capitalize terms a lot. TDX attestation docs always
+refer to the attestation blob as "Quotes".
+
+I mainly went with "Quotes" in the logs because that term has already
+been used everywhere in the tdx-guest code/logs (see tdx-guest.c). So I
+wanted to preserve some consistency at least in the logs. In the added
+host code and prints, I'm starting to just use "quotes" because that
+seems to be the more common convention in the TDX host code. I'm happy
+to make adjustments if this doesn't make sense.
+
+> 
+> > prepare the required metadata during Quoting extension bringup.
+
+That's a poor choice of word on my part. I'll rephrase it in the next
+revision. I mainly just wanted to convey "prepare struct quote_data".
+
+> 
+> How does it being shared with TDX guest suggest this? Just that TDX guests will
+
+Yes, that's exactly it. I'll make it clearer.
+
+> 
+> > +static struct quote_data {
+
+Sure, I'll fix this.
+
+> 
+> > +	qlist = vmalloc_array(qlist_npages, PAGE_SIZE);
+
+Will do.
+
+> 
+> > +	}
+
+I'll add more explanation here (see below).
+
+> 
+> > +	 * Only the last page needs to be filled. All the other pages will be
+
+Yeah I was trying to create all-1 u64 entries. This is pretty
+under-commented. I'll redo the comments.
+
+> 
+> > +	/* Populate HPA_LINKED_LIST as per TDX ABI spec */
+
+Will do. This part is pretty under-commented as well.
+
+> 
+> > +	qdata->buf = qbuf;
+
+That's a really good idea. I'll do that.
+
+> 
+> > +	qdata->hpa_list_pa = PFN_PHYS(pfn);
+
+Good point. I think I had some other errors that I later removed. I'll
+just return -ENOMEM directly here.
+
+> 
+> > +}
+
+Previously, get_tdx_sys_info_quote() just happened to be the last
+statement in tdx_quote_init() so getting an error didn't require an
+early return. tdx_quote_init() wasn't doing much at the time. But now
+the code can't see a valid max_quote_size if get_tdx_sys_info_quote()
+fails.
+
+> 
+> > +
+
+Yes. struct quote_data remains uninitialized so it will have NULL
+pointers. All the added APIs will take this into account so there won't
+be NULL pointer accesses.
+
+> 
+> >  }
+
+---
+
+## [99] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 09/15] x86/virt/tdx: Add interface to generate a Quote*
+
+On Thu, May 28, 2026 at 03:30:45PM -0700, Edgecombe, Rick P wrote:
+> > +
+> > +	/* TDH.QUOTE.GET expects the input data to fit in a page */
+
+There is a similar check for this in_data_len on the KVM side in patch
+12, but it is for a different reason. The check in KVM is to make sure
+it maps valid guest memory pages into the kernel, while here we make
+sure it complies with the SEAMCALL API. That said, the KVM check does
+make the check here kinda redundant... I can remove this for simplicity.
+
+> 
+> > +
+
+"r" is a SEAMCALL error just like any other SEAMCALL. If r == 0
+(SUCCESS), there is no documented scenario for when "!out_len" or
+"out_len > quote_data.buf_len" would occur. I would assume these would
+be TDX module bugs.
+
+The reason I check the last 2 conditions is mainly to protect the
+kernel:
+
+  - "!out_len" will cause kvmemdup() to return ZERO_SIZE_PTR
+  - "out_len > quote_data.buf_len" will cause out-of-bounds memory
+    access in kvmemdup()
+
+> 
+> > +		goto out;
+
+Hm interesting idea. But a Quote buffer could be close to 4MB in the worst
+case. Let's say max_quote_size is 3MB, that's 768 vmalloc_to_pfn() calls
+each time... That sounds a bit excessive right?
+
+The extra bits mainly come from using kvmemdup() I think. Having to use
+kvfree() on it does feel a bit annoying but that was the tradeoff I
+made...
+
+>
+
+---
+
+## [100] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 09/15] x86/virt/tdx: Add interface to generate a Quote*
+
+On Thu, Jun 11, 2026 at 08:15:50PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Ah yes, I should document that. I'll put that in the patch log.
+
+> 
+> > +static u64 tdx_quote_get(struct tdx_td *td, u64 in_data_pa, u64 in_data_len,
+
+Will do. It's because we use whatever the default Quote ID is.
+
+> 
+> ...
+
+Yep I can fix that. Thanks.
+
+>
+
+---
+
+## [101] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 10/15] x86/tdx: Move and rename Quote request
+ structure*
+
+On Thu, Jun 11, 2026 at 08:16:37PM +0300, Adrian Hunter wrote:
+> > -static int wait_for_quote_completion(struct tdx_quote_buf *quote_buf, u32 timeout)
+> > +static int wait_for_quote_completion(struct tdx_quote_req *quote_buf, u32 timeout)
+
+Good catch, I'll fix that.
+
+> 
+> >  {
+
+Thanks for catching that. This needs to be fixed. We can submit a
+separate guest-only patch.
+
+>
+
+---
+
+## [102] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 10/15] x86/tdx: Move and rename Quote request
+ structure*
+
+On Fri, Jun 12, 2026 at 05:04:05PM -0700, Dan Williams (nvidia) wrote:
+> >  }
+> >  #endif /* CONFIG_INTEL_TDX_GUEST && CONFIG_KVM_GUEST */
+
+Will do, thanks for the review Dan!
+
+---
+
+## [103] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 12/15] KVM: TDX: Add in-kernel Quote generation*
+
+On Fri, Jun 12, 2026 at 05:20:31PM -0700, Dan Williams (nvidia) wrote:
+> [..]
+> > +static u64 __get_quote_kernel(struct kvm_vcpu *vcpu, struct tdx_quote_req *req,
+
+Ah makes sense. I'll fix it up.
+
+> 
+> > +	void *quote_data __free(kvfree) =
+
+Good point... I'll fix the naming. Thanks.
+
+---
+
+## [104] Peter Fang — 2026-06-14
+*Subject: Re: [RFC PATCH 13/15] KVM: TDX: Support event-notify interrupts only
+ with userspace quoting*
+
+On Thu, Jun 11, 2026 at 10:36:52PM +0300, Adrian Hunter wrote:
+> On 22/05/2026 06:41, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Hm that's an interesting point. But isn't the whole point of
+SetupEventNotifyInterrupt to set up a contract with the host VMM? The
+GHCI spec is quite loose about this.
+
+If we say "the host VMM is not required to honor this contract", then
+maybe this doesn't truly break anything. But then this stance kind of
+makes this whole feature moot, or at least not very useful?
+
+Not adding this patch feels like making this problem worse, right?
+Because now we will have platforms that won't ever fire these
+interrupts, and the host still tells the guest SetupEventNotifyInterrupt
+is supported.
+
+> 
+> > 
+
+Just to maintain status quo basically. Seems like previously there was
+some interest in adding this support to the guest at some point. This
+patch simply turns off this feature when quoting is not done in
+userspace. But platforms that do quoting in userspace (e.g. don't
+support DICE extension) can observe the same behavior as today, if/when
+such a guest comes into existence.
+
+> 
+> > 
+
+Can you please point me to it? I couldn't find that section in that
+file.
+
+> 
+> > +                  KVM only supports version 1 of the GetQuote request.
+
+Documenting this came up during some internal discussions. But yeah it
+looks a bit out of place. I can remove it.
+
+> 
+> >  
+
+I think this is related to the discussion above about how hard host VMM
+should try to honor the SetupEventNotifyInterrupt contract.
+
+>
+
+---
+
+## [105] Adrian Hunter — 2026-06-15
+*Subject: Re: [RFC PATCH 13/15] KVM: TDX: Support event-notify interrupts only
+ with userspace quoting*
+
+>>> @@ -7335,6 +7335,9 @@ inputs and outputs of the TDVMCALL.  Currently the following values of
+>>>     queued successfully, the TDX guest can poll the status field in the
+
+Sorry, got he file name wrong: Documentation/arch/x86/tdx.rst
+
+---
+
+## [106] Xu Yilun — 2026-06-15
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+> The internal implementation details of extension seamcalls buries the
+> lead on why this mechanism is important, why Linux should care, and why
+
+I may not include the ARM/AMD examples, not sure I can explain them
+well.
+
+> mechanism is "give the service environment some memory", "invoke the
+> service API", and "continue invoking until complete". All protocol state
+
+[...]
+
+> > The Extensions consumes relatively large amount of memory (~50MB). So it
+> > is designed to be off by default.
+
+[...]
+
+> 
+> > == Some history ==
+
+Good to me, will include most of them, thanks.
+
+---
+
+## [107] Xu Yilun — 2026-06-15
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+> > Check TDX_FEATURES0 before reading these metadata. If a feature is
+> > advertised, a failure in reading associated metadata causes the entire
+
+Agree.
+
+---
+
+## [108] Xu Yilun — 2026-06-15
+*Subject: Re: [PATCH 02/15] x86/virt/tdx: Add extra memory to TDX Module for
+ Extensions*
+
+On Fri, Jun 12, 2026 at 04:49:36PM -0700, Dan Williams (nvidia) wrote:
+> Xu Yilun wrote:
+> > TDX Module introduces a new concept called "TDX Module Extensions" to
+
+Yes, I'll drop long running, keep preemptible and resumable.
+
+> 
+> > Currently, TDX Module memory use is relatively static. But, the
+
+Good to me.
+
+> > For now, TDX Module Extensions consumes relatively large amount of
+> > memory (~50MB). Use contiguous page allocation to avoid permanently
+
+Agree. I'll change it as:
+
+For now, TDX module extensions consume tens of megabytes memory that
+will never be returned to host. Use contiguous page allocation to
+isolate these large blocks entirely, avoiding permanent memory
+fragmentation and reducing buddy allocator efficiency. Print ...
+
+
+> > +	u64 *root;
+
+...
+
+> > +	root = kzalloc(PAGE_SIZE, GFP_KERNEL);
+> > +	if (!root)
+
+Agree. I really don't have to introduce a new "root" page term. The SPEC
+says "The HPA_LIST is a 4KB page which contains a list of HPAs", so
+hpa_list page is a good name.
+
+> case where it might sometimes be this odd "singleton" object? You could
+> just make it this for actual type safety.
+
+OK, let me try.
+
+> > +		ret = tdx_ext_mem_add(virt_to_page(root), nents);
+> > +		/*
+
+Yes no need the 'once'.
+
+Since I'll print all memory for the extensions anyway below. I'll use:
+
+	WARN(ret, "Fatal: TDX Module rejected (%d) memory for extensions, stranded all pages\n",
+	     ret);
+
+Thanks,
+Yilun
+
+---
+
+## [109] Dave Hansen — 2026-06-15
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On 6/15/26 08:22, Xu Yilun wrote:
+>> The TDX "Extension SEAMCALL" capability is akin to ARM CCA's "Stateful
+>> RMI Operations (SRO)", and achieves similar externalized complexity
+
+I actually think they're pretty important proof points. One of the big
+challenges as a maintainer evaluating these things is judging the
+solution itself.
+
+Is this architecture a good one? Is it overly complex? Are the avenues
+for simplification?
+
+If five vendors pop up all with similar problems and solutions, then
+it's a pretty good bet that they're all on the right track. But, if
+there are four going one direction and one going off by itself, it's a
+sign that the errant one might need a course correction.
+
+It would honestly be worth your time to go *talk* to the AMD and ARM
+folks and ensure that you are all on the same page. Last I checked, they
+seemed to be at least halfway reasonable human beings and don't bite.
+Let me know if I can help with some introductions.
+
+---
+
+## [110] Xu Yilun — 2026-06-15
+*Subject: Re: [PATCH 04/15] x86/virt/tdx: Enable the Extensions right after
+ basic TDX Module init*
+
+On Fri, Jun 12, 2026 at 05:08:48PM -0700, Dan Williams (nvidia) wrote:
+> Xu Yilun wrote:
+> > The detailed initialization flow for TDX Module Extensions has been
+
+Agree. Will remove the section which is copied from cover letter.
+
+> 
+> Otherwise I agree with the proposed reordering of this initial series.
+
+Thanks for the review!
+
+---
+
+## [111] Dave Hansen — 2026-06-15
+*Subject: Re: [PATCH 01/15] x86/virt/tdx: Read global metadata for TDX Module
+ Extensions*
+
+On 6/12/26 15:20, Dan Williams (nvidia) wrote:
+>> Check TDX_FEATURES0 before reading these metadata. If a feature is
+>> advertised, a failure in reading associated metadata causes the entire
+
+One other note on this: the current Linux policy of "any available
+extension, all the time" is the simplest possible functional policy. If
+Linux has one policy, I think that's the one it should have.
+
+That said, I'm open to the idea that users might desire other policies.
+We should absolutely explore them another day in another series.
+
+---
+
+## [112] Peter Fang — 2026-06-15
+*Subject: Re: [RFC PATCH 13/15] KVM: TDX: Support event-notify interrupts only
+ with userspace quoting*
+
+On Mon, Jun 15, 2026 at 07:39:01AM +0300, Adrian Hunter wrote:
+> >>> @@ -7335,6 +7335,9 @@ inputs and outputs of the TDVMCALL.  Currently the following values of
+> >>>     queued successfully, the TDX guest can poll the status field in the
+
+Thanks a lot for the pointers! It definitely needs to be updated.
+
+>
+
+---
+
+## [113] Xu Yilun — 2026-06-16
+*Subject: Re: [PATCH 00/15] Enable TDX Module Extensions and DICE-based TDX
+ Quoting*
+
+On Mon, Jun 15, 2026 at 08:57:09AM -0700, Dave Hansen wrote:
+> On 6/15/26 08:22, Xu Yilun wrote:
+> >> The TDX "Extension SEAMCALL" capability is akin to ARM CCA's "Stateful
+
+OK, I can include this section that Dan provides.
+
+> challenges as a maintainer evaluating these things is judging the
+> solution itself.
+
+Yes, I queried ARM/AMD TDISP folks offline and CCed them in this thread.
+Correct me if anything wrong:
+
+AFAIK, AMD firmware run on an external physical core (PSP), firmware call
+execution won't occupy host CPU, and the two partners communicate
+asynchronously, so no worry about interruptibility and preemptibility.
+
+From Alexey:
+
+  "The AMD CPU puts a request in a queue, writes to doorbell, and wait for
+   an interrupt. The PSP (a separate physical core) will see this, handle,
+   put the data in the CPU memory (if needed), trigger the interrupt. Done.
+   The host CPU can be rescheduled while waiting"
+
+
+ARM SRO is something I don't familiar with. ARM has no co-processor for
+CC, host invokes RMI and trap into RMM for secure execution, stateless
+RMI blocks interrupt so should be short lived. This is very similar to
+Intel SEAMCALL.
+
+Stateful RMI, however, from their RMM 2.0bet1 SPEC [1] B4.3.2 Stateful
+RMI operations, could be used "When an RMI operation cannot be completed
+within an IMPLEMENTATION DEFINED time limit". It is "guaranteed to yield
+within an IMPLEMENTATION DEFINED time limit from the point at which an
+interrupt becomes pending." I see it tries to solve the same problem as
+extension SEAMCALLs.
+
+I see SRO is WIP in [2], and is used for TDISP [3].
+
+[1] https://developer.arm.com/documentation/den0137/2-0bet1/
+[2] https://lore.kernel.org/all/20260318155413.793430-49-steven.price@arm.com/
+[3] https://lore.kernel.org/all/20260427065121.916615-3-aneesh.kumar@kernel.org/
 
 ---

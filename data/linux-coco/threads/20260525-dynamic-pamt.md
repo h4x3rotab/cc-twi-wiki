@@ -1,9 +1,9 @@
 ---
 title: 'Dynamic PAMT'
 date: 2026-05-25
-last_reply: 2026-06-05
-message_count: 23
-participants: ['Rick Edgecombe', 'Chao Gao', 'Kiryl Shutsemau', 'Dave Hansen']
+last_reply: 2026-06-11
+message_count: 30
+participants: ['Rick Edgecombe', 'Chao Gao', 'Kiryl Shutsemau', 'Dave Hansen', 'Binbin Wu', 'Yan Zhao', 'Tony Lindgren', 'Vishal Annapurve']
 ---
 
 ## [1] Rick Edgecombe — 2026-05-25
@@ -2367,5 +2367,143 @@ How important is this patch? I see "Optimize" but I read "Optional".
 
 If we're arguing about it, maybe we should just kick it out and focus on
 the more important bits.
+
+---
+
+## [24] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v6 03/11] x86/virt/tdx: Add tdx_alloc/free_control_page()
+ helpers*
+
+On 5/26/2026 10:35 AM, Rick Edgecombe wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+
+Reviewed-by: Binbin Wu <binbin.wu@linux.intel.com>
+
+One comment below.
+
+
+> 
+> diff --git a/arch/x86/include/asm/tdx.h b/arch/x86/include/asm/tdx.h
+
+I think the header is not needed here.
+
+>  #include <linux/pgtable.h>
+>
+
+---
+
+## [25] Yan Zhao — 2026-06-08
+*Subject: Re: [PATCH v6 03/11] x86/virt/tdx: Add tdx_alloc/free_control_page()
+ helpers*
+
+On Mon, Jun 08, 2026 at 10:11:58AM +0800, Binbin Wu wrote:
+> > diff --git a/arch/x86/include/asm/tdx.h b/arch/x86/include/asm/tdx.h
+> > index 82dc27aecf297..74e75db5728c7 100644
+Right. This version does not invoke page_address() in tdx.h for
+tdx_alloc_control_page() any more.
+
+Also no need to include mm.h for tdx.c (which has invoked page_address() before
+this patch), since tdx.c includes memblock.h which further includes mm.h.
+
+---
+
+## [26] Tony Lindgren — 2026-06-08
+*Subject: Re: [PATCH v6 00/11] Dynamic PAMT*
+
+On Mon, May 25, 2026 at 07:35:04PM -0700, Rick Edgecombe wrote:
+> For a simple small server with mostly physical contiguous RAM and no CXL
+> complications, the basic implementation should be close to optimal anyway.
+
+From usage point of view it's not just a memory optimization though.
+These patches make it easier to see what gets allocated for TDX IMO.
+
+This based on rebasing other patches on the dynamic PAMT series a few
+times over the past year. So for the series:
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [27] Kiryl Shutsemau — 2026-06-08
+*Subject: Re: [PATCH v6 06/11] x86/virt/tdx: Optimize tdx_pamt_get/put()*
+
+On Fri, Jun 05, 2026 at 09:23:21AM -0700, Dave Hansen wrote:
+> On 6/5/26 04:42, Kiryl Shutsemau wrote:
+> >>> I don't see a reason why we can't keep the scoped_guard() on get side.
+
+I don't think it is optional for anything outside of test setup.
+
+Without the optimization, we have all KVM memory allocations serialized
+on a single spinlock. And we do alloc_pamt_array()/free_pamt_array() all
+the time too.
+
+And since the lock is global, it is an easy DoS attack vector: one guest
+can do a shared->private->shared conversion loop and make every guest on
+the host suffer.
+
+---
+
+## [28] Yan Zhao — 2026-06-08
+*Subject: Re: [PATCH v6 06/11] x86/virt/tdx: Optimize tdx_pamt_get/put()*
+
+On Fri, Jun 05, 2026 at 09:23:21AM -0700, Dave Hansen wrote:
+> On 6/5/26 04:42, Kiryl Shutsemau wrote:
+> >>> I don't see a reason why we can't keep the scoped_guard() on get side.
+This patch reduces the number of global pamt_lock acquisitions.
+
+Reference testing data with/without the optimization:
+(collected on my SPR test machine)
+
+Booting/teardown of 1 TD (8 vcpus/8G memory) per iteration:
+                |--------------|-------------|------------|
+                |    avg (us)  |   max (us)  |   min (us) | 
+                |  w/o  |  w/  |  w/o  | w/  | w/o  |  w/ |
+----------------|-------|------|-------|-----|------|-----|
+__tdx_pamt_get()|   2   |  0   |  578  | 505 |  2   |  0  |
+__tdx_pamt_put()|   0   |  0   |  563  | 496 |  0   |  0  |
+----------------|--------------|-------------|------------|
+
+Boot/teardown of 5 TDs (each TD: 8 vcpus/8G memory) concurrently:
+                |--------------|-------------|------------|
+                |    avg (us)  |   max (us)  |   min (us) | 
+                |  w/o  |  w/  |  w/o  | w/  | w/o  |  w/ |
+----------------|-------|------|-------|-----|------|-----|
+__tdx_pamt_get()|  15   |  0   |  1723 | 1386|  2   |  0  |
+__tdx_pamt_put()|   0   |  0   |   562 |  733|  0   |  0  |
+----------------|--------------|-------------|------------|
+
+
+> If we're arguing about it, maybe we should just kick it out and focus on
+> the more important bits.
+DPAMT still works fine without this optimization. The optimization can reduce
+the average time spent on the global lock, especially when there's high
+contention.
+
+---
+
+## [29] Vishal Annapurve — 2026-06-11
+*Subject: Re: [PATCH v6 01/11] x86/virt/tdx: Simplify tdmr_get_pamt_sz()*
+
+On Mon, May 25, 2026 at 7:35 PM Rick Edgecombe
+<rick.p.edgecombe@intel.com> wrote:
+>
+> For each memory region that the TDX module might use (called TDMR), three
+
+Reviewed-by: Vishal Annapurve <vannapurve@google.com>
+
+---
+
+## [30] Vishal Annapurve — 2026-06-11
+*Subject: Re: [PATCH v6 02/11] x86/virt/tdx: Allocate page bitmap for Dynamic PAMT*
+
+On Mon, May 25, 2026 at 7:35 PM Rick Edgecombe
+<rick.p.edgecombe@intel.com> wrote:
+>
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+
+Kirill's comment make sense to me.
+
+Reviewed-by: Vishal Annapurve <vannapurve@google.com>
 
 ---

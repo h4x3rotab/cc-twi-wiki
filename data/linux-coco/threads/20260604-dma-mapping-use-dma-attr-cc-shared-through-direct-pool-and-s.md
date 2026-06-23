@@ -1,9 +1,9 @@
 ---
 title: 'dma-mapping: Use DMA_ATTR_CC_SHARED through direct, pool and swiotlb paths'
 date: 2026-06-04
-last_reply: 2026-06-05
-message_count: 22
-participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM']
+last_reply: 2026-06-22
+message_count: 65
+participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM', 'Petr Tesarik', 'Catalin Marinas', 'Jason Gunthorpe', 'Alexey Kardashevskiy']
 ---
 
 ## [1] Aneesh Kumar K.V (Arm) — 2026-06-04
@@ -3316,5 +3316,1297 @@ Jaehoon.
 
 > ---
 > Cc: Halil Pasic <pasic@linux.ibm.com>
+
+---
+
+## [23] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 02/20] dma-direct: swiotlb: handle swiotlb alloc/free
+ outside __dma_direct_alloc_pages*
+
+On Thu,  4 Jun 2026 14:09:41 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Move swiotlb allocation out of __dma_direct_alloc_pages() and handle it in
+> dma_direct_alloc() / dma_direct_alloc_pages().
+
+What's the reason to pass the buffer size if it's not used?
+
+Other than that, this patch looks good to me.
+
+Petr T
+
+> +{
+> +	swiotlb_release_slots(dev, tlb_addr, pool);
+
+---
+
+## [24] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 03/20] dma-direct: use DMA_ATTR_CC_SHARED in
+ alloc/free paths*
+
+On Thu,  4 Jun 2026 14:09:42 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Propagate force_dma_unencrypted() into DMA_ATTR_CC_SHARED in the
+> dma-direct allocation path and use the attribute to drive the related
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Petr T
+
+> ---
+>  kernel/dma/direct.c | 53 +++++++++++++++++++++++++++++++++++++--------
+
+---
+
+## [25] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 05/20] dma: swiotlb: pass mapping attributes by
+ reference*
+
+On Thu,  4 Jun 2026 14:09:44 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Change swiotlb_tbl_map_single() to take the DMA mapping attributes by
+> reference and update the direct callers accordingly.
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Thanks
+Petr T
+
+> ---
+>  drivers/iommu/dma-iommu.c | 2 +-
+
+---
+
+## [26] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On Thu,  4 Jun 2026 14:09:43 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Teach the atomic DMA pool code to distinguish between encrypted and
+> unencrypted pools, and make pool allocation select the matching pool based
+
+FWIW this also looks good to me, but I don't think I'm the best person
+to review changed to DMA generic pools.
+
+Petr T
+
+> ---
+>  drivers/iommu/dma-iommu.c   |   2 +-
+
+---
+
+## [27] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 06/20] dma: swiotlb: track pool encryption state and
+ honor DMA_ATTR_CC_SHARED*
+
+On Thu,  4 Jun 2026 14:09:45 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Teach swiotlb to distinguish between encrypted and decrypted bounce
+> buffer pools, and make allocation and mapping paths select a pool whose
+
+IIUC this is a copy of the unencrypted member in the corresponding
+struct io_tlb_mem. In other words, if pools are allocated dynamically,
+all pools must have the same encryption state, correct?
+
+>  #endif
+>  };
+
+If my assumption above is correct, then I prefer to add a struct
+io_tlb_mem *mem parameter here and calculate the allocation attributes
+inside this function, so you don't have to repeat it in the callers.
+
+>  {
+>  	struct page *page;
+
+You're removing the check that dev is non-NULL. This is fine, because
+the only call with dev == NULL is from swiotlb_dyn_alloc(), and that one
+uses GFP_KERNEL (i.e. allows blocking). However, if this is an intended
+optimization, I'd rather have it in a separate commit, with this
+explanation why it's OK to do it.
+
+The rest of the patch looks good to me.
+
+Petr T
+
+>  		void *vaddr;
+>
+
+---
+
+## [28] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 08/20] dma-direct: pass attrs to dma_capable() for
+ DMA_ATTR_CC_SHARED checks*
+
+On Thu,  4 Jun 2026 14:09:47 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Teach dma_capable() about DMA_ATTR_CC_SHARED so the capability
+> check can reject encrypted DMA addresses for devices that require
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Petr T
+
+> ---
+>  arch/x86/kernel/amd_gart_64.c | 30 ++++++++++++++++--------------
+
+---
+
+## [29] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 13/20] dma-direct: rename ret to cpu_addr in alloc
+ helpers*
+
+On Thu,  4 Jun 2026 14:09:52 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> ret in dma_direct_alloc() and dma_direct_alloc_pages() holds the returned
+> CPU mapping, not a generic return value. Rename it to cpu_addr and update
+
+I wondered if cpu_addr is descriptive enough (a CPU address could
+theoretically be virtual or physical), but I can see that a few other
+places already use cpu_addr to hold virtual addresses, so yeah, let's
+keep this name.
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Petr T
+
+> ---
+>  kernel/dma/direct.c | 31 +++++++++++++++----------------
+
+---
+
+## [30] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 14/20] dma-direct: return struct page from
+ dma_direct_alloc_from_pool()*
+
+On Thu,  4 Jun 2026 14:09:53 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Commit 5b138c534fda ("dma-direct: factor out a dma_direct_alloc_from_pool
+> helper") changed dma_direct_alloc_from_pool() to return the CPU address
+
+While I totally agree with the reasoning and the fix, it's interesting
+that this bug has been apparently present in the kernel for 5+ years
+without anybody hitting nasty memory corruption bugs.
+
+How can it be? Is the buggy code path never actually used in practice?
+Does it hint at a missed opportunity to simplify the code?
+
+Anyway, these these thoughts are intended for a possible future
+cleanup. For now, let's apply the fix as is, of course.
+
+Petr T
+
+> Tested-by: Michael Kelley <mhklinux@outlook.com>
+> Tested-by: Mostafa Saleh <smostafa@google.com>
+
+---
+
+## [31] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 15/20] iommu/dma: Check atomic pool allocation result
+ directly*
+
+On Thu,  4 Jun 2026 14:09:54 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> The non-blocking, non-coherent allocation path uses dma_alloc_from_pool(),
+> which returns the allocated page and fills cpu_addr only on success.
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Petr T
+
+> ---
+>  drivers/iommu/dma-iommu.c | 11 +++++++----
+
+---
+
+## [32] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 16/20] dma: swiotlb: free dynamic pools from process
+ context*
+
+On Thu,  4 Jun 2026 14:09:55 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> swiotlb_dyn_free() is used after removing a dynamic swiotlb pool from
+> RCU-protected lists. It can call swiotlb_free_tlb(), which may need to
+
+Good catch!
+
+> Use queue_rcu_work() for dynamic pool freeing instead. This keeps the RCU
+> grace period before freeing a published pool, while running the actual pool
+
+Strictly speaking, it's not necessary, because this is in the error
+path just after allocating a transient pool. There are only two
+possible scenarios:
+
+a. The transient buffer was allocated from a sleeping context, and then
+   it's also OK to decrypt memory.
+
+b. The transient buffer was allocated in atomic context, but then it was
+   allocated from a coherent pool and it is returned to that pool
+   rather than decrypted.
+
+However, it's also fine to queue an RCU work. The logic is definitely
+cleaner and easier to maintain.
+
+> Tested-by: Michael Kelley <mhklinux@outlook.com>
+> Tested-by: Mostafa Saleh <smostafa@google.com>
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Petr T
+
+> ---
+>  include/linux/swiotlb.h |  4 ++--
+
+---
+
+## [33] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 17/20] dma: swiotlb: handle set_memory_decrypted()
+ failures*
+
+On Thu,  4 Jun 2026 14:09:56 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> Check the return value when converting swiotlb pools between encrypted and
+> decrypted mappings. If the default pool cannot be decrypted after early
+
+This works fine, but instead of effectively leaking the memory, we
+could return it to the buddy allocator and reset nslabs to zero as if
+SWIOTLB was not even initialized.
+
+OTOH I don't want to overthink this, because the system is probably not
+too useful after such a boot-time failure, so unless you _want_ to
+improve the error path, you can simply add:
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Petr T
+
+> Tested-by: Michael Kelley <mhklinux@outlook.com>
+> Tested-by: Mostafa Saleh <smostafa@google.com>
+
+---
+
+## [34] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 19/20] swiotlb: Preserve allocation virtual address
+ for dynamic pools*
+
+On Thu,  4 Jun 2026 14:09:58 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> swiotlb_alloc_tlb() can allocate from the DMA atomic pool when a decrypted
+> pool is needed from atomic context. With CONFIG_DMA_DIRECT_REMAP, the
+
+Hm, so the old code was broken; you may want to add:
+
+Fixes: 79636caad361 ("swiotlb: if swiotlb is full, fall back to a transient memory pool")
+
+And of course:
+
+Reviewed-by: Petr Tesarik <ptesarik@suse.com>
+
+Thank you!
+Petr T
+
+> ---
+>  kernel/dma/swiotlb.c | 32 +++++++++++++++++++-------------
+
+---
+
+## [35] Catalin Marinas — 2026-06-09
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On Thu, Jun 04, 2026 at 02:09:39PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> This series propagates DMA_ATTR_CC_SHARED through the dma-direct,
+> dma-pool, and swiotlb paths so that encrypted and decrypted DMA buffers
+
+Please check Sashiko's reports, it has some good points:
+
+https://sashiko.dev/#/patchset/20260604083959.1265923-1-aneesh.kumar@kernel.org
+
+I think the main one is the swiotlb_tbl_map_single() changes which break
+AMD SME host support. There cc_platform_has(CC_ATTR_MEM_ENCRYPT) is true
+but force_dma_unencrypted() is false. Normally you'd not end up on this
+path but you can have swiotlb=force.
+
+> Aneesh Kumar K.V (Arm) (20):
+>   s390: Expose protected virtualization through cc_platform_has()
+
+Patch 10 above...
+
+>   dma-direct: select DMA address encoding from DMA_ATTR_CC_SHARED
+>   dma-pool: fix page leak in atomic_pool_expand() cleanup
+
+Patch 12...
+
+>   dma-direct: rename ret to cpu_addr in alloc helpers
+>   dma-direct: return struct page from dma_direct_alloc_from_pool()
+
+and I think patches 14, 15 are independent fixes. Some of them even have
+Fixes: tags and Cc: stable. Please move them to the beginning of the
+series to avoid inadvertent dependencies and make them harder to
+backport. It's also easier to follow the series without random fixes for
+mainline in the middle.
+
+>   dma: swiotlb: free dynamic pools from process context
+>   dma: swiotlb: handle set_memory_decrypted() failures
+
+---
+
+## [36] Catalin Marinas — 2026-06-09
+*Subject: Re: [PATCH v6 01/20] s390: Expose protected virtualization through
+ cc_platform_has()*
+
+On Thu, Jun 04, 2026 at 02:09:40PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> Protected virtualization guests use memory encryption, so advertise that to
+> the rest of the kernel through cc_platform_has(CC_ATTR_MEM_ENCRYPT).
+
+Nit: just drop the --- line if you did intend to cc those people.
+Nothing wrong for them to end up in the commit log (proof that they've
+been cc'ed if they did not reply ;)).
+
+---
+
+## [37] Petr Tesarik — 2026-06-09
+*Subject: Re: [PATCH v6 20/20] swiotlb: remove unused SWIOTLB_FORCE flag*
+
+On Thu,  4 Jun 2026 14:09:59 +0530
+"Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+> SWIOTLB_FORCE has no remaining in-tree users. Forced bouncing is now
+> controlled through the swiotlb=force command line option via
+
+These constants are kernel-internal, so let's not leave a hole in the
+bitmask... I mean, what about changing SWIOTLB_ANY to (1 << 1) after
+you remove SWIOTLB_FORCE?
+
+Other than that, LGTM.
+
+I consider this whole series a big step towards saner handling of
+encrypted/decrypted memory for DMA buffers. Thank you for your effort!
+
+Petr T
+
+>  
+>  /*
+
+---
+
+## [38] Catalin Marinas — 2026-06-09
+*Subject: Re: [PATCH v6 14/20] dma-direct: return struct page from
+ dma_direct_alloc_from_pool()*
+
+On Thu, Jun 04, 2026 at 02:09:53PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> Commit 5b138c534fda ("dma-direct: factor out a dma_direct_alloc_from_pool
+> helper") changed dma_direct_alloc_from_pool() to return the CPU address
+
+Nit: remove the empty line after Cc: stable. It may confuse tooling.
+
+---
+
+## [39] Jason Gunthorpe — 2026-06-09
+*Subject: Re: [PATCH v6 14/20] dma-direct: return struct page from
+ dma_direct_alloc_from_pool()*
+
+On Thu, Jun 04, 2026 at 02:09:53PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> @@ -270,9 +270,12 @@ void *dma_direct_alloc(struct device *dev, size_t size,
+>  	 * the atomic pools instead if we aren't allowed block.
+
+You should probably put this at the start of the series so it can be
+backported
+
+Reviewed-by: Jason Gunthorpe <jgg@nvidia.com>
+
+To Petr's question I think this just shows nobody is really stressing
+the PCI dma paths on CC VMs today.
+
+	if (force_dma_unencrypted(dev) && dma_direct_use_pool(dev, gfp))
+		return dma_direct_alloc_from_pool(dev, size, dma_handle, gfp);
+
+For instance the places even calling dma_alloc_pages() don't look like
+things people would use in a CC VM.
+
+Jason
+
+---
+
+## [40] Jason Gunthorpe — 2026-06-09
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On Thu, Jun 04, 2026 at 02:09:43PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>  struct page *dma_alloc_from_pool(struct device *dev, size_t size,
+> -		void **cpu_addr, gfp_t gfp,
+
+I don't think you should be overloading DMA_ATTR_CC_SHARED like this.
+
+	/*
+	 * DMA_ATTR_CC_SHARED is not a caller-visible dma_alloc_*()
+	 * attribute. The direct allocator uses it internally after it has
+	 * decided that the backing pages must be shared/decrypted, so the
+	 * rest of the allocation path can consistently select DMA addresses,
+	 * choose compatible pools and restore encryption on free.
+	 */
+	if (attrs & DMA_ATTR_CC_SHARED)
+		return NULL;
+
+	if (force_dma_unencrypted(dev)) {
+		attrs |= DMA_ATTR_CC_SHARED;
+		mark_mem_decrypt = true;
+	}
+
+It is fine to have a bit inside the attrs that is only used by the
+internal logic, but it needs to have a clearer name
+__DMA_ATTR_REQUIRE_CC_SHARED perhaps.
+
+The sashiko note does look legit though:
+
+	if (IS_ENABLED(CONFIG_DMA_DIRECT_REMAP) &&
+	    !gfpflags_allow_blocking(gfp) && !coherent) {
+		page = dma_alloc_from_pool(dev, PAGE_ALIGN(size), &cpu_addr,
+					   gfp, attrs, NULL);
+		if (!page)
+			return NULL;
+
+I don't see anything doing the force_dma_unencrypted test along this
+callchain..
+
+I guess it should be done one step up in dma_alloc_attrs() instead of
+in dma_direct_alloc()?
+
+Jason
+
+---
+
+## [41] Jason Gunthorpe — 2026-06-09
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On Tue, Jun 09, 2026 at 02:43:08PM +0100, Catalin Marinas wrote:
+> On Thu, Jun 04, 2026 at 02:09:39PM +0530, Aneesh Kumar K.V (Arm) wrote:
+> > This series propagates DMA_ATTR_CC_SHARED through the dma-direct,
+
+IMHO that's an AMD issue, not with the design of this series..
+
+The series is right, a device that is !force_dma_decrypted() must be
+considerd to be a trusted device and we must never place any DMA
+mappings for a trusted device into shared memory.
+
+That AMD has done somethine insane:
+
+bool force_dma_unencrypted(struct device *dev)
+{
+	/*
+	 * For SEV, all DMA must be to unencrypted addresses.
+	 */
+	if (cc_platform_has(CC_ATTR_GUEST_MEM_ENCRYPT))
+		return true;
+
+	/*
+	 * For SME, all DMA must be to unencrypted addresses if the
+	 * device does not support DMA to addresses that include the
+	 * encryption mask.
+	 */
+	if (cc_platform_has(CC_ATTR_HOST_MEM_ENCRYPT)) {
+		u64 dma_enc_mask = DMA_BIT_MASK(__ffs64(sme_me_mask));
+		u64 dma_dev_mask = min_not_zero(dev->coherent_dma_mask,
+						dev->bus_dma_limit);
+
+		if (dma_dev_mask <= dma_enc_mask)
+			return true;
+	}
+
+Is an AMD issue. We already have an address mask limit system built
+into the DMA API, arch code should not be co-opting the CC mechanism
+to create a special pool for address limited devices.
+
+The correct thing is to ensure the DMA API is checking any address
+limits on the actual true dma_addr_t, not on an intermediate like a
+phys_addr before it is adjusted with any C bit. Then it is a normal
+low address swiotlb bounce like any other.
+
+I think we can ignore this Sashiko remark, in real systems the use of
+swiotlb for 64 bit devices is very rare. Though it would be good to
+remove this code from AMD...
+
+Jason
+
+---
+
+## [42] Aneesh Kumar K.V — 2026-06-10
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> On Thu, Jun 04, 2026 at 02:09:43PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>>  struct page *dma_alloc_from_pool(struct device *dev, size_t size,
+
+Are you suggesting adding another attribute in addition to
+DMA_ATTR_CC_SHARED?
+
+Is the idea that __DMA_ATTR_REQUIRE_CC_SHARED would be used in the
+allocation path to request a CC_SHARED allocation, while
+DMA_ATTR_CC_SHARED would be used in the mapping path to describe the
+attribute of the address?
+
+
+
+>
+> The sashiko note does look legit though:
+
+Yes, I'll move it there.
+
+-aneesh
+
+---
+
+## [43] Aneesh Kumar K.V — 2026-06-10
+*Subject: Re: [PATCH v6 06/20] dma: swiotlb: track pool encryption state and
+ honor DMA_ATTR_CC_SHARED*
+
+Petr Tesarik <ptesarik@suse.com> writes:
+
+> On Thu,  4 Jun 2026 14:09:45 +0530
+> "Aneesh Kumar K.V (Arm)" <aneesh.kumar@kernel.org> wrote:
+
+...
+
+>>  /*
+>>   * If memory encryption is supported, phys_to_dma will set the memory encryption
+
+That is correct. The reason we have the unencrypted member in struct
+io_tlb_pool is that we need it in swiotlb_dyn_free().
+
+When freeing memory from an unencrypted pool, we need to convert the
+memory back to private/encrypted
+
+>
+>>  #endif
+
+....
+
+>> @@ -604,30 +621,26 @@ static struct page *alloc_dma_pages(gfp_t gfp, size_t bytes, u64 phys_limit)
+>>   * @dev:	Device for which a memory pool is allocated.
+
+Will switch to that. That is, we will use struct io_tlb_mem->unencrypted
+to determine the pool attribute instead of using unsigned long attrs
+
+>
+>>  {
+
+I'll add that back.
+
+-aneesh
+
+---
+
+## [44] Jason Gunthorpe — 2026-06-10
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On Wed, Jun 10, 2026 at 01:37:26PM +0530, Aneesh Kumar K.V wrote:
+> Jason Gunthorpe <jgg@ziepe.ca> writes:
+> 
+
+Yeah, it is a thought at least
+
+Maybe a comment is good enough.
+
+I just find it hard to follow when we have this dual usage. Like the
+code above for dma_pool->unencrypted is completely wrong if it is an
+"attribute of an address". Easy to cut & paste that into the wrong
+context.
+
+Especially if you move things up higher.. having the alloc set both
+CC_SHARED and REQUIRE_CC_SHARED or maybe ALLOC_CC_SHARED would make it
+clearer that the alloc code lives under that callchain
+
+Jason
+
+---
+
+## [45] Aneesh Kumar K.V — 2026-06-11
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> On Wed, Jun 10, 2026 at 01:37:26PM +0530, Aneesh Kumar K.V wrote:
+>> Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+If we are adding DMA_ATTR_ALLOC_SHARED, should we also allow
+dma_alloc_attrs() to take that attribute value?
+
+Does this look okay? 
+(Note: Parts of the documentation text were updated using Codex.)
+
+modified   Documentation/core-api/dma-attributes.rst
+@@ -179,3 +179,32 @@ interface when building their uAPIs, when possible.
+ 
+ It must never be used in an in-kernel driver that only works with
+ kernel memory.
++
++DMA_ATTR_CC_SHARED
++------------------
++
++This attribute indicates that a DMA mapping is shared, or decrypted, for
++confidential computing guests. For normal system memory, the caller must
++already have marked the memory decrypted with set_memory_decrypted(). CPU
++PTEs for the mapping must use pgprot_decrypted(), and the same shared
++semantic may be passed to a vIOMMU when it sets up the IOPTE.
++
++This attribute describes an existing mapping. It does not allocate shared
++backing pages and must not be passed to dma_alloc_attrs(). For MMIO, use
++this together with DMA_ATTR_MMIO to indicate shared MMIO. Unless
++DMA_ATTR_MMIO is provided, the mapping requires a struct page.
++
++DMA_ATTR_ALLOC_CC_SHARED
++------------------------
++
++This attribute indicates that a dma_alloc_attrs() allocation must use
++shared, or decrypted, backing pages for confidential computing guests.
++Allocation paths use this request when they select shared DMA pools,
++decrypt newly allocated pages or restore encryption on free.
++
++DMA_ATTR_ALLOC_CC_SHARED differs from DMA_ATTR_CC_SHARED in that it
++requests shared backing memory from the allocation path. DMA_ATTR_CC_SHARED
++describes an already-shared mapping and requires the caller to have
++prepared normal system memory before mapping it. Callers that need shared
++memory from dma_alloc_attrs() should request DMA_ATTR_ALLOC_CC_SHARED
++instead of DMA_ATTR_CC_SHARED.
+modified   include/linux/dma-mapping.h
+@@ -103,6 +103,13 @@
+  */
+ #define DMA_ATTR_CC_SHARED	(1UL << 13)
+ 
++/*
++ * DMA_ATTR_ALLOC_CC_SHARED: Allocates DMA memory as shared (decrypted) for
++ * confidential computing guests. Unlike DMA_ATTR_CC_SHARED, this attribute
++ * is used by dma_alloc_attrs() paths that create shared backing pages;
++ * DMA_ATTR_CC_SHARED describes an already-shared mapping.
++ */
++#define DMA_ATTR_ALLOC_CC_SHARED	(1UL << 14)
+ /*
+  * A dma_addr_t can hold any valid DMA or bus address for the platform.  It can
+  * be given to a device to use as a DMA source or target.  It is specific to a
+
+---
+
+## [46] Aneesh Kumar K.V — 2026-06-11
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> The sashiko note does look legit though:
+>
+
+I think we should do something similar to what dma_map_phys() does here,
+considering that we only support DMA direct with DMA_ATTR_CC_SHARED/DMA_ATTR_ALLOC_CC_SHARED.
+
+@@ -637,6 +637,7 @@ void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle,
+ {
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+ 	void *cpu_addr;
++	bool is_cc_shared;
+ 
+ 	WARN_ON_ONCE(!dev->coherent_dma_mask);
+ 
+@@ -657,8 +658,17 @@ void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle,
+ 	/* let the implementation decide on the zone to allocate from: */
+ 	flag &= ~(__GFP_DMA | __GFP_DMA32 | __GFP_HIGHMEM);
+ 
++	if (force_dma_unencrypted(dev))
++		attrs |= DMA_ATTR_ALLOC_CC_SHARED;
++
++	is_cc_shared = attrs & DMA_ATTR_CC_SHARED;
++
+ 	if (dma_alloc_direct(dev, ops) || arch_dma_alloc_direct(dev)) {
+ 		cpu_addr = dma_direct_alloc(dev, size, dma_handle, flag, attrs);
++	} else if (is_cc_shared) {
++		trace_dma_alloc(dev, NULL, 0, size, DMA_BIDIRECTIONAL, flag,
++				attrs);
++		return NULL;
+ 	} else if (use_dma_iommu(dev)) {
+ 		cpu_addr = iommu_dma_alloc(dev, size, dma_handle, flag, attrs);
+ 	} else if (ops->alloc) {
+
+-aneesh
+
+---
+
+## [47] Aneesh Kumar K.V — 2026-06-11
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Catalin Marinas <catalin.marinas@arm.com> writes:
+
+> On Thu, Jun 04, 2026 at 02:09:39PM +0530, Aneesh Kumar K.V (Arm) wrote:
+>> This series propagates DMA_ATTR_CC_SHARED through the dma-direct,
+
+I would consider the above similar to a trusted device requiring swiotlb
+bouncing. At some point, based on real-world use cases, we may need to
+add protected io_tlb_mem pools. We have not done that yet because no
+such use case has come so far.
+
+-aneesh
+
+---
+
+## [48] Jason Gunthorpe — 2026-06-11
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On Thu, Jun 11, 2026 at 10:21:50AM +0530, Aneesh Kumar K.V wrote:
+
+> If we are adding DMA_ATTR_ALLOC_SHARED, should we also allow
+> dma_alloc_attrs() to take that attribute value?
+
+I don't think we should..
+
+It is hard to see any reason to allocate shared memory through the DMA
+API. The way the DMA API works only the device that it is allocated
+for can access that memory, so it is effectively private to the
+device. Thus what purpose is shared device private memory?
+
+> +DMA_ATTR_CC_SHARED
+> +------------------
+
+Yes, though we need to fix a few ATTR_MMIO users to make this
+statement true
+
+> +DMA_ATTR_ALLOC_CC_SHARED
+> +------------------------
+
+The semantic is right, but I would make it a private attribute since
+no driver should use it.
+
+Jason
+
+---
+
+## [49] Jason Gunthorpe — 2026-06-11
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On Thu, Jun 11, 2026 at 10:55:47AM +0530, Aneesh Kumar K.V wrote:
+> Jason Gunthorpe <jgg@ziepe.ca> writes:
+> 
+
+Yeah, I think that's the right idea for now..
+
+> +	if (force_dma_unencrypted(dev))
+> +		attrs |= DMA_ATTR_ALLOC_CC_SHARED;
+
+But it would be clearer to put the test in the iommu_ functions I
+think, since they are the ones that have the issue. We will need to
+fix it someday..
+
+I think we can ignore the op-> functions, arches cannot support CC and
+still use dma_map_ops..
+
+Jason
+
+---
+
+## [50] Petr Tesarik — 2026-06-11
+*Subject: Re: [PATCH v6 04/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On Thu, 11 Jun 2026 08:37:40 -0300
+Jason Gunthorpe <jgg@ziepe.ca> wrote:
+
+> On Thu, Jun 11, 2026 at 10:55:47AM +0530, Aneesh Kumar K.V wrote:
+> > Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+Hm, sounds reasonable. Should we probably enforce this at configure or
+build time?
+
+Petr T
+
+---
+
+## [51] Alexey Kardashevskiy — 2026-06-17
+*Subject: Re: [PATCH v6 03/20] dma-direct: use DMA_ATTR_CC_SHARED in alloc/free
+ paths*
+
+On 4/6/26 18:39, Aneesh Kumar K.V (Arm) wrote:
+> Propagate force_dma_unencrypted() into DMA_ATTR_CC_SHARED in the
+> dma-direct allocation path and use the attribute to drive the related
+
+Why this limit?
+
+Context: I am looking for a memory pool for a few shared pages (to do some guest<->host communication), SWIOTLB seems like the right fit but swiotlb_alloc() is not exported and dma_direct_alloc(DMA_ATTR_CC_SHARED) is not allowed.  Thanks,
+
+
+> +	 */
+> +	if (attrs & DMA_ATTR_CC_SHARED)
+
+---
+
+## [52] Aneesh Kumar K.V — 2026-06-17
+*Subject: Re: [PATCH v6 03/20] dma-direct: use DMA_ATTR_CC_SHARED in
+ alloc/free paths*
+
+Alexey Kardashevskiy <aik@amd.com> writes:
+
+> On 4/6/26 18:39, Aneesh Kumar K.V (Arm) wrote:
+>> Propagate force_dma_unencrypted() into DMA_ATTR_CC_SHARED in the
+
+swiotlb is not the right pool to use for that, right?
+CCA had a similar requirement for ITS pages and ended up creating a genpool:
+b08e2f42e86b ("irqchip/gic-v3-its: Share ITS tables with a non-trusted hypervisor")
+
+-aneesh
+
+---
+
+## [53] Jason Gunthorpe — 2026-06-17
+*Subject: Re: [PATCH v6 03/20] dma-direct: use DMA_ATTR_CC_SHARED in
+ alloc/free paths*
+
+On Wed, Jun 17, 2026 at 10:50:39AM +1000, Alexey Kardashevskiy wrote:
+> > @@ -193,16 +193,31 @@ void *dma_direct_alloc(struct device *dev, size_t size,
+> >   		dma_addr_t *dma_handle, gfp_t gfp, unsigned long attrs)
+
+Then setup your struct device so that the DMA API knows the
+guest<->host channel requires unecrypted and it will work correctly.
+
+I think this is a reasonable API to use for that, and I was just
+advocating that hyperv should be using it too.
+
+But it all relies on a properly setup struct device.
+
+Jason
+
+---
+
+## [54] Alexey Kardashevskiy — 2026-06-18
+*Subject: Re: [PATCH v6 03/20] dma-direct: use DMA_ATTR_CC_SHARED in alloc/free
+ paths*
+
+On 18/6/26 01:41, Jason Gunthorpe wrote:
+> On Wed, Jun 17, 2026 at 10:50:39AM +1000, Alexey Kardashevskiy wrote:
+>>> @@ -193,16 +193,31 @@ void *dma_direct_alloc(struct device *dev, size_t size,
+
+Sounds good but how do I do that in practice? DMA_ATTR_CC_SHARED is not externally available so I'll have to trick the DMA layer into using SWIOTLB (which is still all shared, right?) as I specifically want to skip page conversions. Setting low DMA mask won't guarantee that the DMA layer won't allocate a page outside of SWIOTLB and convert it. Manually do
+
+dev->dma_io_tlb_mem->force_bounce = true;
+dev->dma_io_tlb_mem->for_allow = true;
+
+?
+Or follow the Aneesh'es genpool approach? Thanks,
+
+
+> 
+> Jason
+
+---
+
+## [55] Alexey Kardashevskiy — 2026-06-18
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On 10/6/26 00:47, Jason Gunthorpe wrote:
+> On Tue, Jun 09, 2026 at 02:43:08PM +0100, Catalin Marinas wrote:
+>> On Thu, Jun 04, 2026 at 02:09:39PM +0530, Aneesh Kumar K.V (Arm) wrote:
+
+
+swiotlb=force forces swiotlb, not decryption.
+
+> That AMD has done somethine insane:
+> 
+
+
+So when I try "mem_encrypt=on iommu=pt swiotlb=force" with this patchset, it fails to boot. But it boots with a hack like this:
+
+===
+@@ -39,7 +41,7 @@ bool force_dma_unencrypted(struct device *dev)
+                         return true;
+         }
+  
+-       return false;
++       return swiotlb_force_bounce;
+  }
+===
+
+Or we say "mem_encrypt=on iommu=pt swiotlb=force" combo is just weird and we won't be supporting which bit in this? Thanks,
+
+
+> 
+> Is an AMD issue. We already have an address mask limit system built
+
+---
+
+## [56] Aneesh Kumar K.V — 2026-06-18
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Alexey Kardashevskiy <aik@amd.com> writes:
+
+> On 10/6/26 00:47, Jason Gunthorpe wrote:
+>> On Tue, Jun 09, 2026 at 02:43:08PM +0100, Catalin Marinas wrote:
+
+Something like?
+
+modified   arch/x86/mm/mem_encrypt.c
+@@ -34,6 +34,13 @@ bool force_dma_unencrypted(struct device *dev)
+ 		u64 dma_enc_mask = DMA_BIT_MASK(__ffs64(sme_me_mask));
+ 		u64 dma_dev_mask = min_not_zero(dev->coherent_dma_mask,
+ 						dev->bus_dma_limit);
++		/*
++		 * With memory encryption enabled, SWIOTLB is marked decrypted.
++		 * If SWIOTLB bouncing is forced, treat the device as requiring
++		 * decrypted DMA.
++		 */
++		if (is_swiotlb_force_bounce(dev))
++			return true;
+ 
+ 		if (dma_dev_mask <= dma_enc_mask)
+ 			return true;
+
+
+
+-aneesh
+
+---
+
+## [57] Jason Gunthorpe — 2026-06-18
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On Thu, Jun 18, 2026 at 09:37:22AM +0100, Aneesh Kumar K.V wrote:
+> Alexey Kardashevskiy <aik@amd.com> writes:
+> 
+
+If force_dma_decrypted() == true then swiotlb must allocate from a
+decrypted memory pool. It is right there in the name!
+
+The hypervisor environment should *never* set force_dma_decrypted()
+because all devices can access all hypervisor memory, up to their IOVA
+limits.
+
+> > So when I try "mem_encrypt=on iommu=pt swiotlb=force" with this
+> > patchset, it fails to boot. But it boots with a hack like this:
+
+On the host side I expect this to cause swiotlb to allocate encrypted
+memory and bounce to it.
+
+>  		u64 dma_enc_mask = DMA_BIT_MASK(__ffs64(sme_me_mask));
+>  		u64 dma_dev_mask = min_not_zero(dev->coherent_dma_mask,
+
+And this is more insane logic. The right fix is to allocate the
+swiotlb bounce from the *encrypted* pools when running on the
+hypervisor which requires undoing this abuse of force_dma_decrypted().
+
+Jason
+
+---
+
+## [58] Alexey Kardashevskiy — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On 19/6/26 01:37, Jason Gunthorpe wrote:
+> On Thu, Jun 18, 2026 at 09:37:22AM +0100, Aneesh Kumar K.V wrote:
+>> Alexey Kardashevskiy <aik@amd.com> writes:
+
+True. But we do not have encrypted swiotlb pool today, right?
+
+> 
+>>> So when I try "mem_encrypt=on iommu=pt swiotlb=force" with this
+
++1.
+
+But how does the kernel decide if it is this swiotlb pool or just some page which happens to be below the IOVA limit?
+
+swiotlb can be for bouncing (with all these dma_sync_single_for_cpu) or, if dev->dma_io_tlb_mem->for_alloc = true, for coherent allocation (no need in dma_sync_single_for_cpu).
+
+I am looking for a way to set up my "sev-guest" device such as when dma_alloc_attrs(snp_dev->dev,...) happens, it allocates a page from the shared swiotlb pool (with no actual bouncing) and there is no obvious way to trick the DMA layer into doing that.
+
+
+> 
+> Jason
+
+---
+
+## [59] Jason Gunthorpe — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On Fri, Jun 19, 2026 at 12:05:45PM +1000, Alexey Kardashevskiy wrote:
+
+> > > > > IMHO that's an AMD issue, not with the design of this series..
+> > > > > 
+
+"encrypted" is just normal struct page memory, that's the default for
+swiotlb.
+
+I think it was a big mistake for the AMD SME stuff to overload the
+decrypted/encrypted CC stuff which should mean shared/private in a
+guest context to also mean things about physical memory encryption in
+the host. It is really confusing.
+
+The SME side is just a bad arch choice, the real world doesn't work
+well if you set high address bits in your dma_addr_t. I think AMD
+needs to use those restricted swiotlb pool where it allocates this
+very special "SME Disabled" memory that will have a low
+dma_addr_t. Then alloc and bouncing will get memory with a suitable
+dma_addr_t. This has nothing to do with force_dma_unencrypted() which
+is only a CC guest concept and nothing else in the OS should ever
+touch decrypted memory.
+
+> > And this is more insane logic. The right fix is to allocate the
+> > swiotlb bounce from the *encrypted* pools when running on the
+
+You mean in swiotlb_tbl_unmap_single() ? It checks the address against
+the pool's range?
+
+> swiotlb can be for bouncing (with all these dma_sync_single_for_cpu)
+> or, if dev->dma_io_tlb_mem->for_alloc = true, for coherent
+
+Whats a "sev-guest" device?
+
+> dma_alloc_attrs(snp_dev->dev,...) happens, it allocates a page from
+> the shared swiotlb pool (with no actual bouncing) and there is no
+
+Why do you need this?
+
+Jason
+
+---
+
+## [60] Aneesh Kumar K.V — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> On Thu, Jun 18, 2026 at 09:37:22AM +0100, Aneesh Kumar K.V wrote:
+>> Alexey Kardashevskiy <aik@amd.com> writes:
+
+Agreed. If the device can do encrypted DMA and requires bouncing, it
+should bounce through encrypted pools. We don't support encrypted pools
+now and that means, we mark the option ("mem_encrypt=on iommu=pt
+swiotlb=force") not supported for now? 
+
+-aneesh
+
+---
+
+## [61] Jason Gunthorpe — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On Fri, Jun 19, 2026 at 01:14:13PM +0100, Aneesh Kumar K.V wrote:
+> > And this is more insane logic. The right fix is to allocate the
+> > swiotlb bounce from the *encrypted* pools when running on the
+
+?? if you don't have a CC system then the swiotlb is "encrypted"
+meaning ordinary struct page system memory.
+
+The hypervisor should not be triggering any CC special stuff here, it
+is not a CC guest.
+
+Agree we don't need to worry about swiotlb=force with a trusted device
+in the GUEST for now, but it should be something to fix eventually.
+
+Jason
+
+---
+
+## [62] Aneesh Kumar K.V — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> On Fri, Jun 19, 2026 at 01:14:13PM +0100, Aneesh Kumar K.V wrote:
+>> > And this is more insane logic. The right fix is to allocate the
+
+If i understand this correctly, the setup Alexey is referring to here is
+bare metal system with memory encryption enabled and dma address doesn't
+need C bit cleared because it is handled in iommu. ( I consider this as
+memory encryption that is handled transparently, device can access any
+address because that encryption details are now managed by iommu).
+
+Thinking about this more, I guess we should mark the swiotlb as
+cc_shared only with  CC_ATTR_GUEST_MEM_ENCRYPT instead of
+CC_ATTR_MEM_ENCRYPT as we have below.
+
+
+	/*
+	 * if platform support memory encryption, swiotlb buffers are
+	 * shared by default.
+	 */
+	if (cc_platform_has(CC_ATTR_MEM_ENCRYPT))
+		io_tlb_default_mem.cc_shared = true;
+	else
+		io_tlb_default_mem.cc_shared = false;
+
+....
+	if (io_tlb_default_mem.cc_shared)
+		set_memory_decrypted((unsigned long)mem->vaddr, bytes >> PAGE_SHIFT);
+
+So we consider swiotlb as encrypted pool in such config.
+
+Now we have the case of host memory encryption where the C-bit needs to
+be cleared in dma_addr_t. That requires special handling in the kernel, and
+I believe we need to mark swiotlb as unencrypted in this configuration.
+
+I am still not clear whether there is a config option or runtime check
+we can use to identify this case.
+
+-aneesh
+
+---
+
+## [63] Aneesh Kumar K.V — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> On Fri, Jun 19, 2026 at 12:05:45PM +1000, Alexey Kardashevskiy wrote:
+>
+
+Agreed. This would make the code much simpler.
+
+-aneesh
+
+---
+
+## [64] Jason Gunthorpe — 2026-06-19
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On Fri, Jun 19, 2026 at 02:36:19PM +0100, Aneesh Kumar K.V wrote:
+> >> Agreed. If the device can do encrypted DMA and requires bouncing, it
+> >> should bounce through encrypted pools. We don't support encrypted pools
+
+This is how I understand it too, if the iommu is turned on then it can
+take the high PA with the C bit set and map it to an IOVA that matches
+the device's dma limit.
+
+> ( I consider this as memory encryption that is handled
+> transparently, device can access any address because that encryption
+
+Compared to the guest side there are some important host side differences:
+
+ - On the host the iommu can fix it because this is only a matter of
+   IOVA range not access control. On a guest even a IOMMU cannot
+   permit access to private memory
+ - On the host the state of the device is driven by the dma limit
+   which is not set until after the driver probes. On guest the state is
+   set by the tsm and device security level before the driver
+   probes
+ - Both flows end up using pgprot_decrypted and set_memory_decrypted()
+   to create their special pools, but for completely different
+   reasons.
+ - The memory coming from the special swiotlb pool must NOT be used by
+   a trusted device on a CC guest, while there is no problem for any
+   device to use it on the host.
+
+> Thinking about this more, I guess we should mark the swiotlb as
+> cc_shared only with  CC_ATTR_GUEST_MEM_ENCRYPT instead of
+
+The name cc_shared should be used for GUEST scenarios only.
+
+I guess there is some merit in keeping swiotlb using "decrypted" to
+mean it usinig pgprot_decrypted and set_memory_decyped() which AMD
+gives meaning to on both host and guest.
+
+IDK what AMD should do on the host by default. I guess it should setup
+a swiotlb pool of low dma addrs "unencrypted", but not "cc_shared"?
+
+But if we are operating on the host then this pool is not limited to
+only T=0 devices, every device can "safely" use it. (ignoring this
+destroys the security memory encryption on bare metal was supposed to
+provide)
+
+> Now we have the case of host memory encryption where the C-bit needs to
+> be cleared in dma_addr_t. That requires special handling in the kernel, and
+
+I think we need to split the two things up, they have different
+behaviors and need different flags and labels to make it all work
+right.
+
+> I am still not clear whether there is a config option or runtime check
+> we can use to identify this case.
+
+The dma api has to detect, after the driver sets the dma limit, that
+none of system memory is usable when:
+ - The direct path is being used
+ - phys to dma for 0 is outside the dma limit
+
+Then it should assume the arch has setup a swiotlb pool for it to use
+to fix the high memory problem.
+
+Similar hackery would be needed in the dma alloc path to know that
+decrypted can be used to fix the high memory problem like for GUEST.
+
+I guess some 'dev_cannot_reach_memory(dev)' sort of test in a
+few key places? Setup with a static branch to be a nop on everything
+but AMD, compiled out on every other arch.
+
+Jason
+
+---
+
+## [65] Alexey Kardashevskiy — 2026-06-22
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+On 19/6/26 22:03, Jason Gunthorpe wrote:
+> On Fri, Jun 19, 2026 at 12:05:45PM +1000, Alexey Kardashevskiy wrote:
+> 
+It is a bit in the PTE which says "encrypted", what do you mean by overloaded?...
+
+> The SME side is just a bad arch choice, the real world doesn't work
+> well if you set high address bits in your dma_addr_t. I think AMD
+
+The generic __init iommu_subsys_init(void) calls iommu_set_default_translated() if CC_ATTR_MEM_ENCRYPT (==force the use of IOMMU) and eliminates the bouncing by default, pretty much. We (AMD) do not really want to force Cbit in DMA handles and it is not happening unless "iommu=pt".
+
+> Then alloc and bouncing will get memory with a suitable
+> dma_addr_t. This has nothing to do with force_dma_unencrypted() which
+
+True.
+
+Although, with "iommu=pt" enabled, dma handles from swiotlb should not have Cbit so these swiotlb pages  have to be unencrypted.
+
+As you mentioned in another mail in the thread, DMAing to unencrypted memory with mem_encrypt=on make no sense security wise. May be enforce either mem_encrypt=on or iommu=pt is allowed at the same time but not both? I am worried though that some weirdo still has a use case for it.
+
+
+>>> And this is more insane logic. The right fix is to allocate the
+>>> swiotlb bounce from the *encrypted* pools when running on the
+
+It is a platform device, presented in SNP VMs as /dev/sev-guest and the guest userspace calls ioctls on it when it needs VM attestation report/certificates/etc.
+
+The sev-guest driver makes calls to the HV (GHCB protocol) to:
+1) get report/certificates/measurements from the HV <- this is done via shared memory as the HV writes to it;
+2) asks the HV to get the digests from the PSP <- this is done via encrypted memory (buuuut it is software encrypted and as far as the hw is concerned - it is shared - no Cbit, no RMP - these buffers contain plaintext headers of the PSP requests and cyphertext of the request/response body).
+
+>> dma_alloc_attrs(snp_dev->dev,...) happens, it allocates a page from
+>> the shared swiotlb pool (with no actual bouncing) and there is no
+
+/dev/sev-guest uses only shared memory (from the HW standpoint), and it is normally lot less than 1MB. If hugepages are used, then today it allocates 4K pages (they come encrypted and likely backed with a 2M page), the driver converts them to shared to make that GHCB call. The conversion smashes backing 2M page to 4K pages (+RMP +IOPDE as there is possible ongoing DMA), which is a problem (I have mentioned it as "TMPM" before - a hw/fw helper to do the smashing).
+
+The idea here is that if swiotlb is already shared, the sev-guest could use that memory pool.
+
+Thanks,
+
+
+> 
+> Jason
 
 ---

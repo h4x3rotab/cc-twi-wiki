@@ -1,8 +1,8 @@
 ---
 title: 'Switch Arm SMCCC firmware services to an SMCCC bus'
 date: 2026-05-27
-last_reply: 2026-06-04
-message_count: 13
+last_reply: 2026-06-08
+message_count: 19
 participants: ['Aneesh Kumar K.V (Arm)', 'Sudeep Holla', 'Suzuki K Poulose']
 ---
 
@@ -1280,5 +1280,256 @@ to rely/depend on multiple conditional compilation or callbacks IMO.
 
 Let's find see if it can work with what we are adding now and may add in
 near future and then decide.
+
+---
+
+## [14] Aneesh Kumar K.V — 2026-06-08
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+Sudeep Holla <sudeep.holla@kernel.org> writes:
+
+> On Thu, Jun 04, 2026 at 06:56:28PM +0530, Aneesh Kumar K.V wrote:
+>> Sudeep Holla <sudeep.holla@kernel.org> writes:
+
+If we move all the conditional checks to the driver probe path, then I
+think this can work. Something like the below:
+
+struct smccc_device_info {
+	u32 func_id;
+	bool requires_smc;
+	const char *device_name;
+};
+
+static const struct smccc_device_info smccc_devices[] __initconst = {
+	{
+		.func_id        = ARM_SMCCC_TRNG_VERSION,
+		.requires_smc   = false,
+		.device_name    = "arm-smccc-trng",
+	},
+
+	{
+		.func_id        = RSI_ABI_VERSION,
+		.requires_smc   = true,
+		.device_name    = RSI_DEV_NAME,
+	},
+};
+
+static bool __init smccc_probe_smccc_device(const struct smccc_device_info *smccc_dev)
+{
+	unsigned long ret;
+	struct arm_smccc_res res;
+
+	if (smccc_conduit == SMCCC_CONDUIT_NONE)
+		return false;
+
+	if (smccc_dev->requires_smc && smccc_conduit != SMCCC_CONDUIT_SMC)
+		return false;
+
+	arm_smccc_1_1_invoke(smccc_dev->func_id, &res);
+	ret = res.a0;
+
+	if ((s32)ret == SMCCC_RET_NOT_SUPPORTED)
+		return false;
+
+	return true;
+}
+
+static int __init smccc_devices_init(void)
+{
+	struct arm_smccc_device *sdev;
+	const struct smccc_device_info *smccc_dev;
+
+	for (int i = 0; i < ARRAY_SIZE(smccc_devices); i++) {
+		smccc_dev = &smccc_devices[i];
+
+		if (!smccc_probe_smccc_device(smccc_dev))
+			continue;
+
+               sdev = arm_smccc_device_register(smccc_dev->device_name);
+               if (IS_ERR(sdev))
+                       pr_err("%s: could not register device: %ld\n",
+                              smccc_dev->device_name, PTR_ERR(sdev));
+
+	}
+
+	return 0;
+}
+device_initcall(smccc_devices_init);
+
+with the diff to hw_random/smccc_trng
+
+modified   arch/arm64/include/asm/archrandom.h
+@@ -12,7 +12,7 @@
+ 
+ extern bool smccc_trng_available;
+ 
+-static inline bool __init smccc_probe_trng(void)
++static inline bool smccc_probe_trng(void)
+ {
+ 	struct arm_smccc_res res;
+ 
+modified   drivers/char/hw_random/arm_smccc_trng.c
+@@ -19,6 +19,8 @@
+ #include <linux/arm-smccc.h>
+ #include <linux/arm-smccc-bus.h>
+ 
++#include <asm/archrandom.h>
++
+ #ifdef CONFIG_ARM64
+ #define ARM_SMCCC_TRNG_RND	ARM_SMCCC_TRNG_RND64
+ #define MAX_BITS_PER_CALL	(3 * 64UL)
+@@ -98,6 +100,10 @@ static int smccc_trng_probe(struct arm_smccc_device *sdev)
+ {
+ 	struct hwrng *trng;
+ 
++	/* validate the minimum version requirement */
++	if (!smccc_probe_trng())
++		return -ENODEV;
++
+ 	trng = devm_kzalloc(&sdev->dev, sizeof(*trng), GFP_KERNEL);
+ 	if (!trng)
+ 		return -ENOMEM;
+
+We can also move arch/arm64/include/asm/rsi_smc.h to
+include/linux/arm-rsi-smccc.h. There was a suggestion to move these
+firmware interfaces out of architecture-specific code:
+
+https://lore.kernel.org/all/agsNO9cc7H-b0H8L@willie-the-truck
+
+This will also avoid the #ifdef CONFIG_ARM64
+
+-aneesh
+
+---
+
+## [15] Sudeep Holla — 2026-06-08
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On Mon, Jun 08, 2026 at 01:49:13PM +0530, Aneesh Kumar K.V wrote:
+> Sudeep Holla <sudeep.holla@kernel.org> writes:
+> 
+
+Sounds good to me.
+
+[...]
+
+> We can also move arch/arm64/include/asm/rsi_smc.h to
+> include/linux/arm-rsi-smccc.h. There was a suggestion to move these
+
+Ah OK, sorry I had missed this.
+
+---
+
+## [16] Suzuki K Poulose — 2026-06-08
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On 08/06/2026 09:19, Aneesh Kumar K.V wrote:
+> Sudeep Holla <sudeep.holla@kernel.org> writes:
+> 
+
+Don't we need parameters passed to this (Requested Interface version for 
+e.g.) ? See more below.
+
+
+> 		.requires_smc   = true,
+> 		.device_name    = RSI_DEV_NAME,
+
+Is this a reliable check for all possible SMCCC services ? i.e., Are we 
+expected to get RET_NOT_SUPPORTED for any service for which the backend
+is not available ?
+
+Also, as pointed out RSI_ABI_VERSION may return other errors based on 
+the input (requested version, e.g., RSI_ERROR_INPUT) and we may still go
+ahead and register the device ?
+
+> 		return false;
+> 
+
+super minor nit: arm-smccc-rsi.h ?
+
+Cheers
+Suzuki
+
+
+> firmware interfaces out of architecture-specific code:
+>
+
+---
+
+## [17] Aneesh Kumar K.V — 2026-06-08
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+> On 08/06/2026 09:19, Aneesh Kumar K.V wrote:
+>> Sudeep Holla <sudeep.holla@kernel.org> writes:
+
+...
+
+>>> I was trying to avoid conditional compilation altogether and hence the
+>>> reason for keeping it as simple as possible. Also IS_ENABLED(CONFIG_ARM64)
+
+The idea is that we only check whether the function ID is supported. All
+other conditional logic should be handled in the driver probe path, as
+demonstrated by the changes in drivers/char/hw_random/arm_smccc_trng.c.
+
+>
+>> 		.requires_smc   = true,
+
+That is correct. That is what the SMCCC specification says
+
+> Also, as pointed out RSI_ABI_VERSION may return other errors based on 
+> the input (requested version, e.g., RSI_ERROR_INPUT) and we may still go
+
+Correct, and the driver probe will check for the minimum and maximum supported versions.
+
+>> 		return false;
+>> 
+
+-aneesh
+
+---
+
+## [18] Sudeep Holla — 2026-06-08
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On Mon, Jun 08, 2026 at 04:56:29PM +0530, Aneesh Kumar K.V wrote:
+> Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+> 
+
++1. Yes, we just want to know whether the firmware is aware of that feature
+before creating the `smccc_device` for it. The device probe can then perform a
+more thorough, feature-specific check to determine whether the device/feature
+is usable.
+
+That is the main idea behind the approach I suggested. Please let me know if
+you still see any issues or think this may not work.
+
+---
+
+## [19] Suzuki K Poulose — 2026-06-08
+*Subject: Re: [PATCH v6 3/4] firmware: smccc: arm-cca-guest: Bind the TSM
+ provider to an SMCCC device*
+
+On 08/06/2026 13:32, Sudeep Holla wrote:
+> On Mon, Jun 08, 2026 at 04:56:29PM +0530, Aneesh Kumar K.V wrote:
+>> Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+Ok, yea, I kind of forgot that we are boot strapping a driver based on
+this "smccc device" and the device is only an indication of the firmware
+service, the driver would decide if the service matches its expectation.
+
+Thanks for the clarification, apologies for the noise.
+
+Suzuki
+
+
+
+>
 
 ---

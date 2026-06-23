@@ -1,9 +1,9 @@
 ---
 title: 'TDX KVM selftests'
 date: 2026-05-21
-last_reply: 2026-06-05
-message_count: 31
-participants: ['Lisa Wang', 'Yosry Ahmed', 'Sean Christopherson', 'Ackerley Tng']
+last_reply: 2026-06-23
+message_count: 63
+participants: ['Lisa Wang', 'Yosry Ahmed', 'Sean Christopherson', 'Ackerley Tng', 'Binbin Wu', 'Chenyi Qiang', 'Xiaoyao Li']
 ---
 
 ## [1] Lisa Wang — 2026-05-21
@@ -2714,5 +2714,1173 @@ tests can leave the details to the infrastructure.
 If there's a recurring problem, or we anticipate one, then we can and should
 figure out how to minimize the pain so that tests don't have to deal with the
 same boilerplate issues over and over.  Hence the __shared idea.
+
+---
+
+## [32] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+[...]
+
+> diff --git a/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h b/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h
+> index f647e6ca6b34..48d4bd36c35b 100644
+
+Nit:
+The two lines' backslashes are misaligned.
+
+> +	} };								\
+> +									\
+
+tdx_cmd.c.hw_error is u64 and it could be assigned to ret, which is a int,
+the upper bits could be truncated if the upper 32-bit is set.
+
+> +									\
+> +	__TEST_ASSERT_VM_VCPU_IOCTL(!ret, #cmd,	ret, vm);		\
+
+---
+
+## [33] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 06/22] tools: include: Add kbuild.h for assembly
+ structure offsets*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Sagi Shahar <sagis@google.com>
+> 
+                           ^
+Nit: missing a space. 
+
+> provides the macros needed to extract these offsets from C code and
+> expose them to assembly, ensuring the two remain synchronized.
+
+Reviewed-by: Binbin Wu <binbin.wu@linux.intel.com>
+
+> ---
+>  tools/include/linux/kbuild.h | 11 +++++++++++
+
+---
+
+## [34] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 09/22] KVM: selftests: Expose functions to get default
+ sregs values*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+
+[...]
+
+> +
+> +static inline u64 kvm_get_default_cr4(void)
+
+[...]
+
+> @@ -647,16 +643,12 @@ static void vcpu_init_sregs(struct kvm_vm *vm, struct kvm_vcpu *vcpu)
+>  	vcpu_sregs_get(vcpu, &sregs);
+
+I guess the 5-level paging thing is dropped unexpectedly during rebase?
+
+
+> +	sregs.gdt.limit = kvm_get_default_gdt_limit();
+>
+
+---
+
+## [35] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 11/22] KVM: selftests: Set up TDX boot parameters
+ region*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+[...]> +void tdx_vm_load_common_boot_parameters(struct kvm_vm *vm)
+> +{
+> +	struct td_boot_parameters *params =
+
+This should be removed after the 5-level paging code is added back in
+kvm_get_default_cr4().
+
+---
+
+## [36] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 12/22] KVM: selftests: Back the first memory region
+ with guest_memfd for TDX*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> Force GUEST_MEMFD for the primary memory region of TDX VMs.
+> 
+
+This sounds a bit confusing to me.
+It's the kernel/KVM only support guest_memfd for private pages.
+The restriction is not from the "TDX architecture".
+
+Also, the short log is also a bit confusing.
+Why describe the "first memory region" here?
+
+> 
+> Signed-off-by: Lisa Wang <wyihan@google.com>
+
+---
+
+## [37] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 13/22] KVM: selftests: Set first memory region as
+ shared if guest_memfd*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> Set the initial state of the first memory region as shared if it is
+> backed by guest_memfd, so that the KVM selftest framework functions can
+
+The build failed due to this:
+
+lib/kvm_util.c: In function ‘__vm_create’:
+lib/kvm_util.c:507:9: error: too many arguments to function ‘vm_mem_add’
+  507 |         vm_mem_add(vm, VM_MEM_SRC_ANONYMOUS, 0, 0, nr_pages, flags, -1, 0, gmem_flags);
+      |         ^~~~~~~~~~
+In file included from lib/kvm_util.c:9:
+include/kvm_util.h:714:6: note: declared here
+  714 | void vm_mem_add(struct kvm_vm *vm, enum vm_mem_backing_src_type src_type,
+      |      ^~~~~~~~~~
+lib/kvm_util.c: At top level:
+cc1: note: unrecognized command-line option ‘-Wno-gnu-variable-sized-type-not-at-end’ may have been intended to silence earlier diagnostics
+
+It seems the patch set doesn't wire gmem_flags parameter to vm_mem_add().
+
+>  	for (i = 0; i < NR_MEM_REGIONS; i++)
+>  		vm->memslots[i] = 0;
+
+---
+
+## [38] Binbin Wu — 2026-06-08
+*Subject: Re: [PATCH v13 15/22] KVM: selftests: Call KVM_TDX_INIT_VCPU when
+ creating a new TDX vcpu*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+[...]> diff --git a/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h b/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h
+> index 9660ea9d2f31..4d01f806b37d 100644
+> --- a/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h
+
+Nit:
+The two lines' backslashes are misaligned.
+
+> +	} };								\
+> +									\
+
+Similar issue of the truncation of upper bits.
+Though TDX KVM code never sets hw_error currently for vcpu version. 
+
+> +})
+> +
+
+---
+
+## [39] Binbin Wu — 2026-06-09
+*Subject: Re: [PATCH v13 16/22] KVM: selftests: Load per-vCPU guest stack in
+ TDX boot parameters*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Sagi Shahar <sagis@google.com>
+> 
+
+Reviewed-by: Binbin Wu <binbin.wu@linux.intel.com>
+
+One nit below.
+
+[...]>  
+> +void tdx_vcpu_load_boot_parameters(struct kvm_vm *vm, struct kvm_vcpu *vcpu)
+> +{
+
+An extra empty line.
+
+>  static struct kvm_tdx_capabilities *tdx_read_capabilities(struct kvm_vm *vm)
+>  {
+
+---
+
+## [40] Binbin Wu — 2026-06-09
+*Subject: Re: [PATCH v13 20/22] KVM: selftests: Implement MMIO WRITE for the
+ TDX VM*
+
+On 5/22/2026 7:17 AM, Lisa Wang wrote:
+> From: Erdem Aktas <erdemaktas@google.com>
+> 
+                                                                       ^
+Something was cut off?
+
+> 
+> To perform emulated I/O, VMs use the TDG.VP.VMCALL instruction to
+
+Nit:
+The headers in tools/testing/selftests/kvm use SELFTEST_KVM_XXX.
+
+> +
+> +#include <linux/types.h>
+
+I think this should just be 0 instead of TDG_VP_VMCALL, although
+TDG_VP_VMCALL is also 0.
+Per GHCI spec about R10:
+ : Set to 0 indicates that TDG.VP.VMCALL leaf used in R11 is defined
+ : in this specification.
+ : All other values 0x1 to 0xFFFFFFFFFFFFFFFF indicate TDG.VP.VMCALL
+ : is vendor-specific (both R10 and R11).
+
+
+> +	register u64 r11_reg asm("r11") = TDG_VP_VMCALL_VE_REQUEST_MMIO;
+> +	register u64 r12_reg asm("r12") = size;
+
+---
+
+## [41] Chenyi Qiang — 2026-06-15
+*Subject: Re: [PATCH v13 09/22] KVM: selftests: Expose functions to get default
+ sregs values*
+
+On 6/8/2026 2:39 PM, Binbin Wu wrote:
+> On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> 
+
+Also, sregs.efer |= kvm_get_default_efer() is dropped unexpectedly during rebase.
+
+>>  
+>>  	kvm_seg_set_unusable(&sregs.ldt);
+
+---
+
+## [42] Lisa Wang — 2026-06-15
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On Mon, Jun 08, 2026 at 01:57:24PM +0800, Binbin Wu wrote:
+[...snip...]
+> +	} tdx_cmd = { .c = {						\
+> +		.id = (cmd),						\
+
+Thanks. Will fix these in the next version.
+
+Lisa
+
+> > +									\
+> > +	__TEST_ASSERT_VM_VCPU_IOCTL(!ret, #cmd,	ret, vm);		\
+
+---
+
+## [43] Ackerley Tng — 2026-06-15
+*Subject: Re: [PATCH v13 13/22] KVM: selftests: Set first memory region as
+ shared if guest_memfd*
+
+Lisa Wang <wyihan@google.com> writes:
+
+> Set the initial state of the first memory region as shared if it is
+> backed by guest_memfd, so that the KVM selftest framework functions can
+
+Just noticed this while hacking some SNP tests.
+
+> -	vm_userspace_mem_region_add(vm, VM_MEM_SRC_ANONYMOUS, 0, 0, nr_pages, flags);
+> +	vm_mem_add(vm, VM_MEM_SRC_ANONYMOUS, 0, 0, nr_pages, flags, -1, 0, gmem_flags);
+
+I think this patch should fully buy into in-place conversions, so we
+need to also set GUEST_MEMFD_FLAG_MMAP:
+
+@@ -483,6 +483,7 @@ struct kvm_vm *__vm_create(struct vm_shape shape,
+u32 nr_runnable_vcpus,
+ {
+ 	u64 nr_pages = vm_nr_pages_required(shape.mode, nr_runnable_vcpus,
+ 						 nr_extra_pages);
++	enum vm_mem_backing_src_type src_type = VM_MEM_SRC_ANONYMOUS;
+ 	struct userspace_mem_region *slot0;
+ 	u64 gmem_flags = 0;
+ 	struct kvm_vm *vm;
+@@ -503,10 +504,16 @@ struct kvm_vm *__vm_create(struct vm_shape
+shape, u32 nr_runnable_vcpus,
+ 	 */
+ 	if (is_guest_memfd_required(shape)) {
+ 		flags |= KVM_MEM_GUEST_MEMFD;
+-		gmem_flags |= GUEST_MEMFD_FLAG_INIT_SHARED;
++		gmem_flags |= GUEST_MEMFD_FLAG_INIT_SHARED | GUEST_MEMFD_FLAG_MMAP;
++		/*
++		 * TODO: Clean this up together with vm_mem_add(). Use
++		 * VM_MEM_SRC_SHMEM to tell vm_mem_add() to mmap
++		 * guest_memfd with MAP_SHARED.
++		 */
++		src_type = VM_MEM_SRC_SHMEM;
+ 	}
+
+-	vm_mem_add(vm, VM_MEM_SRC_ANONYMOUS, 0, 0, nr_pages, flags, -1, 0,
+gmem_flags);
++	vm_mem_add(vm, src_type, 0, 0, nr_pages, flags, -1, 0, gmem_flags);
+ 	for (i = 0; i < NR_MEM_REGIONS; i++)
+ 		vm->memslots[i] = 0;
+
+The VM_MEM_SRC_SHMEM is a bit of a hack but imo that refactor should go
+with another series to clean up vm_mem_add().
+
+The above code was working for TDX because vm_mem_add() without the
+guest_memfd MMAP flag would leave region->fd as -1. Without
+setting src_type to VM_MEM_SRC_ANONYMOUS, the assertion in vm_mem_add()
+
+  region->fd == -1 || backing_src_is_shared(src_type)
+
+would pass.
+
+tdx_init_mem_region() was called with the anonymously mmap()-ed address,
+which turns out fine.
+
+With the above change, we would also need to call tdx_init_mem_region()
+with NULL for source_address.
+
+---
+
+## [44] Lisa Wang — 2026-06-16
+*Subject: Re: [PATCH v13 13/22] KVM: selftests: Set first memory region as
+ shared if guest_memfd*
+
+On Mon, Jun 08, 2026 at 04:03:23PM +0800, Binbin Wu wrote:
+> On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> > +	 * exactly like other memory providers.
+
+This series need to based on "KVM: selftests: Add support for mmap() on
+guest_memfd in core library" for the gmem_flags parameter.
+
+Lisa
+
+> >  	for (i = 0; i < NR_MEM_REGIONS; i++)
+> >  		vm->memslots[i] = 0;
+
+---
+
+## [45] Ackerley Tng — 2026-06-15
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Fri, Jun 05, 2026, Ackerley Tng wrote:
+>> Sean Christopherson <seanjc@google.com> writes:
+
+I could add more memslots after finalizing the VM, but then I'd have to
+make the guest accept more memory. Hence, I'd rather set up all the
+memslots and then finalize the VM.
+
+sev_smoke_test currently has a separate vm_sev_launch(), which is the
+equivalent of tdx_init_mem_region(), and that's called in the tests
+themselves.
+
+sev_smoke_test also uses vcpu_args_set() after creating the VM with
+vm_create_shape_with_one_vcpu(). Would that work if vm_sev_launch() got
+moved into kvm_arch_vm_finalize_vcpus()?
+
+>> >> It's also possible to have some kvm_vm_finalize() call that can be
+>> >> explicitly and manually invoked from selftests just for CoCo selftests.
+
+I still think kvm_arch_vm_finalize_vcpus() is an odd place to be
+finalizing the VM.
+
+I would prefer to not have to explicitly call some function like
+kvm_arch_vm_finalize() (no vcpu in the name), but a common arch function
+calling vm_sev_launch() and tdx_vm_finalize() is what I can think of
+for test setup flexibility, without too much magic.
+
+For now, I can't think of many uses of __shared. ucall shared memory is
+allocated dynamically, and we can also make it shared cleanly within
+ucall code.
+
+The global variables (sync_global_to_guest()) will appear in the guest
+as long as sync_global_to_guest() is called before
+kvm_arch_vm_finalize(), which I think makes sense to people writing
+tests for CoCo.
+
+
+So 2 questions to push this along:
+
+1. What do you think of a kvm_arch_vm_finalize() that calls
+   vm_sev_launch() and tdx_vm_finalize()? My key issue is that
+   kvm_arch_vm_finalize_*vcpus*() seems to be for finalizing vCPUs
+   rather than the whole VM.
+
+3. Would you like __shared implemented together with this series, as a
+   prerequisite, or later?
+
+---
+
+## [46] Xiaoyao Li — 2026-06-16
+*Subject: Re: [PATCH v13 01/22] KVM: selftests: Add macros to simplify creating
+ VM shapes for non-default types*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Sean Christopherson<seanjc@google.com>
+> 
+
+Reviewed-by: Xiaoyao Li <xiaoyao.li@intel.com>
+
+> ---
+>   tools/testing/selftests/kvm/include/kvm_util.h     | 13 +++++++
+
+It seems the name "__VM_SHAPE" fits better?
+
+> +({						\
+> +	struct vm_shape shape = {		\
+
+and I think making it one line would be OK?
+
+So something on top:
+
+---8<---
+diff --git a/tools/testing/selftests/kvm/include/kvm_util.h 
+b/tools/testing/selftests/kvm/include/kvm_util.h
+index 041bdbfb93f7..a1b5d2029d05 100644
+--- a/tools/testing/selftests/kvm/include/kvm_util.h
++++ b/tools/testing/selftests/kvm/include/kvm_util.h
+@@ -223,17 +223,7 @@ kvm_static_assert(sizeof(struct vm_shape) == 
+sizeof(u64));
+
+  #define VM_TYPE_DEFAULT                        0
+
+-#define VM_SHAPE(__mode)                       \
+-({                                             \
+-       struct vm_shape shape = {               \
+-               .mode = (__mode),               \
+-               .type = VM_TYPE_DEFAULT         \
+-       };                                      \
+-                                               \
+-       shape;                                  \
+-})
+-
+-#define __VM_TYPE(__mode, __type)              \
++#define __VM_SHAPE(__mode, __type)             \
+  ({                                             \
+         struct vm_shape shape = {               \
+                 .mode = (__mode),               \
+@@ -243,8 +233,8 @@ kvm_static_assert(sizeof(struct vm_shape) == 
+sizeof(u64));
+         shape;                                  \
+  })
+
+-#define VM_TYPE(__type)                                \
+-       __VM_TYPE(VM_MODE_DEFAULT, __type)
++#define VM_SHAPE(__mode)       __VM_SHAPE(__mode, VM_TYPE_DEFAULT)
++#define VM_TYPE(__type)                __VM_SHAPE(VM_MODE_DEFAULT, __type)
+
+  extern enum vm_guest_mode vm_mode_default;
+
+---
+
+## [47] Chenyi Qiang — 2026-06-16
+*Subject: Re: [PATCH v13 08/22] KVM: selftests: Add TDX boot code*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Erdem Aktas <erdemaktas@google.com>
+> 
+
+It would be better to maintain consistency by using /* ... */ for single-line comments in this series, such as the SELFTESTS_TDX_TDX_H in patch 20 and other license Identifier.
+
+---
+
+## [48] Sean Christopherson — 2026-06-16
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+On Mon, Jun 15, 2026, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> 
+
+Why?  It's not like the performance of this code matters terribly.
+
+Regardless, nothing *requires* a test to go down that route.  As I said before,
+my goal with the selftests infrastructure is to effectively optimize the entire
+experience, i.e. to provide default behavior that works well for the majority of
+tests.  Attempting to provide default behavior that perfectly fits *every* test
+is simply impossible.
+
+> sev_smoke_test currently has a separate vm_sev_launch(), which is the
+> equivalent of tdx_init_mem_region(), and that's called in the tests
+
+No, because vCPU state would be encrypted at that point.  Moving vm_sev_launch()
+would also break test_sev_dbg(), which sets a global buffer to all 0xaa prior to
+encrypting that data.
+
+> >> >> It's also possible to have some kvm_vm_finalize() call that can be
+> >> >> explicitly and manually invoked from selftests just for CoCo selftests.
+
+That's literally why the function exists though.  The one and only existing
+implementation (on arm64) uses it to initialize the vGIC.
+
+  void kvm_arch_vm_finalize_vcpus(struct kvm_vm *vm)
+  {
+	if (vm->arch.has_gic)
+		__vgic_v3_init(vm->arch.gic_fd);
+  }
+
+That's *very* similar to the proposed TDX usage, where some per-VM asset(s) can
+be initialized/frozen only after all vCPUs have been added.  In other words, the
+name is describing where in the VM creation/setup flow the hook is called, and
+perhaps more importantly, the impact of the call: vCPUs are finalized (obviously
+with a different definition of "finalized" based on the VM properties).
+
+> I would prefer to not have to explicitly call some function like
+> kvm_arch_vm_finalize() (no vcpu in the name), but a common arch function
+
+We can't have our cake and eat it too.  Either we launch/finalize SEV/TDX VMs as
+part of the common VM creation flows (as proposed for TDX), or we force tests to
+manually launch/finalize the VM after additional setup.  The only way to have it
+both ways is to utilize crazy macro shenanigans to execute arbitrary code between
+creating the VM and launching/finalizing the VM, and even I would balk at that.
+
+I honestly don't see any reason to try to figure out which of the two approaches
+is optimal at this time.  Whatever decision we make isn't set in stone, and in
+fact should be relative easy to change.  And without being able to see all the
+TDX/SEV tests that are waiting in the wings, it's more or less impossible to make
+an informed decision.
+
+I definitely want to have SEV and TDX use the same core approach in the end, but
+I don't think we should force the issue right now, because the cost of reworking
+the SEV and/or TDX infrastructure when there are only a bare handful of tests is
+so low.  It will cost more to try to predict the future of a 50/50 outcome than
+it will to make a completely wild guess between the two options and rework things
+if we guess wrong.
+
+> For now, I can't think of many uses of __shared. ucall shared memory is
+> allocated dynamically, and we can also make it shared cleanly within
+
+Uh, every selftest that uses global variables to communicate between guest and
+host?
+
+> The global variables (sync_global_to_guest()) will appear in the guest
+> as long as sync_global_to_guest() is called before
+
+Yes, but that's completely orthogonal to all of this.
+
+> So 2 questions to push this along:
+> 
+
+Key word "seems".  I'm pretty sure Oliver picked kvm_arch_vm_finalize_vcpus() as
+the name in commit 8911c7dbc607 ("KVM: arm64: selftests: Create a VGICv3 for
+'default' VMs") for the same reasons I think it's a good fit for coco VMs: like
+finalizing TDX VMs, initializing the vGIC effectively finalizes vCPUs.
+
+We could rename it to kvm_arch_vm_finalize(), but that won't change the fact that
+we'll need to decide between automagic vs. manual finalization, and it definitely
+should be a separate discussion.
+
+> 3. Would you like __shared implemented together with this series, as a
+>    prerequisite, or later?
+
+Only if __shared is a hard requirement for base TDX support, which I assume is
+not the case.
+
+---
+
+## [49] Ackerley Tng — 2026-06-16
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+>
+> [...snip...]
+
+Makes sense. I'm good with merging this as it is done in this
+patch. Thanks :)
+
+>> For now, I can't think of many uses of __shared. ucall shared memory is
+>> allocated dynamically, and we can also make it shared cleanly within
+
+This definitely should not block this series.
+
+It's coming together for me now with your explanation:
+kvm_arch_vm_finalize_vcpus() actually means finalizing vCPUs! vGIC ==
+Virtual Generic Interrupt Controller, which has to be done after all the
+vCPUs are set up. Since the name is describing where in the VM
+creation/setup flow the hook is called (after creating VM and after
+creating vCPUs), maybe something like kvm_arch_vm_post_vcpu_create()?
+
+Renaming this to kvm_arch_vm_finalize() makes it sound like it is
+finalizing the VM, but this function shouldn't finalize the VM since for
+CoCo finalizing the VM also loads the guest image into the guest - deals
+with memory, not just vCPUs.
+
+8911c7dbc607 ("KVM: arm64: selftests: Create a VGICv3 for 'default'
+VMs") also includes a test_disable_default_vgic() function, we could
+also use something like that to skip CoCo VM finalization for some
+tests? Maybe that's a good middle ground.
+
+>> 3. Would you like __shared implemented together with this series, as a
+>>    prerequisite, or later?
+
+Yup!
+
+---
+
+## [50] Sean Christopherson — 2026-06-16
+*Subject: Re: [PATCH v13 01/22] KVM: selftests: Add macros to simplify creating
+ VM shapes for non-default types*
+
+On Tue, Jun 16, 2026, Xiaoyao Li wrote:
+> On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> > diff --git a/tools/testing/selftests/kvm/include/kvm_util.h b/tools/testing/selftests/kvm/include/kvm_util.h
+
+Oh, that's way better!  I say we go straight there:
+
+--
+From: Sean Christopherson <seanjc@google.com>
+Date: Tue, 28 Oct 2025 21:20:27 +0000
+Subject: [PATCH] KVM: selftests: Add macros to simplify creating VM shapes for
+ non-default types
+
+Add VM_TYPE() and __VM_SHAPE() macros to create a vm_shape structure given
+a type (and mode), and use the macros to define VM_SHAPE_{SEV,SEV_ES,SNP}
+shapes for x86's SEV family of VM shapes.  Providing common infrastructure
+will avoid having to copy+paste vm_sev_create_with_one_vcpu() for TDX.
+
+Use the new SEV+ shapes and drop vm_sev_create_with_one_vcpu().
+
+Opportunistically move the existing VM_SHAPE() (now __VM_SHAPE()) macro
+below the definitions of VM_MODE_DEFAULT so that all of the SHAPE/TYPE
+macros are bundled together.
+
+No functional change intended.
+
+Reviewed-by: Binbin Wu <binbin.wu@linux.intel.com>
+Reviewed-by: Ira Weiny <ira.weiny@intel.com>
+Signed-off-by: Sean Christopherson <seanjc@google.com>
+---
+ .../testing/selftests/kvm/include/kvm_util.h  | 28 +++++++------
+ .../selftests/kvm/include/x86/processor.h     |  4 ++
+ tools/testing/selftests/kvm/include/x86/sev.h |  2 -
+ tools/testing/selftests/kvm/lib/x86/sev.c     | 16 --------
+ .../selftests/kvm/x86/sev_smoke_test.c        | 40 +++++++++----------
+ 5 files changed, 40 insertions(+), 50 deletions(-)
+
+diff --git a/tools/testing/selftests/kvm/include/kvm_util.h b/tools/testing/selftests/kvm/include/kvm_util.h
+index dc70c6da63fa..46bae183d7fc 100644
+--- a/tools/testing/selftests/kvm/include/kvm_util.h
++++ b/tools/testing/selftests/kvm/include/kvm_util.h
+@@ -221,18 +221,6 @@ struct vm_shape {
+ 
+ kvm_static_assert(sizeof(struct vm_shape) == sizeof(u64));
+ 
+-#define VM_TYPE_DEFAULT			0
+-
+-#define VM_SHAPE(__mode)			\
+-({						\
+-	struct vm_shape shape = {		\
+-		.mode = (__mode),		\
+-		.type = VM_TYPE_DEFAULT		\
+-	};					\
+-						\
+-	shape;					\
+-})
+-
+ extern enum vm_guest_mode vm_mode_default;
+ 
+ #if defined(__aarch64__)
+@@ -270,8 +258,24 @@ extern enum vm_guest_mode vm_mode_default;
+ 
+ #endif
+ 
++#define VM_TYPE_DEFAULT			0
++
++#define __VM_SHAPE(__mode, __type)			\
++({						\
++	struct vm_shape shape = {		\
++		.mode = (__mode),		\
++		.type = (__type),		\
++	};					\
++						\
++	shape;					\
++})
++
++
++#define VM_SHAPE(__mode)	__VM_SHAPE(__mode, VM_TYPE_DEFAULT)
+ #define VM_SHAPE_DEFAULT	VM_SHAPE(VM_MODE_DEFAULT)
+ 
++#define VM_TYPE(__type)		__VM_SHAPE(VM_MODE_DEFAULT, __type)
++
+ #define MIN_PAGE_SIZE		(1U << MIN_PAGE_SHIFT)
+ #define PTES_PER_MIN_PAGE	ptes_per_page(MIN_PAGE_SIZE)
+ 
+diff --git a/tools/testing/selftests/kvm/include/x86/processor.h b/tools/testing/selftests/kvm/include/x86/processor.h
+index 77f576ee7789..0aa6eecfcbde 100644
+--- a/tools/testing/selftests/kvm/include/x86/processor.h
++++ b/tools/testing/selftests/kvm/include/x86/processor.h
+@@ -365,6 +365,10 @@ static inline unsigned int x86_model(unsigned int eax)
+ 	return ((eax >> 12) & 0xf0) | ((eax >> 4) & 0x0f);
+ }
+ 
++#define VM_SHAPE_SEV		VM_TYPE(KVM_X86_SEV_VM)
++#define VM_SHAPE_SEV_ES		VM_TYPE(KVM_X86_SEV_ES_VM)
++#define VM_SHAPE_SNP		VM_TYPE(KVM_X86_SNP_VM)
++
+ #define PHYSICAL_PAGE_MASK      GENMASK_ULL(51, 12)
+ 
+ #define PAGE_SHIFT		12
+diff --git a/tools/testing/selftests/kvm/include/x86/sev.h b/tools/testing/selftests/kvm/include/x86/sev.h
+index 1af44c151d60..944c59dbe510 100644
+--- a/tools/testing/selftests/kvm/include/x86/sev.h
++++ b/tools/testing/selftests/kvm/include/x86/sev.h
+@@ -53,8 +53,6 @@ void snp_vm_launch_start(struct kvm_vm *vm, u64 policy);
+ void snp_vm_launch_update(struct kvm_vm *vm);
+ void snp_vm_launch_finish(struct kvm_vm *vm);
+ 
+-struct kvm_vm *vm_sev_create_with_one_vcpu(u32 type, void *guest_code,
+-					   struct kvm_vcpu **cpu);
+ void vm_sev_launch(struct kvm_vm *vm, u64 policy, u8 *measurement);
+ 
+ kvm_static_assert(SEV_RET_SUCCESS == 0);
+diff --git a/tools/testing/selftests/kvm/lib/x86/sev.c b/tools/testing/selftests/kvm/lib/x86/sev.c
+index 93f916903461..95d8520eea34 100644
+--- a/tools/testing/selftests/kvm/lib/x86/sev.c
++++ b/tools/testing/selftests/kvm/lib/x86/sev.c
+@@ -158,22 +158,6 @@ void snp_vm_launch_finish(struct kvm_vm *vm)
+ 	vm_sev_ioctl(vm, KVM_SEV_SNP_LAUNCH_FINISH, &launch_finish);
+ }
+ 
+-struct kvm_vm *vm_sev_create_with_one_vcpu(u32 type, void *guest_code,
+-					   struct kvm_vcpu **cpu)
+-{
+-	struct vm_shape shape = {
+-		.mode = VM_MODE_DEFAULT,
+-		.type = type,
+-	};
+-	struct kvm_vm *vm;
+-	struct kvm_vcpu *cpus[1];
+-
+-	vm = __vm_create_with_vcpus(shape, 1, 0, guest_code, cpus);
+-	*cpu = cpus[0];
+-
+-	return vm;
+-}
+-
+ void vm_sev_launch(struct kvm_vm *vm, u64 policy, u8 *measurement)
+ {
+ 	if (is_sev_snp_vm(vm)) {
+diff --git a/tools/testing/selftests/kvm/x86/sev_smoke_test.c b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
+index 1a49ee391586..fe2c438882ae 100644
+--- a/tools/testing/selftests/kvm/x86/sev_smoke_test.c
++++ b/tools/testing/selftests/kvm/x86/sev_smoke_test.c
+@@ -104,7 +104,7 @@ static void compare_xsave(u8 *from_host, u8 *from_guest)
+ 		abort();
+ }
+ 
+-static void test_sync_vmsa(u32 type, u64 policy)
++static void test_sync_vmsa(struct vm_shape shape, u64 policy)
+ {
+ 	struct kvm_vcpu *vcpu;
+ 	struct kvm_vm *vm;
+@@ -114,7 +114,7 @@ static void test_sync_vmsa(u32 type, u64 policy)
+ 	double x87val = M_PI;
+ 	struct kvm_xsave __attribute__((aligned(64))) xsave = { 0 };
+ 
+-	vm = vm_sev_create_with_one_vcpu(type, guest_code_xsave, &vcpu);
++	vm = vm_create_shape_with_one_vcpu(shape, &vcpu, guest_code_xsave);
+ 	gva = vm_alloc_shared(vm, PAGE_SIZE, KVM_UTIL_MIN_VADDR,
+ 			      MEM_REGION_TEST_DATA);
+ 	hva = addr_gva2hva(vm, gva);
+@@ -150,13 +150,13 @@ static void test_sync_vmsa(u32 type, u64 policy)
+ 	kvm_vm_free(vm);
+ }
+ 
+-static void test_sev(void *guest_code, u32 type, u64 policy)
++static void test_sev(void *guest_code, struct vm_shape shape, u64 policy)
+ {
+ 	struct kvm_vcpu *vcpu;
+ 	struct kvm_vm *vm;
+ 	struct ucall uc;
+ 
+-	vm = vm_sev_create_with_one_vcpu(type, guest_code, &vcpu);
++	vm = vm_create_shape_with_one_vcpu(shape, &vcpu, guest_code);
+ 
+ 	/* TODO: Validate the measurement is as expected. */
+ 	vm_sev_launch(vm, policy, NULL);
+@@ -201,12 +201,12 @@ static void guest_shutdown_code(void)
+ 	__asm__ __volatile__("ud2");
+ }
+ 
+-static void test_sev_shutdown(u32 type, u64 policy)
++static void test_sev_shutdown(struct vm_shape shape, u64 policy)
+ {
+ 	struct kvm_vcpu *vcpu;
+ 	struct kvm_vm *vm;
+ 
+-	vm = vm_sev_create_with_one_vcpu(type, guest_shutdown_code, &vcpu);
++	vm = vm_create_shape_with_one_vcpu(shape, &vcpu, guest_shutdown_code);
+ 
+ 	vm_sev_launch(vm, policy, NULL);
+ 
+@@ -218,28 +218,28 @@ static void test_sev_shutdown(u32 type, u64 policy)
+ 	kvm_vm_free(vm);
+ }
+ 
+-static void test_sev_smoke(void *guest, u32 type, u64 policy)
++static void test_sev_smoke(void *guest, struct vm_shape shape, u64 policy)
+ {
+ 	const u64 xf_mask = XFEATURE_MASK_X87_AVX;
+ 
+-	if (type == KVM_X86_SNP_VM)
+-		test_sev(guest, type, policy | SNP_POLICY_DBG);
++	if (shape.type == KVM_X86_SNP_VM)
++		test_sev(guest, shape, policy | SNP_POLICY_DBG);
+ 	else
+-		test_sev(guest, type, policy | SEV_POLICY_NO_DBG);
+-	test_sev(guest, type, policy);
++		test_sev(guest, shape, policy | SEV_POLICY_NO_DBG);
++	test_sev(guest, shape, policy);
+ 
+-	if (type == KVM_X86_SEV_VM)
++	if (shape.type == KVM_X86_SEV_VM)
+ 		return;
+ 
+-	test_sev_shutdown(type, policy);
++	test_sev_shutdown(shape, policy);
+ 
+ 	if (kvm_has_cap(KVM_CAP_XCRS) &&
+ 	    (xgetbv(0) & kvm_cpu_supported_xcr0() & xf_mask) == xf_mask) {
+-		test_sync_vmsa(type, policy);
+-		if (type == KVM_X86_SNP_VM)
+-			test_sync_vmsa(type, policy | SNP_POLICY_DBG);
++		test_sync_vmsa(shape, policy);
++		if (shape.type == KVM_X86_SNP_VM)
++			test_sync_vmsa(shape, policy | SNP_POLICY_DBG);
+ 		else
+-			test_sync_vmsa(type, policy | SEV_POLICY_NO_DBG);
++			test_sync_vmsa(shape, policy | SEV_POLICY_NO_DBG);
+ 	}
+ }
+ 
+@@ -247,13 +247,13 @@ int main(int argc, char *argv[])
+ {
+ 	TEST_REQUIRE(kvm_cpu_has(X86_FEATURE_SEV));
+ 
+-	test_sev_smoke(guest_sev_code, KVM_X86_SEV_VM, 0);
++	test_sev_smoke(guest_sev_code, VM_SHAPE_SEV, 0);
+ 
+ 	if (kvm_cpu_has(X86_FEATURE_SEV_ES))
+-		test_sev_smoke(guest_sev_es_code, KVM_X86_SEV_ES_VM, SEV_POLICY_ES);
++		test_sev_smoke(guest_sev_es_code, VM_SHAPE_SEV_ES, SEV_POLICY_ES);
+ 
+ 	if (kvm_cpu_has(X86_FEATURE_SEV_SNP))
+-		test_sev_smoke(guest_snp_code, KVM_X86_SNP_VM, snp_default_policy());
++		test_sev_smoke(guest_snp_code, VM_SHAPE_SNP, snp_default_policy());
+ 
+ 	return 0;
+ }
+
+base-commit: e49bb0b5e1e3a8d7783bc7222c02cc6ff90fa2aa
+--
+
+---
+
+## [51] Sean Christopherson — 2026-06-16
+*Subject: Re: [PATCH v13 19/22] KVM: selftests: Finalize TD memory as part of kvm_arch_vm_finalize_vcpus*
+
+On Tue, Jun 16, 2026, Ackerley Tng wrote:
+> >> 1. What do you think of a kvm_arch_vm_finalize() that calls
+> >>    vm_sev_launch() and tdx_vm_finalize()? My key issue is that
+
+No, because I would expect post_vcpu_create() to run after creating each vCPU,
+not after creating all vCPUs.  E.g. see KVM's kvm_arch_vcpu_{pre,post}create().
+
+> Renaming this to kvm_arch_vm_finalize() makes it sound like it is
+> finalizing the VM, but this function shouldn't finalize the VM since for
+
+That probably won't work well, and in practice it's just shuffling deck chairs
+on the Titanic.  For vGIC, and pre-create hook works because the tests that opt
+out of automatic vGIC instantiation want that behavior to apply to all VMs that
+the test creates.  That's not the case for sev_smoke_test though, because some
+testcases need deferred launch (test_sync_vmsa()), whereas others can use
+automatic launch (test_sev()).
+
+The other wrinkle is that SEV at least needs to provide the policy, which again
+varies per VM within a single test.
+
+---
+
+## [52] Ackerley Tng — 2026-06-16
+*Subject: Re: [PATCH v13 00/22] TDX KVM selftests*
+
+Lisa Wang <wyihan@google.com> writes:
+
+> This patch series focuses on setting up a TDX VM and adding all code
+> necessary to run a basic lifecycle test.
+
+Sean, Lisa evaluated your suggestion [1] (summarized as 1. above) but we
+think TDCALL MMIO is better, what do you think?
+
++ Jump directly to where the mmio is used: [2]
++ And here's [3] how tdx_mmio_write() is implemented, with no more
+  throwing everything in a structure. It's also not macroed/prototyped
+  like you suggested in [4], but I think those prototypes can evolve out
+  of future tdx functions?
+
+Let us know so Lisa can try another option (if necessary) while we
+collect more reviews :)
+
+[1] https://lore.kernel.org/all/aQTcDH9LRezI30dm@google.com/
+[2] https://lore.kernel.org/all/20260521-tdx-selftests-v13-v13-21-6983ae4c3a4d@google.com/
+[3] https://lore.kernel.org/all/20260521-tdx-selftests-v13-v13-20-6983ae4c3a4d@google.com/
+[4] https://lore.kernel.org/all/aQTdTkMIukzt-YlA@google.com/
+
+> 4. A note on #VE and x86 ucall simplification
+> It is worth noting that the use of a Virtualization Exception (#VE)
+
+---
+
+## [53] Sean Christopherson — 2026-06-16
+*Subject: Re: [PATCH  v13 20/22] KVM: selftests: Implement MMIO WRITE for the
+ TDX VM*
+
+On Thu, May 21, 2026, Lisa Wang wrote:
+> diff --git a/tools/testing/selftests/kvm/include/x86/tdx/tdx.h b/tools/testing/selftests/kvm/include/x86/tdx/tdx.h
+> new file mode 100644
+
+This is absurd.  Either open code the literals or use sizeof() where appropriate.
+
+> +};
+> +
+
+This needs to be proper assembly, i.e. in a .S file.  Using register like this
+is *extremely* dangerous, because the compiler is (stupidly) allowed to clobber
+registers between their declarations/initialization and their consumption in
+the asm() blob.
+
+> +
+> +	asm volatile(
+
+---
+
+## [54] Sean Christopherson — 2026-06-16
+*Subject: Re: [PATCH  v13 21/22] KVM: selftests: Add ucall support for TDX*
+
+On Thu, May 21, 2026, Lisa Wang wrote:
+> diff --git a/tools/testing/selftests/kvm/lib/x86/ucall.c b/tools/testing/selftests/kvm/lib/x86/ucall.c
+> index e7dd5791959b..c8e3418d53af 100644
+
+I think we should use an x86-specific GPA, not the first address past memslot0.
+Unlike other architectures, x86 has a nice swath of addresses that are pretty
+much guaranteed to be unused, thanks to selftests creating a local APIC by default.
+On the other hand, the chances of a collision with a memslot just after memslot0
+are decidedly non-zero.
+
+Note, because CoCo VMS don't support read-only memslots, the TODO in __vm_create()
+can't be resolved for TDX using the suggested shenanigans.
+
+I vote for either the I/O APIC (0xfec00000) or HPET(0xfed00000).  We *know* TDX
+doesn't support an in-kernel I/O APIC, and the odds of KVM selftests ever
+implementing an I/O APIC are basically nil.  Ditto for the HPET.
+
+> +{
+> +	vm_type = vm->type;
+
+Drop host_ucall_mmio_gpa entirely.  "host GPA" is rather nonsensical, and KVM is
+responsible for stripping the shared bit.  You can actually drop ucall_mmio_gpa
+as well if we go with a hardcoded magic address.
+
+> +		ucall_mmio_gpa |= vm->arch.s_bit;
+> +		sync_global_to_guest(vm, ucall_mmio_gpa);
+
+s/MMIO_SIZE_8B/sizeof(hva_t), because what you're writing is the address of a
+pointer in the host virtual address space.
+
+> +		return;
+> +	}
+
+This needs to return NULL.  Either that or make this an if-elif.  Falling
+through to the normal KVM_EXIT_IO check is not what we want.
+
+---
+
+## [55] Sean Christopherson — 2026-06-16
+*Subject: Re: [PATCH v13 00/22] TDX KVM selftests*
+
+On Tue, Jun 16, 2026, Ackerley Tng wrote:
+> Lisa Wang <wyihan@google.com> writes:
+> 
+
+I think y'all should have responded to that thread with "that doesn't work
+because host userspace can't access the registers".  Reviews are multi-way
+discussions, not one-way streams of "do this".  And the expectation is that
+either review feedback is addressed in the next version, or the dicussion is
+closed/resolved *before* posting the next version.
+
+Remaining silent and then writing a thesis in the cover letter of a future version
+of the series is very inefficient for everyone involved.  I obviously don't read
+cover letters all that closely at v13 and I gotta imagine a *lot* of effort went
+into the above (which I greatly appreciate!).  The paper trail also becomes
+impossible to follow, because anyone reading my response would probably make the
+same assumption as me: it was a viable idea and that's what we implemented.
+
+I'm a-ok with using MMIO, because yeah, there doesn't seem to be a better option.
+
+---
+
+## [56] Xiaoyao Li — 2026-06-17
+*Subject: Re: [PATCH v13 02/22] KVM: selftests: Update
+ kvm_init_vm_address_properties() for TDX*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Isaku Yamahata <isaku.yamahata@intel.com>
+> 
+
+Reviewed-by: Xiaoyao Li <xiaoyao.li@intel.com>
+
+> ---
+>   tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h | 14 ++++++++++++++
+
+---
+
+## [57] Xiaoyao Li — 2026-06-17
+*Subject: Re: [PATCH v13 01/22] KVM: selftests: Add macros to simplify creating
+ VM shapes for non-default types*
+
+On 6/17/2026 12:51 AM, Sean Christopherson wrote:
+> From: Sean Christopherson<seanjc@google.com>
+> Date: Tue, 28 Oct 2025 21:20:27 +0000
+
+Reviewed-by: Xiaoyao Li <xiaoyao.li@intel.com>
+
+some nits below
+
+> ---
+>   .../testing/selftests/kvm/include/kvm_util.h  | 28 +++++++------
+
+inconsistent indentation with below lines.
+
+> +({						\
+> +	struct vm_shape shape = {		\
+
+one extra new line.
+
+> +#define VM_SHAPE(__mode)	__VM_SHAPE(__mode, VM_TYPE_DEFAULT)
+>   #define VM_SHAPE_DEFAULT	VM_SHAPE(VM_MODE_DEFAULT)
+
+---
+
+## [58] Xiaoyao Li — 2026-06-17
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Sagi Shahar <sagis@google.com>
+> 
+
+It looks __tdx_vm_ioctl() can be implemented as the static inline function.
+
+Given all the existing xxx_ioctl() are implmeneted as MACRO, I'm OK with it.
+
+> +
+> +#define tdx_vm_ioctl(vm, cmd, flags, arg)				\
+
+No need to add sizeof(tdx_cap->cpuid). It's included by sizeof(*tdx_cap)
+
+> +					   (sizeof(struct kvm_cpuid_entry2) * nr_cpuid_configs));
+> +		TEST_ASSERT(tdx_cap,
+
+The debug info will be printed everytime the function is called, which 
+is unnecessary.
+
+Ideally, the kvm_tdx_capabilities can be cached like what is done for 
+kvm_supported_cpuid.
+
+> +	return tdx_cap;
+> +}
+
+No need to introduce a new fucntin. We can use get_cpuid_entry().
+
+---
+
+## [59] Xiaoyao Li — 2026-06-17
+*Subject: Re: [PATCH v13 04/22] KVM: selftests: TDX: Use KVM_TDX_CAPABILITIES
+ to validate TDs' attribute configuration*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Isaku Yamahata <isaku.yamahata@intel.com>
+> 
+
+Reviewed-by: Xiaoyao Li <xiaoyao.li@intel.com>
+
+> ---
+>   tools/testing/selftests/kvm/lib/x86/tdx/tdx_util.c | 14 ++++++++++++++
+
+well, this is another caller of tdx_read_capabilities().
+
+As I commented in the previous patch, it's worth caching the result in 
+tdx_read_capabilities() like what kvm_get_supported_cpuid() does for 
+kvm_supported_cpuid.
+
+And it can help only print the debug once.
+
+> +	/* Make sure all the attributes are reported as supported */
+> +	TEST_ASSERT_EQ(attributes & tdx_cap->supported_attrs, attributes);
+
+---
+
+## [60] Xiaoyao Li — 2026-06-17
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> +/*
+> + * Filter CPUID based on TDX supported capabilities
+
+s/non-supported/unsupported/
+
+and break the line to <80 chars
+
+---
+
+## [61] Xiaoyao Li — 2026-06-17
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> diff --git a/tools/testing/selftests/kvm/lib/x86/processor.c b/tools/testing/selftests/kvm/lib/x86/processor.c
+> index b68ad1dc7e02..8d06e7186df1 100644
+
+It fails compilation:
+
+kvm/tools/testing/selftests/kvm/lib/x86/processor.c:806:(.text+0x212c): 
+undefined reference to `tdx_init_vm'
+
+We need grab the change on Makefile.kvm from Patch 10 to this patch.
+
+diff --git a/tools/testing/selftests/kvm/Makefile.kvm 
+b/tools/testing/selftests/kvm/Makefile.kvm
+index e5769268936a..0107ba02b01c 100644
+--- a/tools/testing/selftests/kvm/Makefile.kvm
++++ b/tools/testing/selftests/kvm/Makefile.kvm
+@@ -29,6 +29,7 @@ LIBKVM_x86 += lib/x86/sev.c
+  LIBKVM_x86 += lib/x86/svm.c
+  LIBKVM_x86 += lib/x86/ucall.c
+  LIBKVM_x86 += lib/x86/vmx.c
++LIBKVM_x86 += lib/x86/tdx/tdx_util.c
+
+  LIBKVM_arm64 += lib/arm64/gic.c
+  LIBKVM_arm64 += lib/arm64/gic_v3.c
+
+---
+
+## [62] Xiaoyao Li — 2026-06-23
+*Subject: Re: [PATCH v13 05/22] KVM: selftests: Expose segment definitions to
+ assembly files*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Sagi Shahar <sagis@google.com>
+> 
+
+Reviewed-by: Xiaoyao Li <xiaoyao.li@intel.com>
+
+> ---
+>   tools/testing/selftests/kvm/include/x86/processor_asm.h | 12 ++++++++++++
+
+---
+
+## [63] Xiaoyao Li — 2026-06-23
+*Subject: Re: [PATCH v13 08/22] KVM: selftests: Add TDX boot code*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> From: Erdem Aktas <erdemaktas@google.com>
+> 
+
+<snip>
+
+> diff --git a/tools/testing/selftests/kvm/include/x86/tdx/td_boot.h b/tools/testing/selftests/kvm/include/x86/tdx/td_boot.h
+> index af4474dee387..e5d54a20ed72 100644
+
+Why not just put it into tdx_boot.h where it also gets referenced?
+
+And even just define it in patch 06.
+
+> +#endif  // SELFTEST_TDX_TD_BOOT_ASM_H
+> diff --git a/tools/testing/selftests/kvm/lib/x86/tdx/td_boot.S b/tools/testing/selftests/kvm/lib/x86/tdx/td_boot.S
+
+It's weird to put such a comment here. Put it together with the comment 
+above cli?
+
+> +	movl $TD_BOOT_PARAMETERS_GPA, %ebx
+> +
 
 ---

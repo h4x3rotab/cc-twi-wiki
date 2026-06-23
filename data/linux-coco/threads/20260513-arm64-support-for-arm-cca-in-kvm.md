@@ -1,9 +1,9 @@
 ---
 title: 'arm64: Support for Arm CCA in KVM'
 date: 2026-05-13
-last_reply: 2026-06-05
-message_count: 134
-participants: ['Steven Price', 'Aneesh Kumar K.V', 'Gavin Shan', 'Suzuki K Poulose', 'Marc Zyngier', 'Wei-Lin Chang', 'Lorenzo Pieralisi']
+last_reply: 2026-06-15
+message_count: 147
+participants: ['Steven Price', 'Aneesh Kumar K.V', 'Gavin Shan', 'Suzuki K Poulose', 'Marc Zyngier', 'Wei-Lin Chang', 'Lorenzo Pieralisi', 'Dan Williams (nvidia)']
 ---
 
 ## [1] Steven Price — 2026-05-13
@@ -10378,6 +10378,355 @@ the page can simply be refaulted.
 That said, I'll look into Wei-Lin's suggestion to use
 kvm_gfn_range_filter which would allow all three combinations of
 private-only, shared-only and private+shared.
+
+Thanks,
+Steve
+
+---
+
+## [135] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 24/44] KVM: arm64: Handle realm MMIO emulation*
+
+On 28/05/2026 06:03, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Indeed - I'm surprised checkpatch didn't manage to flag that. I'll fix.
+
+Thanks,
+Steve
+
+>>       return kvm_handle_guest_abort(vcpu);
+>>   }
+
+---
+
+## [136] Suzuki K Poulose — 2026-06-08
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 05/06/2026 07:23, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Could we give the RMM a chance to make use of the Block mappings by 
+creating the Missing RTTs to the level that may work for the current
+range_desc ? i.e., if the range_desc is a 2M block size, we could create
+tables upto L2 in the first go and if the RMM still needs RTT, we could
+go further down to the KVM_PGTABLE_LAST_LEVEL. I understand this is
+kind of an optimisation, so may be we could defer it. (Same applies for
+the non_secure map below).
+
+
+>> +            if (ret)
+>> +                goto err_undelegate;
+
+^^ Same as above.
+
+Suzuki
+
+
+>> +                              memcache);
+>> +            if (ret)
+
+---
+
+## [137] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 26/44] arm64: RMI: Allow populating initial contents*
+
+On 28/05/2026 06:30, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+kvm_arm_rmi_populate() may return an error though. E.g. if the
+"reserved" field is set then it's kvm_arm_rmi_populate() that detects
+that and returns -EINVAL.
+
+>>       default:
+>>           return -EINVAL;
+
+Ack.
+
+>> +        ret = realm_create_rtt_levels(realm, ipa, level,
+>> +                          KVM_PGTABLE_LAST_LEVEL, NULL);
+
+Ack
+
+>> +    return ret;
+>> +}
+
+Good catch. args->size == 0 can trigger a WARN_ON currently. I'll put
+the "return 0" after the realm_ensure_created() call so the behaviour
+matches.
+
+I don't think the wrapped range is quite such a problem - but detecting
+it and rejecting it early seems like a good idea.
+
+>> +    ret = realm_ensure_created(kvm);
+>> +    if (ret)
+
+pages_populated is *signed* long. This is handling an error code - so if
+it's negative we expect the error code to be between -1 and -MAX_ERRNO
+which should easily fit within the 'int' return.
+
+For positive values we continue below (encoding the potentially larger
+number in the args outputs) and return 0.
+
+Thanks,
+Steve
+
+>> +
+>> +    args->size -= pages_populated << PAGE_SHIFT;
+
+---
+
+## [138] Suzuki K Poulose — 2026-06-08
+*Subject: Re: [PATCH v14 26/44] arm64: RMI: Allow populating initial contents*
+
+On 08/06/2026 10:36, Steven Price wrote:
+> On 28/05/2026 06:30, Gavin Shan wrote:
+>> Hi Steve,
+
+...
+
+>>> diff --git a/arch/arm64/kvm/rmi.c b/arch/arm64/kvm/rmi.c
+>>> index a89873a5eb77..209087bcf399 100644
+
+Thinking more about this, I guess a buggy VMM can trigger this
+by populating twice ? (level == KVM_PGTABLE_LAST_LEVEL). So, we should
+return the error back, than warning here and suppressing the error ?
+
+
+Suzuki
+
+---
+
+## [139] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 28/44] arm64: RMI: Create the realm descriptor*
+
+On 26/05/2026 23:47, Wei-Lin Chang wrote:
+> Hi,
+> 
+Indeed.
+
+Thanks,
+Steve
+
+> Thanks,
+> Wei-Lin Chang
+
+---
+
+## [140] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 28/44] arm64: RMI: Create the realm descriptor*
+
+On 28/05/2026 06:51, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Well spotted - yes the current situation where the entire region is
+leaked if the delegate only partially completes is less than ideal! I'll
+add a third argument to rmi_delegate_range() to return the top of the
+region that was successfully delegated. The caller can then attempt an
+undelegate on just the range which was delegated.
+
+Thanks,
+Steve
+
+>> +    if (WARN_ON(rmi_undelegate_page(rd_phys))) {
+>> +        /* Leak the page if it isn't returned */
+
+---
+
+## [141] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 08/06/2026 10:30, Suzuki K Poulose wrote:
+> On 05/06/2026 07:23, Gavin Shan wrote:
+>> Hi Steve,
+
+[...]
+
+>>> diff --git a/arch/arm64/kvm/rmi.c b/arch/arm64/kvm/rmi.c
+>>> index cae29fd3353c..761b38a4071c 100644
+
+A simple change would be just to create one level at a time like this:
+
+diff --git a/arch/arm64/kvm/rmi.c b/arch/arm64/kvm/rmi.c
+index b79b96f7dffb..3f3ade1d3895 100644
+--- a/arch/arm64/kvm/rmi.c
++++ b/arch/arm64/kvm/rmi.c
+@@ -767,15 +767,15 @@ static int realm_map_protected(struct kvm *kvm,
+ 			/* Create missing RTTs and retry */
+ 			int level = RMI_RETURN_INDEX(ret);
+ 
+-			WARN_ON(level == KVM_PGTABLE_LAST_LEVEL);
++			if (WARN_ON(level >= KVM_PGTABLE_LAST_LEVEL))
++				goto err_undelegate;
+ 			ret = realm_create_rtt_levels(realm, ipa, level,
+-						      KVM_PGTABLE_LAST_LEVEL,
++						      level + 1,
+ 						      memcache);
+ 			if (ret)
+ 				goto err_undelegate;
+ 
+-			ret = rmi_rtt_data_map(rd, ipa, ipa_top, flags,
+-					       range_desc, &out_top);
++			continue;
+ 		}
+ 
+ 		if (WARN_ON(ret))
+
+Thanks,
+Steve
+
+---
+
+## [142] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 05/06/2026 12:20, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+You're absolutely correct - that's a nice simplification!
+
+Thanks,
+Steve
+
+---
+
+## [143] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 32/44] KVM: arm64: Handle Realm PSCI requests*
+
+On 28/05/2026 07:55, Gavin Shan wrote:
+> Hi Steve,
+> 
+
+Whoops - indeed it isn't!
+
+>>       /*
+>>        * Make sure the reset request is observed if the RUNNABLE
+
+Ack, although as the comment says this should be going away.
+
+Thanks,
+Steve
+
+>> +
+>> +    return 0;
+
+---
+
+## [144] Suzuki K Poulose — 2026-06-08
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 08/06/2026 11:56, Steven Price wrote:
+> On 08/06/2026 10:30, Suzuki K Poulose wrote:
+>> On 05/06/2026 07:23, Gavin Shan wrote:
+
+That looks good to me.
+
+Cheers
+Suzuki
+
+
+>   
+>   		if (WARN_ON(ret))
+
+---
+
+## [145] Steven Price — 2026-06-08
+*Subject: Re: [PATCH v14 26/44] arm64: RMI: Allow populating initial contents*
+
+On 08/06/2026 10:41, Suzuki K Poulose wrote:
+> On 08/06/2026 10:36, Steven Price wrote:
+>> On 28/05/2026 06:30, Gavin Shan wrote:
+
+Populating twice causes rmi_delegate_page() to be run twice on the same
+page and the second one will then fail. So I don't think this is
+possible (please correct me if I've missed something!)
+
+Thanks,
+Steve
+
+---
+
+## [146] Dan Williams (nvidia) — 2026-06-12
+*Subject: Re: [PATCH v14 10/44] arm64: RMI: Add support for SRO*
+
+Steven Price wrote:
+[..]
+> > alloc_pages_exact() will fail if the requested size exceeds the maximal
+> > allowed
+
+Just some comparison comments as I am also going through the TDX patches
+which enable "Extension SEAMCALLs". These new SEAMCALLs are similar to
+the SRO mechanism [1].
+
+TDX asks for an upfront delegation of memory at init time using
+alloc_contig_pages() that is never returned until entire module is
+shutdown. alloc_contig_pages() is not subject to the MAX_ORDER limit,
+but not sure that alloc_contig_pages() is suitable for small+dynamic
+runtime memory add / release that SRO potentially wants to do?
+
+Does SRO always balance the size of RMI_OP_MEM_REQ_DONATE with
+RMI_OP_MEM_REQ_RECLAIM, or might some donate requests be a one way
+donation like TDX? Just poking to see if there is a path to preallocate
+a pool vs the fine grained per-operation alloc/free.
+
+[1]: http://lore.kernel.org/20260522034128.3144354-3-yilun.xu@linux.intel.com
+
+---
+
+## [147] Steven Price — 2026-06-15
+*Subject: Re: [PATCH v14 10/44] arm64: RMI: Add support for SRO*
+
+Hi Dan,
+
+On 13/06/2026 00:07, Dan Williams (nvidia) wrote:
+> Steven Price wrote:
+> [..]
+
+Looks like at least at the moment it's much more one-way than the SRO
+mechanism - there's no reclaim mechanism (yet).
+
+> TDX asks for an upfront delegation of memory at init time using
+> alloc_contig_pages() that is never returned until entire module is
+
+Yeah I'm not sure quite what is best. I expect the RMM to only request
+contiguous memory for very small allocations to use as hardware page
+tables. It's an issue I'm trying to work through that the specification
+doesn't provide any guidance for what sort of allocations the host
+should expect to provide.
+
+> Does SRO always balance the size of RMI_OP_MEM_REQ_DONATE with
+> RMI_OP_MEM_REQ_RECLAIM, or might some donate requests be a one way
+
+The spec is unfortunately not prescriptive on this point. For an
+operation which eventually fails, the expectation is that the RMM will
+return all the memory that was provided (and exactly that memory). But
+the specification doesn't actually require that.
+
+The problem is that there are situations where a racing operation on
+another CPU could trigger this to not happen. For example, a new page
+table needs to be allocated to complete a map operation, but then a
+racing operation on another CPU makes use of this page table (e.g due to
+a map at a different address), the memory for the page table cannot be
+returned even if the operation doesn't complete because it's in use from
+the racing operation.
+
+I don't believe the current RMM design will actually do this - but it's
+not something we actually want to prevent in the spec.
+
+Equally the expectation is that all the donated memory for a guest will
+be returned when the guest is destroyed. But we don't have anything in
+the spec to enforce this.
+
+I don't particularly expect a pool to be that useful for the expected
+memory allocation patterns as I expect SRO donations to be long lived.
+We don't (yet at least) have a concept of donating memory just for
+"scratch" memory during an operation. Although the SRO mechanism doesn't
+rule that out.
 
 Thanks,
 Steve

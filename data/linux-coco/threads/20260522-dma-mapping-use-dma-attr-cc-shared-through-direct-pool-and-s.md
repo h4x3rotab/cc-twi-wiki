@@ -1,9 +1,9 @@
 ---
 title: 'dma-mapping: Use DMA_ATTR_CC_SHARED through direct, pool and swiotlb paths'
 date: 2026-05-22
-last_reply: 2026-06-04
-message_count: 35
-participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM', 'Michael Kelley', 'Jason Gunthorpe']
+last_reply: 2026-06-08
+message_count: 36
+participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM', 'Michael Kelley', 'Jason Gunthorpe', 'Marek Szyprowski']
 ---
 
 ## [1] Aneesh Kumar K.V (Arm) — 2026-05-22
@@ -3706,5 +3706,23 @@ the pkvm patch will get sequenced as well, it would be best to push
 that it gets picked up right away.
 
 Jason
+
+---
+
+## [36] Marek Szyprowski — 2026-06-08
+*Subject: Re: [PATCH v5 05/20] dma-pool: track decrypted atomic pools and
+ select them via attrs*
+
+On 04.06.2026 20:24, Jason Gunthorpe wrote:
+> On Thu, Jun 04, 2026 at 08:27:36PM +0530, Aneesh Kumar K.V wrote:
+>> I already sent a v6 in the hope of getting this merged for the next
+
+
+I would like to give this a bit of time in linux-next so it is a bit too
+late for v7.2, but before merging it I would also like to have this code
+reviewed by someone with confidential computing knowledge.
+
+
+Best regards
 
 ---

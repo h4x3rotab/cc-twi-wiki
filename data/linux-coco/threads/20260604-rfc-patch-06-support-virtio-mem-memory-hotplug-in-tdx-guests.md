@@ -1,9 +1,9 @@
 ---
 title: '[RFC PATCH 0/6] Support virtio-mem memory hotplug in TDX guests'
 date: 2026-06-04
-last_reply: 2026-06-04
-message_count: 7
-participants: ['Zhenzhong Duan']
+last_reply: 2026-06-15
+message_count: 9
+participants: ['Zhenzhong Duan', 'Kiryl Shutsemau']
 ---
 
 ## [1] Zhenzhong Duan — 2026-06-04
@@ -804,5 +804,99 @@ index 0abfb3505093..ecee6df92395 100644
 +	 */
  	if (!tdx_map_gpa(start, end, enc))
  		return false;
+
+---
+
+## [8] Kiryl Shutsemau — 2026-06-12
+*Subject: Re: [RFC PATCH 0/6] Support virtio-mem memory hotplug in TDX guests*
+
+On Thu, Jun 04, 2026 at 05:35:45AM -0400, Zhenzhong Duan wrote:
+> 2. Re-accepting already-accepted memory returns errors. Ignoring these errors
+> can mislead the guest into believing re-accepted memory is zeroed when it
+
+Re-accepting concern is valid, but often overblown. Reaccepting memory
+that never got allocated is fine.
+
+> == About this series ==
+> 
+
+You are presenting these callbacks as generic memory hotplug thingy, but
+it is only plugged into virtio mem. ACPI hotplug won't accept/release
+memory unless I miss something. Are you expecting them to cover non
+virtio cases too?
+
+And these callbacks feels like very ad-hoc solution.
+
+> See Rick and Paolo's
+> discussion about using TDG.MEM.PAGE.RELEASE in [1].
+
+Having RELEASE in hotplug path without addressing private->shared
+conversion first is odd. That's the most obvious path that has to be
+covered first.
+
+Hm?
+
+> == Future work ==
+> support lazy accept
+
+It would be nice to have some outline on how we will get there to
+understand if this patchset is stepping stone or dead end that has to be
+thrown away later on.
+
+Hot[un]plug is often used to manager overcommited host. Eager accept
+might be counter-productive.
+
+---
+
+## [9] Duan, Zhenzhong — 2026-06-15
+*Subject: RE: [RFC PATCH 0/6] Support virtio-mem memory hotplug in TDX guests*
+
+>-----Original Message-----
+>From: Kiryl Shutsemau <kas@kernel.org>
+
+> Reaccepting memory that never got allocated is fine.
+
+I don't quite understand. "Reaccepting" implies accepting memory that was
+already accepted earlier. For that to happen, the memory must have already
+been allocated on the VMM side, correct?
+
+>
+>> == About this series ==
+
+You are right, I didn't add ACPI hotplug in this series. I'm working on RFCv2
+supporting both virtio-mem and ACPI hotplug in eager/lazy accept mode.
+
+>
+>And these callbacks feels like very ad-hoc solution.
+
+OK, will drop the callbacks in RFCv2.
+
+>
+>> See Rick and Paolo's
+
+This patch series assumes that memory is plugged in as private memory
+and must remain private prior to being unplugged. During the unplugging
+process, memory is allocated from the buddy system and marked as
+FAKE_OFFLINE. Because all free memory within the buddy system is
+strictly private, shared memory can never be unplugged.
+
+Shared memory is originally converted from private memory allocated by
+the buddy system. Consequently, the driver must convert any shared
+memory back to private and return it to the buddy system before it can
+be unplugged.
+
+>
+>> == Future work ==
+
+I realized the callbacks are specially used for eager accept, they are not
+useful for lazy accept. So, I will drop them in RFCv2.
+
+>
+>Hot[un]plug is often used to manager overcommited host. Eager accept
+
+Agree, I should have taken lazy accept into consideration from start.
+
+Thanks
+Zhenzhong
 
 ---

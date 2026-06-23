@@ -1,8 +1,8 @@
 ---
 title: 'Add iommufd ioctls to support TSM operations'
 date: 2026-05-25
-last_reply: 2026-06-02
-message_count: 16
+last_reply: 2026-06-09
+message_count: 19
 participants: ['Aneesh Kumar K.V (Arm)', 'Anthony Krowiak', 'Alexey Kardashevskiy', 'Dan Williams (nvidia)', 'Tian, Kevin', 'Jason Gunthorpe']
 ---
 
@@ -2086,5 +2086,121 @@ No change to host owned part of the IOMMU when TDX or CCA moves the device to se
 > so per CC arch commands are needed to marshal device assignment support
 
 Dunno, besides the DMA thing, these CCA/SEV/TDX types will only appear in WARN_ON of the arch TSM drivers and will not really be seen. If a wrong TSM driver is loaded (say, TDX on AMD), then something just went terribly wrong. Thanks,
+
+---
+
+## [17] Dan Williams (nvidia) — 2026-06-08
+*Subject: Re: [PATCH v5 5/5] iommufd/vdevice: add TSM request ioctl*
+
+Aneesh Kumar K.V wrote:
+[..]
+> > I think we can wait to move it to its own IOMMU operation unless/until
+> > there is a need to set RUN outside of an explicit guest request, right?
+[..]
+> -static bool iommufd_vdevice_tsm_req_scope_valid(u32 scope)
+> +static bool iommufd_vdevice_tsm_req_arch_valid(u32 tvm_arch)
+
+Makes sense for any command that needs tunneling. However, see below, what is
+that set, and do we need a IOMMU_VDEVICE_TSM_COMMON when architecture
+differentiation is not required?
+
+> +		return true;
+> +	default:
+
+The design goal of the netlink device-evidence interface is to be able
+to respond to all shapes of requests for evidence. So netlink caches
+objects that the hypercall handler can fill responses from.
+
+It eliminates a class of commands that need tunneling.
+
+> +	case TSM_REQ_VALIDATE_MMIO:
+> +	case TSM_REQ_SET_TDI_STATE:
+
+Are these potentially candidates for a IOMMU_VDEVICE_TSM_COMMON? The
+handler knows how to do the arch-specific response from the common
+iommufd result, or is there TSM-specific payload beyond @tsm_code for
+these.
+
+Make it the case that guest_req only needs non-common arch for
+operations that are implementation unique, or where the response payload
+exceeds what can be conveyed via @tsm_code.
+
+>  		return true;
+> +	case TSM_REQ_SEV_ENABLE_DMA:
+
+Right, this appears to be the only case where the command is
+implementation unique. The handler can only ask iommufd to take
+arch-specific action.
+
+---
+
+## [18] Aneesh Kumar K.V — 2026-06-09
+*Subject: Re: [PATCH v5 5/5] iommufd/vdevice: add TSM request ioctl*
+
+"Dan Williams (nvidia)" <djbw@kernel.org> writes:
+
+> Aneesh Kumar K.V wrote:
+> [..]
+
+Sure, I can drop this from the iommufd ioctl and use netlink to read and
+regenerate the objects from the VMM.
+
+Can I use netlink to find the cached object size? CCA supports
+RHI_DA_OBJECT_SIZE, which can be used to query the object size.
+If not should we have TSM_REQ_OBJECT_INFO? 
+
+>
+>> +	case TSM_REQ_VALIDATE_MMIO:
+
+I am not sure I follow the IOMMU_VDEVICE_TSM_COMMON feedback above.
+
+Earlier discussions around this concluded that we may want iommufd
+to validate all input commands, rather than making the guest request
+ioctl a passthrough interface.
+
+If we make the ops IOMMU_VDEVICE_TSM_COMMON, we would still need to add
+TSM_REQ_VALIDATE_MMIO and TSM_REQ_SET_TDI_STATE for the arch-specific
+handler. Why not expose those to the generic iommufd layer, so that we
+can add operation validation there and completely drop IOMMU_VDEVICE_TSM_COMMON?
+
+>>  		return true;
+>> +	case TSM_REQ_SEV_ENABLE_DMA:
+
+-aneesh
+
+---
+
+## [19] Alexey Kardashevskiy — 2026-06-09
+*Subject: Re: [PATCH v5 5/5] iommufd/vdevice: add TSM request ioctl*
+
+On 9/6/26 06:58, Dan Williams (nvidia) wrote:
+
+> Aneesh Kumar K.V wrote:
+> [..]
+
+
+I still do not follow why making these arches checks in runtime, should be caught at the build time (ARM vs x86 vs RiscV) or at the TSM modprobe (AMD vs Intel).
+
+The scope becomes just IOMMU_VDEVICE_TSM_REQ_SCOPE_TUNNEL imho.
+
+
+> 
+>> +             return true;
+
++1.
+
+> 
+>> +     case TSM_REQ_VALIDATE_MMIO:
+
+These are not common to put in IOMMUFD - it is either TSM (for TDI states) or KVM (for MMIO validate) on AMD and other arches won't share much either, right?
+
+> Make it the case that guest_req only needs non-common arch for
+> operations that are implementation unique, or where the response payload
+
+There are 2 arch-specific actions - one is calling TSM to execute actual guest request, the other one is notifying the host IOMMU driver about the device going secure. Like this:
+
+https://github.com/AMDESE/linux-kvm/blob/tsm/drivers/iommu/iommufd/viommu.c#L603
+
+I can tuck domain->ops->tsm_enable into my TSM but rather would not. Thanks,
 
 ---

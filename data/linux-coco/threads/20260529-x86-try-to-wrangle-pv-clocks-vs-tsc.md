@@ -1,8 +1,8 @@
 ---
 title: 'x86: Try to wrangle PV clocks vs. TSC'
 date: 2026-05-29
-last_reply: 2026-06-05
-message_count: 66
+last_reply: 2026-06-09
+message_count: 74
 participants: ['Sean Christopherson', 'Jürgen Groß', 'Borislav Petkov', 'David Woodhouse', 'Kiryl Shutsemau', 'Thomas Gleixner']
 ---
 
@@ -4452,5 +4452,270 @@ w/o X86_FEATURE_CONSTANT_TSC.
 Thanks,
 
         tglx
+
+---
+
+## [67] Thomas Gleixner — 2026-06-06
+*Subject: Re: [PATCH v4 10/47] x86/tsc: Consolidate forcing of
+ X86_FEATURE_TSC_KNOWN_FREQ for PV code*
+
+On Fri, May 29 2026 at 07:43, Sean Christopherson wrote:
+
+> Now that all paravirt code that explicitly specifies the TSC frequency
+> also sets X86_FEATURE_TSC_KNOWN_FREQ, replace all of the one-off code
+
+There is a good answer I think.
+
+early_tsc_khz exists to cater for the overclocking crowd. On their
+modded systems the firmware supplied TSC frequency (CPUID/MSR) is not
+matching reality anymore. So they work around that by supplying a close
+enough tsc_early_khz and then they let the refined calibration work
+figure it out.
+
+Arguably that's only relevant for bare metal systems and what's worse is
+that in virtual environments the refined calibration work can fail,
+which renders the TSC unstable.
+
+So I'd rather say we change this logic to:
+
+   if (!hypervisor_is_type(X86_HYPER_NATIVE)) {
+      tsc_khz = x86_init.....();
+      force(X86_FEATURE_TSC_KNOWN_FREQ);
+   } else if (tsc_khz_early) {
+      ....
+   } else {
+      ...
+   }
+
+Along with:
+
+   if (!hypervisor_is_type(X86_HYPER_NATIVE)) {
+      if (tsc_khz_early)
+         pr_warn("Ignoring non-sensical tsc_early_khz command line argument\n");
+
+or something daft like that.
+
+The kernel has for various reasons always tried to cater for the needs
+of users who are plagued by bonkers firmware, but we have to stop to
+prioritize or treating equal ancient and modded out of spec hardware.
+
+TBH, I consider that whole KVM clock nonsense to fall into the modded
+out of spec hardware realm. Do a reality check:
+
+   How many production systems are out there still which run VMs on CPUs
+   with a broken TSC and the lack of VM TSC scaling?
+
+I'm not saying that we should not support the few remaining systems
+anymore, but our tendency to pretend that we can keep all of this
+nonsense working and at the same time making progress is just a fallacy.
+
+I rather want to have a more fine grained differentiation and
+prioritization of:
+
+  1) The actual real world relevant use cases which run on contemporary
+     hardware.
+
+  2) Still relevant use cases on slightly older hardware with less
+     capabilities
+
+  3) Broken firmware
+
+  4) Modded out of spec nonsense
+
+  5) Support for ancient museums pieces
+
+Thanks,
+
+        tglx
+
+---
+
+## [68] David Woodhouse — 2026-06-06
+*Subject: Re: [PATCH v4 10/47] x86/tsc: Consolidate forcing of
+ X86_FEATURE_TSC_KNOWN_FREQ for PV code*
+
+On Sat, 2026-06-06 at 12:34 +0200, Thomas Gleixner wrote:
+> On Fri, May 29 2026 at 07:43, Sean Christopherson wrote:
+> 
+
+I don't know that we can take the KVM (and Xen) clock away from guests,
+but all of the *horrid* part about it is the way it attempts to cope
+with the possibility that the *host* timekeeping might flip away from
+TSC-based mode at any point in time. By the end of my outstanding
+cleanup series, that is the *only* thing the gtod_notifier remains for.
+
+If we can trust the hardware *and* the host kernel, then KVM could
+theoretically hardwire the kvmclock into 'master clock mode' where it
+basically just advertises the TSC→kvmclock relationship *once* to all
+CPUs and it never changes.
+
+All the nonsense about updating it every time we enter a CPU could just
+go away completely.
+
+---
+
+## [69] Sean Christopherson — 2026-06-08
+*Subject: Re: [PATCH v4 10/47] x86/tsc: Consolidate forcing of
+ X86_FEATURE_TSC_KNOWN_FREQ for PV code*
+
+On Sat, Jun 06, 2026, David Woodhouse wrote:
+> On Sat, 2026-06-06 at 12:34 +0200, Thomas Gleixner wrote:
+> > On Fri, May 29 2026 at 07:43, Sean Christopherson wrote:
+
+Ya, I ended up in the same place once Sashiko pointed out that skipping the SNP/TDX
+setup was hazardous[*], and also once I realized that tsc_khz_early *complemented*
+the refinement instead of replacing it.
+
+This is what I have locally:
+
+        if (cc_platform_has(CC_ATTR_GUEST_SNP_SECURE_TSC))
+                known_tsc_khz = snp_secure_tsc_init();
+        else if (boot_cpu_has(X86_FEATURE_TDX_GUEST))
+                known_tsc_khz = tdx_tsc_init();
+
+        /*
+         * If the TSC frequency wasn't provided by trusted firmware, try to get
+         * it from the hypervisor (which is untrusted when running as a CoCo guest).
+         */
+        if (!known_tsc_khz && x86_init.hyper.get_tsc_khz)
+                known_tsc_khz = x86_init.hyper.get_tsc_khz();
+
+        /*
+         * Mark the TSC frequency as known if it was obtained from a hypervisor
+         * or trusted firmware.  Don't mark the frequency as known if the user
+         * specified the frequency, as the user-provided frequency is intended
+         * as a "starting point", not a known, guaranteed frequency.
+         */
+        if (known_tsc_khz && !tsc_early_khz)
+                setup_force_cpu_cap(X86_FEATURE_TSC_KNOWN_FREQ);
+
+        /*
+         * Ignore the user-provided TSC frequency if the exact frequency was
+         * obtained from trusted firmware or the hypervisor, as the user-
+         * provided frequency is intended as a "starting point", not a known,
+         * guaranteed frequency.
+         */
+        if (!known_tsc_khz)
+                known_tsc_khz = tsc_early_khz;
+        else if (tsc_early_khz)
+                pr_err("Ignoring 'tsc_early_khz' in favor of firmware/hypervisor.\n");
+
+[*] https://lore.kernel.org/all/ahnF-FehodVd474X@google.com
+
+> > The kernel has for various reasons always tried to cater for the needs
+> > of users who are plagued by bonkers firmware, but we have to stop to
+
+FWIW, I have the exact same sentiments about kvmclock, but I'm also trying my
+best not to break folks that are happily running on what is effectively flawed,
+ancient "hardward". 
+
+> I don't know that we can take the KVM (and Xen) clock away from guests,
+> but all of the *horrid* part about it is the way it attempts to cope
+
+But to Thomas' point, why bother?  For actual old hardware, kvmclock is what it
+is.  For modern hardware, it's completely antiquated.
+
+---
+
+## [70] Thomas Gleixner — 2026-06-09
+*Subject: Re: [PATCH v4 10/47] x86/tsc: Consolidate forcing of
+ X86_FEATURE_TSC_KNOWN_FREQ for PV code*
+
+On Mon, Jun 08 2026 at 15:38, Sean Christopherson wrote:
+> On Sat, Jun 06, 2026, David Woodhouse wrote:
+>> > Along with:
+
+If the frequenct is known via the above then you want to set the
+KNOWN_FREQ feature bit unconditionally. SNP/TDX/hypervisor override the
+command line argument as you print below.
+
+>         /*
+>          * Ignore the user-provided TSC frequency if the exact frequency was
+
+>> All the nonsense about updating it every time we enter a CPU could just
+>> go away completely.
+
+I agree, but we are not forced to make it a first class citizen to the
+detriment of sane systems.
+
+Thanks,
+
+        tglx
+
+---
+
+## [71] Sean Christopherson — 2026-06-09
+*Subject: Re: [PATCH v4 10/47] x86/tsc: Consolidate forcing of
+ X86_FEATURE_TSC_KNOWN_FREQ for PV code*
+
+On Tue, Jun 09, 2026, Thomas Gleixner wrote:
+> On Mon, Jun 08 2026 at 15:38, Sean Christopherson wrote:
+> > On Sat, Jun 06, 2026, David Woodhouse wrote:
+
+Doh, forgot to remove that check when I shuffled things around.  Thank you!
+
+---
+
+## [72] Sean Christopherson — 2026-06-09
+*Subject: Re: [PATCH v4 01/47] x86/tsc: Never re-calibrate TSC frequency if its
+ exact timing is known*
+
+On Fri, Jun 05, 2026, Thomas Gleixner wrote:
+> On Fri, Jun 05 2026 at 11:04, Sean Christopherson wrote:
+> But we also should have a check in the TSC init code somewhere which
+
+Ugh, any objection to punting on this for now?  KVM and Xen guests will trigger
+TSC_KNOWN_FREQ without CONSTANT_TSC, thanks to commits:
+
+  e10f78050323 ("kvmclock: fix TSC calibration for nested guests")
+  898ec52d2ba0 ("x86/xen/time: Set the X86_FEATURE_TSC_KNOWN_FREQ flag in xen_tsc_khz()")
+
+Hyper-V guests might as well?  Hyper-V's handling of TSC is weird, even for a
+hypervisor.
+
+Even when the frequency is provided in CPUID by the hypervisor, QEMU at least
+requires a fairly explicit opt-in to advertise CONSTANT_TSC, presumably to try
+to prevent users from shooting themselves in the foot.
+
+---
+
+## [73] Thomas Gleixner — 2026-06-09
+*Subject: Re: [PATCH v4 01/47] x86/tsc: Never re-calibrate TSC frequency if
+ its exact timing is known*
+
+On Tue, Jun 09 2026 at 10:17, Sean Christopherson wrote:
+
+> On Fri, Jun 05, 2026, Thomas Gleixner wrote:
+>> On Fri, Jun 05 2026 at 11:04, Sean Christopherson wrote:
+
+Hypervisors are ranked by weirdness? I ranked them by insanity so far.
+
+> Even when the frequency is provided in CPUID by the hypervisor, QEMU at least
+> requires a fairly explicit opt-in to advertise CONSTANT_TSC, presumably to try
+
+Bah. We really should have enforced the dependency when we introduced
+KNOWN_FREQ. But that ship has sailed.
+
+Though for correctness sake this should be fixed at some point in the
+foreseeable future.
+
+Thanks,
+
+        tglx
+
+---
+
+## [74] Sean Christopherson — 2026-06-09
+*Subject: Re: [PATCH v4 02/47] x86/tsc: Add a standalone helpers for getting
+ TSC info from CPUID.0x15*
+
+On Mon, Jun 01, 2026, Borislav Petkov wrote:
+> On Fri, May 29, 2026 at 07:43:49AM -0700, Sean Christopherson wrote:
+> > +static int cpuid_get_tsc_info(struct cpuid_tsc_info *info)
+
+Actually, if we take the approach of relying on the user to check the return
+code, then there's no need to zero the struct since all fields will be explicitly
+written, especially if we drop the "tsc_khz" field.  I was zeroing the field
+purely as defense in depth.
 
 ---

@@ -1,8 +1,8 @@
 ---
 title: '[RFC PATCH v5 00/45] TDX: Dynamic PAMT + S-EPT Hugepage'
 date: 2026-01-28
-last_reply: 2026-05-18
-message_count: 152
+last_reply: 2026-06-11
+message_count: 153
 participants: ['Sean Christopherson', 'Konrad Rzeszutek Wilk', 'Dave Hansen', 'Edgecombe, Rick P', 'Yan Zhao', 'Huang, Kai']
 ---
 
@@ -11335,5 +11335,117 @@ bit chaotic...
 
 --
 https://github.com/kvm-x86/linux/tree/next
+
+---
+
+## [153] Yan Zhao — 2026-06-11
+*Subject: Re: [RFC PATCH v5 30/45] x86/virt/tdx: Add API to demote a 2MB
+ mapping to 512 4KB mappings*
+
+> +u64 tdh_mem_page_demote(struct tdx_td *td, u64 gpa, enum pg_level level, u64 pfn,
+> +			struct page *new_sp, struct tdx_pamt_cache *pamt_cache,
+Note for the next posting:
+
+When DPAMT is enabled, part of the DEMOTE SEAMCALL performs the same function as
+PAMT.ADD for the guest page, with the DPAMT page pair specified at args.r12 and
+args.r13. So, DEMOTE has the same contention issue as PAMT.ADD [1].
+Consider the following scenario:
+
+      CPU 0                                     CPU 1
+
+(1) DEMOTE adds pfn A1=0x1b090c,         (2) PAMT.ADD adds pfn YY, pfn ZZ as
+pfn B1=0x119b4f as DPAMT pages            DPAMT pages for pfn A2=0x1b090d.
+for guest page XX=0x511a00
+
+(1) CPU0 needs to acquire a shared lock on page A1's 2MB PAMT entry.
+    Since A1 and B1 are added as DPAMT pages, they don't necessarily have DPAMT
+    pages installed for their own 2MB ranges.
+(2) Assume there're no DPAMT pages installed for A1's 2MB range.
+    CPU1 installs DPAMT pages YY, ZZ for page A2, acquiring an exclusive lock
+    on page A2's 2MB PAMT entry.
+
+Because pages A1 and A2 reside within the same 2MB range, either DEMOTE or
+PAMT.ADD will return TDX_OPERAND_BUSY [2].
+
+Though KVM holds write mmu_lock before invoking DEMOTE, which prevents
+concurrent PAMT.ADD within one TD, the above BUSY error could occur if a second
+TD invokes PAMT.ADD while the first TD is invoking DEMOTE.
+
+So, fix this issue by acquiring the global pamt_lock around DEMOTE. See the new
+implementation [3].
+
+Since this contention should occur rarely (e.g., when there's a second TD
+invoking PAMT.ADD concurrently while the first TD is invoking DEMOTE, and the
+DPAMT page pair to add for DEMOTE must reside in the 2MB target range as
+PAMT.ADD),  a possible optimization is to avoid holding the global pamt_lock in
+the first invocation of tdh_mem_page_demote() (e.g., by indicating try or fast
+mode); only acquire the global pamt_lock if the first try returns busy, ensuring
+the second invocation must succeed.
+
+[1] https://lore.kernel.org/kvm/aNX6V6OSIwly1hu4@yzhao56-desk.sh.intel.com
+[2] The contention is verified with an internal POC.
+    Error logs:
+    a.1) DEMOTE adds PAMT pages pfn1=0x19c0a0, pfn2=0x1b572f for guest pfn=0x519800
+      2) __tdx_pamt_get() adds PAMT pages for pfn=0x19c0a1.
+      3) DEMOTE returns error 0x800002000000000c.
+    b.1) DEMOTE adds PAMT pages pfn1=0x1b090c, pfn2=0x119b4f for guest pfn=0x511a00
+      2) __tdx_pamt_get() adds PAMT pages for pfn=0x1b090d
+      3) PAMT.ADD returns error 0x8000020000000001.
+
+[3] New implementation:
+u64 tdh_mem_page_demote(struct tdx_td *td, u64 gpa, enum pg_level level, u64 pfn,
+                        struct page *new_sp, struct tdx_pamt_cache *pamt_cache,  
+                        u64 *ext_err1, u64 *ext_err2)                            
+{                                                                                
+        bool dpamt = tdx_supports_dynamic_pamt(&tdx_sysinfo) && level == PG_LEVEL_2M;
+        struct page *pamt_pages[TDX_DPAMT_ENTRY_PAGE_CNT];                       
+        struct tdx_module_args args = {                                          
+                .rcx = gpa | pg_level_to_tdx_sept_level(level),                  
+                .rdx = tdx_tdr_pa(td),                                           
+                .r8 = page_to_phys(new_sp),                                      
+        };                                                                       
+        atomic_t *pamt_refcount;                                                 
+        u64 ret;                                                                 
+                                                                                 
+        if (!tdx_supports_demote_nointerrupt(&tdx_sysinfo))                      
+                return TDX_SW_ERROR;                                             
+                                                                                 
+        /* Flush the new S-EPT page to be added */                               
+        tdx_clflush_page(new_sp);                                                
+                                                                                 
+        if (dpamt) {                                                             
+                if (alloc_pamt_array(pamt_pages, pamt_cache))                    
+                        return TDX_SW_ERROR;                                     
+                                                                                 
+                args.r12 = page_to_phys(pamt_pages[0]);                          
+                args.r13 = page_to_phys(pamt_pages[1]);                          
+                                                                                 
+                /*                                                               
+                 * Before demotion, the 2MB guest memory range is not managed    
+                 * by DPAMT, so its pamt_refcount should be 0.                   
+                 * Set it to 512 after demotion succeeds, since removing of each 
+                 * 4KB mapping will reduce the refcount by 1.                    
+                 */                                                              
+                pamt_refcount = tdx_find_pamt_refcount(pfn);                     
+                                                                                 
+                spin_lock(&pamt_lock);                                           
+        } 
+	ret = seamcall_saved_ret(TDH_MEM_PAGE_DEMOTE, &args);
+
+        if (dpamt) {
+                if (!ret)
+                        WARN_ON_ONCE(atomic_cmpxchg_release(pamt_refcount, 0, PTRS_PER_PMD));
+
+                spin_unlock(&pamt_lock);
+
+                if (ret)
+                        free_pamt_array(pamt_pages);
+        }
+
+        *ext_err1 = args.rcx;
+        *ext_err2 = args.rdx;
+
+        return ret;
+}
 
 ---
