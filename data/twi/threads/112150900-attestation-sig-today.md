@@ -47,18 +47,18 @@ Join Zoom Meeting
 Meeting ID: 996 3934 7425  
 Passcode: cahi18  
 One tap mobile  
-[redacted-phone],,99639347425#,,,,\*522813# US (New York)  
-[redacted-phone],,99639347425#,,,,\*522813# US (Washington DC)  
++19292056099,,99639347425#,,,,\*522813# US (New York)  
++13017158592,,99639347425#,,,,\*522813# US (Washington DC)  
   
 Dial by your location  
-        [redacted-phone] US (New York)  
-        [redacted-phone] US (Washington DC)  
-        [redacted-phone] US (Chicago)  
-        [redacted-phone] US (San Jose)  
-        [redacted-phone] US (Tacoma)  
-        [redacted-phone] US (Houston)  
-        [redacted-phone] US Toll-free  
-        [redacted-phone] US Toll-free  
+        +1 929 205 6099 US (New York)  
+        +1 301 715 8592 US (Washington DC)  
+        +1 312 626 6799 US (Chicago)  
+        +1 669 900 6833 US (San Jose)  
+        +1 253 215 8782 US (Tacoma)  
+        +1 346 248 7799 US (Houston)  
+        888 788 0099 US Toll-free  
+        877 853 5247 US Toll-free  
 Meeting ID: 996 3934 7425  
 Passcode: 522813  
 Find your local number: [https://zoom.us/u/acj6dfQUR2](https://www.google.com/url?q=https://zoom.us/u/acj6dfQUR2&sa=D&source=calendar&usd=2&usg=AOvVaw0YGjyujWQ2wiSxQGI9_w2r)

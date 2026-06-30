@@ -21,7 +21,7 @@ I however lost my voice this weekend and cannot narrate it. Perhaps someone on t
 Hope this helps.
 
 [Mark
-F. Novak](mailto:mark.f.novak@...) | M: [redacted-phone] | Zoom: mark.f.novak
+F. Novak](mailto:mark.f.novak@...) | M: +1(425)260-8728 | Zoom: mark.f.novak
 
 Applied Enterprise Security Architecture, JPMorgan Chase & Co.
 

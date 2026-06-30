@@ -47,7 +47,7 @@ EtheWolfe
 V/r  
   
 Eric Wolfe | Director of Engineering  
-M: [redacted-phone]  
+M: 804.839.9884  
 [wolfe@...](mailto:wolfe@...)
 
 <https://www.mainsailindustries.com/>
@@ -112,7 +112,7 @@ Show quoted text](#quoted-251995407)
 > V/r  
 >   
 > Eric Wolfe | Director of Engineering  
-> M: [redacted-phone]  
+> M: 804.839.9884  
 > [wolfe@...](mailto:wolfe@...)
 >
 > <https://www.mainsailindustries.com/>
