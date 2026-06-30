@@ -1,9 +1,9 @@
 ---
 title: 'Enable DICE-based TDX Quoting Extension'
 date: 2026-06-18
-last_reply: 2026-06-22
-message_count: 22
-participants: ['Xu Yilun', 'Dave Hansen']
+last_reply: 2026-06-29
+message_count: 48
+participants: ['Xu Yilun', 'Dave Hansen', 'Chao Gao', 'Peter Fang', 'Tony Lindgren', 'Sean Christopherson']
 ---
 
 ## [1] Xu Yilun — 2026-06-18
@@ -2581,5 +2581,896 @@ index 32b13b0c85f9..f07e12552bf9 100644
  #define TDH_EXT_INIT                   60
  #define TDH_EXT_MEM_ADD                        61
  #define TDH_SYS_DISABLE                        69
+
+---
+
+## [23] Chao Gao — 2026-06-23
+*Subject: Re: [PATCH v2 02/17] x86/virt/tdx: Configure add-on features on TDX
+ module init and update*
+
+On Thu, Jun 18, 2026 at 04:13:40PM +0800, Xu Yilun wrote:
+>In addition to basic TDX functionalities, TDX module provides add-on
+>features that can be progressively enabled as the kernel supports them.
+
+Actually, we do not need another global variable here. tdx_features0 is cached
+and is not updated across a runtime update, so the derived add-on feature
+bitmap will be the same before and after the update.
+
+
+> static __init int config_tdx_module(struct tdmr_info_list *tdmr_list,
+> 				    u64 global_keyid)
+
+How about moving this r9 assignment out of the if block and placing it next to
+'args.r8 = global_keyid;'? There is no need to guard it, because args.r9 will
+be 0 when no add-on features are enabled, which is perfectly fine.
+
+>+		seamcall_fn = TDH_SYS_CONFIG;
+>+	}
+
+---
+
+## [24] Xu Yilun — 2026-06-24
+*Subject: Re: [PATCH v2 02/17] x86/virt/tdx: Configure add-on features on TDX
+ module init and update*
+
+> There's also zero stopping us from putting version in args:
+> 
+
+Ah, on 2nd reading, I'm pretty sure now I understand your logical argument in
+patch 1 and 2. It's good to me. I append my diff at the end.
+
+> 
+> But this is *exactly* the kind of thing that shouldn't be a part of an
+
+Sorry, I should have been more active in searching for the solution
+rather than sticking to "kernel never keeps versions", when I've found
+the problem that public modules are not available.
+
+----8<----
+
+diff --git a/arch/x86/include/asm/shared/tdx.h b/arch/x86/include/asm/shared/tdx.h
+index f20e91d7ac35..972880910a5e 100644
+--- a/arch/x86/include/asm/shared/tdx.h
++++ b/arch/x86/include/asm/shared/tdx.h
+@@ -143,6 +143,8 @@ struct tdx_module_args {
+        u64 rbx;
+        u64 rdi;
+        u64 rsi;
++       /* for RAX encoding */
++       u8  version;
+ };
+
+ /* Used to communicate with the TDX module */
+diff --git a/arch/x86/kernel/asm-offsets.c b/arch/x86/kernel/asm-offsets.c
+index 081816888f7a..b3c00ff4d819 100644
+--- a/arch/x86/kernel/asm-offsets.c
++++ b/arch/x86/kernel/asm-offsets.c
+@@ -95,6 +95,7 @@ static void __used common(void)
+        OFFSET(TDX_MODULE_rbx, tdx_module_args, rbx);
+        OFFSET(TDX_MODULE_rdi, tdx_module_args, rdi);
+        OFFSET(TDX_MODULE_rsi, tdx_module_args, rsi);
++       OFFSET(TDX_MODULE_version, tdx_module_args, version);
+
+        BLANK();
+        OFFSET(BP_scratch, boot_params, scratch);
+diff --git a/arch/x86/virt/vmx/tdx/tdxcall.S b/arch/x86/virt/vmx/tdx/tdxcall.S
+index 016a2a1ec1d6..d1d3d40c5614 100644
+--- a/arch/x86/virt/vmx/tdx/tdxcall.S
++++ b/arch/x86/virt/vmx/tdx/tdxcall.S
+@@ -48,6 +48,14 @@
+        /* Move Leaf ID to RAX */
+        mov %rdi, %rax
+
++       /*
++        * Extract the version from 'struct tdx_module_args', append it to
++        * RAX[23:16]
++        */
++       movzbl  TDX_MODULE_version(%rsi), %ecx
++       shll    $16, %ecx
++       orq     %rcx, %rax
++
+        /* Move other input regs from 'struct tdx_module_args' */
+        movq    TDX_MODULE_rcx(%rsi), %rcx
+        movq    TDX_MODULE_rdx(%rsi), %rdx
+diff --git a/arch/x86/virt/vmx/tdx/tdx.c b/arch/x86/virt/vmx/tdx/tdx.c
+index a6f8fd0a3df0..bc3aa1f78fc8 100644
+--- a/arch/x86/virt/vmx/tdx/tdx.c
++++ b/arch/x86/virt/vmx/tdx/tdx.c
+@@ -1036,7 +1036,6 @@ static __init void set_tdx_addon_features(void)
+ static __init int config_tdx_module(struct tdmr_info_list *tdmr_list,
+                                    u64 global_keyid)
+ {
+-       u64 seamcall_fn = TDH_SYS_CONFIG_V0;
+        struct tdx_module_args args = {};
+        u64 *tdmr_pa_array;
+        size_t array_sz;
+@@ -1059,18 +1058,18 @@ static __init int config_tdx_module(struct tdmr_info_list *tdmr_list,
+        for (i = 0; i < tdmr_list->nr_consumed_tdmrs; i++)
+                tdmr_pa_array[i] = __pa(tdmr_entry(tdmr_list, i));
+
++       set_tdx_addon_features();
++
+        args.rcx = __pa(tdmr_pa_array);
+        args.rdx = tdmr_list->nr_consumed_tdmrs;
+        args.r8 = global_keyid;
+
+-       set_tdx_addon_features();
+-
+        if (tdx_addon_feature0) {
+                args.r9 = tdx_addon_feature0;
+-               seamcall_fn = TDH_SYS_CONFIG;
++               args.version = 1;
+        }
+
+-       ret = seamcall_prerr(seamcall_fn, &args);
++       ret = seamcall_prerr(TDH_SYS_CONFIG, &args);
+
+        /* Free the array as it is not required anymore. */
+        kfree(tdmr_pa_array);
+@@ -1761,16 +1760,15 @@ int tdx_module_shutdown(void)
+
+ int tdx_module_run_update(void)
+ {
+-       u64 seamcall_fn = TDH_SYS_UPDATE_V0;
+        struct tdx_module_args args = {};
+        int ret;
+
+        if (tdx_addon_feature0) {
+                args.r9 = tdx_addon_feature0;
+-               seamcall_fn = TDH_SYS_UPDATE;
++               args.version = 1;
+        }
+
+-       ret = seamcall_prerr(seamcall_fn, &args);
++       ret = seamcall_prerr(TDH_SYS_UPDATE, &args);
+        if (ret)
+                return ret;
+
+@@ -2353,6 +2351,7 @@ u64 tdh_vp_init(struct tdx_vp *vp, u64 initial_rcx, u32 x2apicid)
+                .rcx = vp->tdvpr_pa,
+                .rdx = initial_rcx,
+                .r8 = x2apicid,
++               .version = 1,
+        };
+
+        return seamcall(TDH_VP_INIT, &args);
+diff --git a/arch/x86/virt/vmx/tdx/tdx.h b/arch/x86/virt/vmx/tdx/tdx.h
+index 32b13b0c85f9..018988c25caa 100644
+--- a/arch/x86/virt/vmx/tdx/tdx.h
++++ b/arch/x86/virt/vmx/tdx/tdx.h
+@@ -44,7 +44,7 @@
+ #define TDH_VP_CREATE                  10
+ #define TDH_MNG_KEY_FREEID             20
+ #define TDH_MNG_INIT                   21
+-#define TDH_VP_INIT                    SEAMCALL_LEAF_VER(22, 1)
++#define TDH_VP_INIT                    22
+ #define TDH_PHYMEM_PAGE_RDMD           24
+ #define TDH_VP_RD                      26
+ #define TDH_PHYMEM_PAGE_RECLAIM                28
+@@ -58,11 +58,9 @@
+ #define TDH_PHYMEM_CACHE_WB            40
+ #define TDH_PHYMEM_PAGE_WBINVD         41
+ #define TDH_VP_WR                      43
+-#define TDH_SYS_CONFIG_V0              45
+-#define TDH_SYS_CONFIG                 SEAMCALL_LEAF_VER(TDH_SYS_CONFIG_V0, 1)
++#define TDH_SYS_CONFIG                 45
+ #define TDH_SYS_SHUTDOWN               52
+-#define TDH_SYS_UPDATE_V0              53
+-#define TDH_SYS_UPDATE                 SEAMCALL_LEAF_VER(TDH_SYS_UPDATE_V0, 1)
++#define TDH_SYS_UPDATE                 53
+ #define TDH_EXT_INIT                   60
+ #define TDH_EXT_MEM_ADD                        61
+ #define TDH_SYS_DISABLE                        69
+
+---
+
+## [25] Peter Fang — 2026-06-24
+*Subject: Re: [PATCH v2 02/17] x86/virt/tdx: Configure add-on features on TDX
+ module init and update*
+
+On Wed, Jun 24, 2026 at 08:00:39PM +0800, Xu Yilun wrote:
+> > There's also zero stopping us from putting version in args:
+> > 
+
+[ ... ]
+
+> diff --git a/arch/x86/virt/vmx/tdx/tdxcall.S b/arch/x86/virt/vmx/tdx/tdxcall.S
+> index 016a2a1ec1d6..d1d3d40c5614 100644
+
+This approach looks much cleaner to me. Would it be better to have a
+small C helper to encode the final RAX value instead of operating on RAX
+directly in asm? Looking at the May 2026 edition of the ABI spec,
+SEAMCALL RAX encoding is starting to get quite complex. Just thinking
+about this from a readability standpoint.
+
+---
+
+## [26] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 03/17] x86/virt/tdx: Detect if the extensions
+ initialization is required*
+
+On Thu, Jun 18, 2026 at 04:13:41PM +0800, Xu Yilun wrote:
+> TDX module extensions support extension SEAMCALLs that are preemptible
+> and resumable, unlike normal SEAMCALLs that run to completion while
+
+How about "TDX module extension SEAMCALLs are preemptible and resumable..."
+above to make it easier to read?
+
+Other than that:
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [27] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 11/17] x86/virt/tdx: Add interface to generate a Quote*
+
+On Thu, Jun 18, 2026 at 04:13:49PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> --- a/arch/x86/virt/vmx/tdx/tdx.c
+...
+> +void *tdx_quote_generate(struct tdx_td *td, void *in_data, u32 in_data_len,
+> +			 u32 *quote_len)
+
+How about make the pre-generated static tdx_quote a template page that only
+gets read and copied to an allocated bufer here?
+
+If the tdx_quote template is only read for copying here, seems you're not
+going to need the mutex at all? That is assuming tdx_quote template does
+not change after init.
+
+---
+
+## [28] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 08/17] x86/virt/tdx: Prepare Quote buffer during
+ extension bringup*
+
+On Thu, Jun 18, 2026 at 04:13:46PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> For simplicity, let all guests share a global buffer. Build the buffer's
+
+To me it seems the pre-generated parts can be made into a template that
+can be copied to an allocated buffer looking at patch 11/17.
+
+---
+
+## [29] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 09/17] x86/virt/tdx: Add interface to check Quoting
+ availability*
+
+On Thu, Jun 18, 2026 at 04:13:47PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [30] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 10/17] x86/virt/tdx: Move tdx_tdr_pa() up in the file*
+
+On Thu, Jun 18, 2026 at 04:13:48PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [31] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 12/17] x86/virt/tdx: Reinitialize the Quoting
+ extension after TDX module update*
+
+On Thu, Jun 18, 2026 at 04:13:50PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [32] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 13/17] x86/virt/tdx: Enable Quoting extension*
+
+On Thu, Jun 18, 2026 at 04:13:51PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [33] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 14/17] x86/tdx: Move and rename Quote request structure*
+
+On Thu, Jun 18, 2026 at 04:13:52PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [34] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 15/17] KVM: TDX: Factor out userspace return path from
+ tdx_get_quote()*
+
+On Thu, Jun 18, 2026 at 04:13:53PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Reviewed-by: Tony Lindgren <tony.lindgren@linux.intel.com>
+
+---
+
+## [35] Tony Lindgren — 2026-06-25
+*Subject: Re: [PATCH v2 17/17] KVM: TDX: Support event-notify interrupts only
+ with userspace Quoting*
+
+On Thu, Jun 18, 2026 at 04:13:55PM +0800, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> --- a/arch/x86/kvm/vmx/tdx.c
+
+Can you use kvm_tdx->get_quote_in_kernel also above? Or should it maybe
+be initialized here if not used earlier?
+  
+> @@ -1684,9 +1691,16 @@ static int tdx_get_quote(struct kvm_vcpu *vcpu)
+>  
+
+Since you're using kvm_tdx->get_quote_in_kernel here.
+
+---
+
+## [36] Xu Yilun — 2026-06-25
+*Subject: Re: [PATCH v2 02/17] x86/virt/tdx: Configure add-on features on TDX
+ module init and update*
+
+On Wed, Jun 24, 2026 at 03:10:37PM -0700, Peter Fang wrote:
+> On Wed, Jun 24, 2026 at 08:00:39PM +0800, Xu Yilun wrote:
+> > > There's also zero stopping us from putting version in args:
+
+I'm also good to it. I made some diff for your proposal, Some additional
+effort here is to update some comments and parameter names, to reflect
+the differences between "function/func/fn" (the unversioned number) and
+the final composite "fn_code" for RAX.
+
+-----8<-------
+
+diff --git a/arch/x86/include/asm/shared/tdx.h b/arch/x86/include/asm/shared/tdx.h
+index f20e91d7ac35..c26eca18fded 100644
+--- a/arch/x86/include/asm/shared/tdx.h
++++ b/arch/x86/include/asm/shared/tdx.h
+@@ -143,6 +143,8 @@ struct tdx_module_args {
+ 	u64 rbx;
+ 	u64 rdi;
+ 	u64 rsi;
++	/* for leaf encoding */
++	u8  version;
+ };
+ 
+ /* Used to communicate with the TDX module */
+diff --git a/arch/x86/virt/vmx/tdx/seamcall.S b/arch/x86/virt/vmx/tdx/seamcall.S
+index 6854c52c374b..5cf3993e98f4 100644
+--- a/arch/x86/virt/vmx/tdx/seamcall.S
++++ b/arch/x86/virt/vmx/tdx/seamcall.S
+@@ -10,8 +10,8 @@
+  *
+  * __seamcall() function ABI:
+  *
+- * @fn   (RDI)  - SEAMCALL Leaf number, moved to RAX
+- * @args (RSI)  - struct tdx_module_args for input
++ * @fn_code (RDI)  - SEAMCALL composite leaf code, moved to RAX
++ * @args    (RSI)  - struct tdx_module_args for input
+  *
+  * Only RCX/RDX/R8-R11 are used as input registers.
+  *
+@@ -29,8 +29,8 @@ SYM_FUNC_END(__seamcall)
+  *
+  * __seamcall_ret() function ABI:
+  *
+- * @fn   (RDI)  - SEAMCALL Leaf number, moved to RAX
+- * @args (RSI)  - struct tdx_module_args for input and output
++ * @fn_code (RDI)  - SEAMCALL composite leaf code, moved to RAX
++ * @args    (RSI)  - struct tdx_module_args for input and output
+  *
+  * Only RCX/RDX/R8-R11 are used as input/output registers.
+  *
+@@ -51,8 +51,8 @@ SYM_FUNC_END(__seamcall_ret)
+  *
+  * __seamcall_saved_ret() function ABI:
+  *
+- * @fn   (RDI)  - SEAMCALL Leaf number, moved to RAX
+- * @args (RSI)  - struct tdx_module_args for input and output
++ * @fn_code (RDI)  - SEAMCALL composite leaf code, moved to RAX
++ * @args    (RSI)  - struct tdx_module_args for input and output
+  *
+  * All registers in @args are used as input/output registers.
+  *
+diff --git a/arch/x86/virt/vmx/tdx/seamcall_internal.h b/arch/x86/virt/vmx/tdx/seamcall_internal.h
+index be5f446467df..bb17d965b453 100644
+--- a/arch/x86/virt/vmx/tdx/seamcall_internal.h
++++ b/arch/x86/virt/vmx/tdx/seamcall_internal.h
+@@ -11,17 +11,28 @@
+ #ifndef _X86_VIRT_SEAMCALL_INTERNAL_H
+ #define _X86_VIRT_SEAMCALL_INTERNAL_H
+ 
++#include <linux/bitfield.h>
+ #include <linux/printk.h>
+ #include <linux/types.h>
+ #include <asm/archrandom.h>
+ #include <asm/processor.h>
+ #include <asm/tdx.h>
+ 
+-u64 __seamcall(u64 fn, struct tdx_module_args *args);
+-u64 __seamcall_ret(u64 fn, struct tdx_module_args *args);
+-u64 __seamcall_saved_ret(u64 fn, struct tdx_module_args *args);
++u64 __seamcall(u64 fn_code, struct tdx_module_args *args);
++u64 __seamcall_ret(u64 fn_code, struct tdx_module_args *args);
++u64 __seamcall_saved_ret(u64 fn_code, struct tdx_module_args *args);
+ 
+-typedef u64 (*sc_func_t)(u64 fn, struct tdx_module_args *args);
++typedef u64 (*sc_func_t)(u64 fn_code, struct tdx_module_args *args);
++
++#define SEAMCALL_VERSION_MASK		GENMASK_U64(23, 16)
++
++static __always_inline u64 __seamcall_fn_encoding(sc_func_t func, u64 fn,
++						  struct tdx_module_args *args)
++{
++	FIELD_MODIFY(SEAMCALL_VERSION_MASK, &fn, args->version);
++
++	return func(fn, args);
++}
+ 
+ static __always_inline u64 __seamcall_dirty_cache(sc_func_t func, u64 fn,
+ 						  struct tdx_module_args *args)
+@@ -39,7 +50,7 @@ static __always_inline u64 __seamcall_dirty_cache(sc_func_t func, u64 fn,
+ 	 */
+ 	this_cpu_write(cache_state_incoherent, true);
+ 
+-	return func(fn, args);
++	return __seamcall_fn_encoding(func, fn, args);
+ }
+ 
+ static __always_inline u64 sc_retry(sc_func_t func, u64 fn,
+diff --git a/arch/x86/virt/vmx/tdx/tdxcall.S b/arch/x86/virt/vmx/tdx/tdxcall.S
+index 016a2a1ec1d6..b0f7867bcd1c 100644
+--- a/arch/x86/virt/vmx/tdx/tdxcall.S
++++ b/arch/x86/virt/vmx/tdx/tdxcall.S
+@@ -24,7 +24,7 @@
+  *-------------------------------------------------------------------------
+  * Input Registers:
+  *
+- * RAX                        - TDCALL/SEAMCALL Leaf number.
++ * RAX                        - TDCALL/SEAMCALL composite Leaf code.
+  * RCX,RDX,RDI,RSI,RBX,R8-R15 - TDCALL/SEAMCALL Leaf specific input registers.
+  *
+  * Output Registers:
+diff --git a/arch/x86/virt/vmx/tdx/tdx.c b/arch/x86/virt/vmx/tdx/tdx.c
+index 6a1c4fe202bb..8c1a5b7f603a 100644
+--- a/arch/x86/virt/vmx/tdx/tdx.c
++++ b/arch/x86/virt/vmx/tdx/tdx.c
+@@ -1019,7 +1019,6 @@ static __init void set_tdx_addon_features(void)
+ static __init int config_tdx_module(struct tdmr_info_list *tdmr_list,
+ 				    u64 global_keyid)
+ {
+-	u64 seamcall_fn = TDH_SYS_CONFIG_V0;
+ 	struct tdx_module_args args = {};
+ 	u64 *tdmr_pa_array;
+ 	size_t array_sz;
+@@ -1042,18 +1041,18 @@ static __init int config_tdx_module(struct tdmr_info_list *tdmr_list,
+ 	for (i = 0; i < tdmr_list->nr_consumed_tdmrs; i++)
+ 		tdmr_pa_array[i] = __pa(tdmr_entry(tdmr_list, i));
+ 
++	set_tdx_addon_features();
++
+ 	args.rcx = __pa(tdmr_pa_array);
+ 	args.rdx = tdmr_list->nr_consumed_tdmrs;
+ 	args.r8 = global_keyid;
+ 
+-	set_tdx_addon_features();
+-
+ 	if (tdx_addon_feature0) {
+ 		args.r9 = tdx_addon_feature0;
+-		seamcall_fn = TDH_SYS_CONFIG;
++		args.version = 1;
+ 	}
+ 
+-	ret = seamcall_prerr(seamcall_fn, &args);
++	ret = seamcall_prerr(TDH_SYS_CONFIG, &args);
+ 
+ 	/* Free the array as it is not required anymore. */
+ 	kfree(tdmr_pa_array);
+@@ -1515,16 +1514,15 @@ int tdx_module_shutdown(void)
+ 
+ int tdx_module_run_update(void)
+ {
+-	u64 seamcall_fn = TDH_SYS_UPDATE_V0;
+ 	struct tdx_module_args args = {};
+ 	int ret;
+ 
+ 	if (tdx_addon_feature0) {
+ 		args.r9 = tdx_addon_feature0;
+-		seamcall_fn = TDH_SYS_UPDATE;
++		args.version = 1;
+ 	}
+ 
+-	ret = seamcall_prerr(seamcall_fn, &args);
++	ret = seamcall_prerr(TDH_SYS_UPDATE, &args);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -2112,6 +2110,7 @@ u64 tdh_vp_init(struct tdx_vp *vp, u64 initial_rcx, u32 x2apicid)
+ 		.rcx = vp->tdvpr_pa,
+ 		.rdx = initial_rcx,
+ 		.r8 = x2apicid,
++		.version = 1,
+ 	};
+ 
+ 	return seamcall(TDH_VP_INIT, &args);
+diff --git a/arch/x86/virt/vmx/tdx/tdx.h b/arch/x86/virt/vmx/tdx/tdx.h
+index 2deb0a5c902e..1f43d2eb2345 100644
+--- a/arch/x86/virt/vmx/tdx/tdx.h
++++ b/arch/x86/virt/vmx/tdx/tdx.h
+@@ -2,7 +2,6 @@
+ #ifndef _X86_VIRT_TDX_H
+ #define _X86_VIRT_TDX_H
+ 
+-#include <linux/bitfield.h>
+ #include <linux/bits.h>
+ 
+ /*
+@@ -12,18 +11,6 @@
+  * architectural definitions come first.
+  */
+ 
+-/*
+- * SEAMCALL leaf:
+- *
+- * Bit 15:0	Leaf number
+- * Bit 23:16	Version number
+- */
+-#define SEAMCALL_LEAF			GENMASK(15, 0)
+-#define SEAMCALL_VER			GENMASK(23, 16)
+-
+-#define SEAMCALL_LEAF_VER(l, v)		(FIELD_PREP(SEAMCALL_LEAF, l) | \
+-					 FIELD_PREP(SEAMCALL_VER, v))
+-
+ /*
+  * TDX module SEAMCALL leaf functions
+  */
+@@ -44,7 +31,7 @@
+ #define TDH_VP_CREATE			10
+ #define TDH_MNG_KEY_FREEID		20
+ #define TDH_MNG_INIT			21
+-#define TDH_VP_INIT			SEAMCALL_LEAF_VER(22, 1)
++#define TDH_VP_INIT			22
+ #define TDH_PHYMEM_PAGE_RDMD		24
+ #define TDH_VP_RD			26
+ #define TDH_PHYMEM_PAGE_RECLAIM		28
+@@ -58,11 +45,9 @@
+ #define TDH_PHYMEM_CACHE_WB		40
+ #define TDH_PHYMEM_PAGE_WBINVD		41
+ #define TDH_VP_WR			43
+-#define TDH_SYS_CONFIG_V0		45
+-#define TDH_SYS_CONFIG			SEAMCALL_LEAF_VER(TDH_SYS_CONFIG_V0, 1)
++#define TDH_SYS_CONFIG			45
+ #define TDH_SYS_SHUTDOWN		52
+-#define TDH_SYS_UPDATE_V0		53
+-#define TDH_SYS_UPDATE			SEAMCALL_LEAF_VER(TDH_SYS_UPDATE_V0, 1)
++#define TDH_SYS_UPDATE			53
+ #define TDH_EXT_INIT			60
+ #define TDH_EXT_MEM_ADD			61
+ #define TDH_SYS_DISABLE			69
+
+---
+
+## [37] Xu Yilun — 2026-06-25
+*Subject: Re: [PATCH v2 02/17] x86/virt/tdx: Configure add-on features on TDX
+ module init and update*
+
+> >For runtime update, Linux applies a policy that no newer features should
+> >be added after update to avoid disrupting live TDX operations. To adhere
+
+I think a global var "static u64 tdx_addon_feature0 *__ro_after_init*;"
+better illustrates the policy that add-on feature bitmap should be decided at
+boot up and never change later. It will also be used to decide if a specific
+add-on feature initialization is needed. We don't want to calculate the bitmap
+again and again, though the result must be the same.
+
+Maybe I should strenghthen the commit message:
+
+  ... both phases can use it. This actually mirrors a TDX module internal state
+  so that kernel knows which add-on TDX operations (for example, quoting
+  SEAMCALLs, which will be added in later patches) are valid.
+
+> 
+> 
+
+I tend to keep r9 assignment in the block, it clearly shows which
+SEAMCALL version needs what parameters, help people map the code to TDX
+module spec.
+
+> 
+> >+		seamcall_fn = TDH_SYS_CONFIG;
+
+---
+
+## [38] Xu Yilun — 2026-06-25
+*Subject: Re: [PATCH v2 03/17] x86/virt/tdx: Detect if the extensions
+ initialization is required*
+
+On Thu, Jun 25, 2026 at 08:19:16AM +0300, Tony Lindgren wrote:
+> On Thu, Jun 18, 2026 at 04:13:41PM +0800, Xu Yilun wrote:
+> > TDX module extensions support extension SEAMCALLs that are preemptible
+
+Included, thanks.
+
+> 
+> Other than that:
+
+---
+
+## [39] Sean Christopherson — 2026-06-25
+*Subject: Re: [PATCH v2 16/17] KVM: TDX: Add in-kernel Quote generation*
+
+On Thu, Jun 18, 2026, Xu Yilun wrote:
+> From: Peter Fang <peter.fang@intel.com>
+> 
+
+Why?
+
+---
+
+## [40] Chao Gao — 2026-06-29
+*Subject: Re: [PATCH v2 03/17] x86/virt/tdx: Detect if the extensions
+ initialization is required*
+
+>+static __init int init_tdx_module_extensions(void)
+>+{
+
+What would happen if the kernel doesn't do this 'ext_required' check
+and always does the extension initialization?
+
+If TDH.EXT.INIT returns success when no extension is configured, we
+could drop this 'ext_required' from this series entirely.
+
+>+
+>+	/* TODO: add the extensions enabling steps here */
+
+---
+
+## [41] Chao Gao — 2026-06-29
+*Subject: Re: [PATCH v2 04/17] x86/virt/tdx: Add extra memory to TDX module
+ for the extensions*
+
+>+#define HPA_LIST_INFO_FIRST_ENTRY	GENMASK_U64(11, 3)
+>+#define HPA_LIST_INFO_PFN		GENMASK_U64(51, 12)
+
+I am not sure about the "manual parameter update" part.
+
+how about:
+		/*
+		 * The TDX module overwrites RCX to track progress when
+		 * this SEAMCALL is interrupted. Use seamcall_ret() to
+		 * save and pass the updated value back on retry.
+		 */
+
+>+		r = seamcall_ret(TDH_EXT_MEM_ADD, &args);
+>+	} while (r == TDX_INTERRUPTED_RESUMABLE);
+
+why -EFAULT?
+
+In sc_retry_prerr(), most SEAMCALL errors are mapped to EIO. Maybe
+we should use EIO here.
+
+>+
+>+	return 0;
+
+There is no "memory_pool_required_pages" here.
+
+>+	if (!required_pages)
+>+		return 0;
+
+Printing 'ret' is useless since it's always -EFAULT.
+
+The real reason to WARN here isn't "no SEAMCALL to reclaim". It is "this
+SEAMCALL shouldn't fail, and if it does, things are broken enough that
+complex error handling isn't worth it".
+
+>+		if (ret)
+>+			break;
+
+This doesn't explain why it should be print. How about:
+
+	/*
+	 * Memory for TDX module extensions is never reclaimed and can be
+	 * tens of megabytes. Print the amount so users know the cost.
+	 */
+
+>+	pr_info("%lu KB consumed for TDX module extensions\n",
+>+		required_pages * PAGE_SIZE / 1024);
+
+---
+
+## [42] Chao Gao — 2026-06-29
+*Subject: Re: [PATCH v2 06/17] x86/virt/tdx: Re-initialize the extensions on
+ runtime TDX module update*
+
+>+/*
+>+ * Mostly the same flow as init_tdx_module_extensions(), but rejects adding
+
+Will tdx_ext_init() return an error if more memory is needed?
+
+If yes, we can leave this check to the module. And with ext_required
+removed (per my earlier comment), this function simplifies to:
+
+int update_tdx_module_extensions(void)
+{
+	if (!(tdx_sysinfo.features.tdx_features0 & TDX_FEATURES0_EXT))
+		return 0;
+
+	return tdx_ext_init();
+}
+
+>+
+>+	return tdx_ext_init();
+
+---
+
+## [43] Chao Gao — 2026-06-29
+*Subject: Re: [PATCH v2 07/17] x86/virt/tdx: Initialize Quoting extension*
+
+On Thu, Jun 18, 2026 at 04:13:45PM +0800, Xu Yilun wrote:
+>From: Peter Fang <peter.fang@intel.com>
+>
+
+This jumps into what the patch does without explaining what the Quoting
+extension is. A brief background would help reviewers who aren't familiar
+with it.
+
+>
+>Because Quoting is an optional TDX feature, do not let initialization
+
+This comment isn't quite helpful.
+
+>+static __init int tdx_quote_init(void)
+>+{
+
+nit: Reduce indentation of the main body. 
+
+	if (!(tdx_addon_feature0 & TDX_FEATURES0_QUOTE))
+		return;
+	
+	ret = tdx_quote_init();
+	WARN_ON_ONCE(ret);
+
+
+Also, why two functions? Can we inline tdx_quote_init() here, or push the
+feature check into it.
+
+>+}
+>+
+
+---
+
+## [44] Peter Fang — 2026-06-29
+*Subject: Re: [PATCH v2 16/17] KVM: TDX: Add in-kernel Quote generation*
+
+On Thu, Jun 25, 2026 at 11:01:58AM -0700, Sean Christopherson wrote:
+> On Thu, Jun 18, 2026, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Hi Sean,
+
+This is mainly to avoid a round trip to userspace for the GetQuote flow.
+
+New TDX modules can now get a Quote directly via an "extension SEAMCALL"
+instead of exiting to userspace and using an SGX enclave. Exiting to
+userspace for GetQuote no longer seems worth the overhead/complexity.
+
+The first half of the series enables extension SEAMCALLs. They implement
+simple APIs for higher-order security protocols that would otherwise need
+to be broken into smaller routines. For Quoting, this allows KVM to get
+a Quote directly through TDH.QUOTE.GET. The TDX module needs only the
+input data from TDG.VP.VMCALL<GetQuote> for that call.
+
+Thanks,
+Peter
+
+---
+
+## [45] Sean Christopherson — 2026-06-29
+*Subject: Re: [PATCH v2 16/17] KVM: TDX: Add in-kernel Quote generation*
+
+On Mon, Jun 29, 2026, Peter Fang wrote:
+> On Thu, Jun 25, 2026 at 11:01:58AM -0700, Sean Christopherson wrote:
+> > On Thu, Jun 18, 2026, Xu Yilun wrote:
+
+Again, why?
+
+> New TDX modules can now get a Quote directly via an "extension SEAMCALL"
+> instead of exiting to userspace and using an SGX enclave. Exiting to
+
+I dunno, from a kernel perspective, this is more complexity, not less:
+
+ Documentation/arch/x86/tdx.rst |  19 ++---
+ Documentation/virt/kvm/api.rst |   3 +
+ arch/x86/include/asm/tdx.h     |   9 +++
+ arch/x86/kvm/vmx/tdx.h         |   6 ++
+ arch/x86/kvm/vmx/tdx.c         | 135 ++++++++++++++++++++++++++++++++-
+ virt/kvm/kvm_main.c            |   1 +
+ 6 files changed, 163 insertions(+), 10 deletions(-)
+
+> The first half of the series enables extension SEAMCALLs. They implement
+> simple APIs for higher-order security protocols that would otherwise need
+
+Answering my own question (though probably poorly), IIUC the answer is that
+DICE-based quoting is done through the TDX Module, whereas existing quoting is
+done through an SGX enclave and so was routed through userspace.
+
+If that's all there is too this, then why is KVM involved?  I.e. why doesn't the
+TDX Module provide the quote directly to the guest?
+
+---
+
+## [46] Peter Fang — 2026-06-29
+*Subject: Re: [PATCH v2 08/17] x86/virt/tdx: Prepare Quote buffer during
+ extension bringup*
+
+On Thu, Jun 25, 2026 at 09:08:28AM +0300, Tony Lindgren wrote:
+> On Thu, Jun 18, 2026 at 04:13:46PM +0800, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Thanks. I'm planning to switch to dynamic allocation in the next
+revision to make this simpler [1]. So the template will be the
+HPA_LINKED_LIST node pages plus the next pointers in these nodes.
+
+[1] https://lore.kernel.org/linux-coco/20260626095833.GB1600180@pedri/
+
+---
+
+## [47] Peter Fang — 2026-06-29
+*Subject: Re: [PATCH v2 11/17] x86/virt/tdx: Add interface to generate a Quote*
+
+On Thu, Jun 25, 2026 at 09:05:28AM +0300, Tony Lindgren wrote:
+> On Thu, Jun 18, 2026 at 04:13:49PM +0800, Xu Yilun wrote:
+> > From: Peter Fang <peter.fang@intel.com>
+
+Hm, actually tdx_quote is an output buffer as well (in the form of a
+head pointer: qdata->hpa_entries_pa). Maybe this code needs better
+commenting...
+
+---
+
+## [48] Peter Fang — 2026-06-29
+*Subject: Re: [PATCH v2 07/17] x86/virt/tdx: Initialize Quoting extension*
+
+On Mon, Jun 29, 2026 at 04:33:25PM +0800, Chao Gao wrote:
+> On Thu, Jun 18, 2026 at 04:13:45PM +0800, Xu Yilun wrote:
+> >From: Peter Fang <peter.fang@intel.com>
+
+Yep, I'll add more background in the changelog.
+
+> 
+> >diff --git a/arch/x86/virt/vmx/tdx/tdx.c b/arch/x86/virt/vmx/tdx/tdx.c
+
+Got it. It makes more sense to add it in patch 12.
+
+> 
+> >+static __init int tdx_quote_init(void)
+
+That's better. I'll make this change.
+
+> 
+> 
+
+tdx_quote_init() has a second call site in patch 12
+(update_tdx_quoting_extension()), during runtime TDX module update.
+
+Adding the "if (feature)" check inside a SEAMCALL helper doesn't seem
+like a common pattern. I'm a bit concerned about making this look
+inconsistent.
+
+>
 
 ---

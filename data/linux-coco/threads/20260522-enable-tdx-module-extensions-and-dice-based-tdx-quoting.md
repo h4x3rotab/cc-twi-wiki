@@ -1,8 +1,8 @@
 ---
 title: 'Enable TDX Module Extensions and DICE-based TDX Quoting'
 date: 2026-05-22
-last_reply: 2026-06-16
-message_count: 113
+last_reply: 2026-06-29
+message_count: 115
 participants: ['Xu Yilun', 'Tony Lindgren', 'Xiaoyao Li', 'Sohil Mehta', 'Kiryl Shutsemau', 'Edgecombe, Rick P', 'Kishen Maloor', 'Adrian Hunter', 'Dan Williams (nvidia)', 'Peter Fang', 'Dave Hansen']
 ---
 
@@ -4484,5 +4484,41 @@ I see SRO is WIP in [2], and is used for TDISP [3].
 [1] https://developer.arm.com/documentation/den0137/2-0bet1/
 [2] https://lore.kernel.org/all/20260318155413.793430-49-steven.price@arm.com/
 [3] https://lore.kernel.org/all/20260427065121.916615-3-aneesh.kumar@kernel.org/
+
+---
+
+## [114] Peter Fang — 2026-06-26
+*Subject: Re: [RFC PATCH 09/15] x86/virt/tdx: Add interface to generate a Quote*
+
+On Sun, Jun 14, 2026 at 04:29:48AM -0700, Peter Fang wrote:
+> > 
+> > > +		goto out;
+
+I didn't change the design in the v2 series, but after some discussion
+with Yilun, I now realize this is actually a really good idea. Having a
+static buffer does complicate the code a bit. I'll probably try doing
+the allocation on the KVM side and just do vmalloc_to_pfn() calls each
+time. Thanks.
+
+> > 
+>
+
+---
+
+## [115] Edgecombe, Rick P — 2026-06-29
+*Subject: Re: [RFC PATCH 06/15] x86/virt/tdx: Initialize Quoting extension
+ during bringup*
+
+On Sun, 2026-06-14 at 00:50 -0700, Peter Fang wrote:
+> > Is this micro-optimization worth it? What are the classes of quote-init
+> > failures vs just make the policy be anything in the module must init.
+
+I thought we were going to do:
+- If quoting is not supported, don't try to init quoting, and don't fail init
+over it.
+- If quoting is supported, but fails to init. Just fail TDX initialization for
+simplicity.
+
+This is what we are doing for the other features.
 
 ---

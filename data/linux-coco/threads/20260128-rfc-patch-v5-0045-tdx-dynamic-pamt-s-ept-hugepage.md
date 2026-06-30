@@ -1,8 +1,8 @@
 ---
 title: '[RFC PATCH v5 00/45] TDX: Dynamic PAMT + S-EPT Hugepage'
 date: 2026-01-28
-last_reply: 2026-06-11
-message_count: 153
+last_reply: 2026-06-30
+message_count: 155
 participants: ['Sean Christopherson', 'Konrad Rzeszutek Wilk', 'Dave Hansen', 'Edgecombe, Rick P', 'Yan Zhao', 'Huang, Kai']
 ---
 
@@ -11447,5 +11447,69 @@ u64 tdh_mem_page_demote(struct tdx_td *td, u64 gpa, enum pg_level level, u64 pfn
 
         return ret;
 }
+
+---
+
+## [154] Edgecombe, Rick P — 2026-06-29
+*Subject: Re: [RFC PATCH v5 30/45] x86/virt/tdx: Add API to demote a 2MB
+ mapping to 512 4KB mappings*
+
+On Thu, 2026-06-11 at 16:44 +0800, Yan Zhao wrote:
+
+Nice find.
+
+> Since this contention should occur rarely (e.g., when there's a second TD
+> invoking PAMT.ADD concurrently while the first TD is invoking DEMOTE, and the
+
+Yes, let's not do it for the initial implementation. 
+
+> 
+> [1] https://lore.kernel.org/kvm/aNX6V6OSIwly1hu4@yzhao56-desk.sh.intel.com
+
+Can we just not do huge pages if we don't have DPAMT? Actually, weren't we
+already going to do it like that?
+
+>                                 
+>                 if (alloc_pamt_array(pamt_pages, pamt_cache))                    
+
+It feels kind of hacky. The refcount stuff is already a bit hard to follow.
+
+>                                                                                  
+>                 spin_lock(&pamt_lock);
+
+---
+
+## [155] Yan Zhao — 2026-06-30
+*Subject: Re: [RFC PATCH v5 30/45] x86/virt/tdx: Add API to demote a 2MB
+ mapping to 512 4KB mappings*
+
+On Tue, Jun 30, 2026 at 05:07:13AM +0800, Edgecombe, Rick P wrote:
+> On Thu, 2026-06-11 at 16:44 +0800, Yan Zhao wrote:
+> 
+Ok. I can put the optimization in the TODO list.
+
+> > 
+> > [1] https://lore.kernel.org/kvm/aNX6V6OSIwly1hu4@yzhao56-desk.sh.intel.com
+Yes, we can.
+I wasn't aware we're going to disallow huge page if we don't have DPAMT.
+I thought we could have huge page with and without DPAMT.
+
+> already going to do it like that?
+Is this to avoid the "if (dpamt)" check here?
+We may still need to check "level == PG_LEVEL_2M" here, since DPAMT related
+code is not necessary if the demotion is from 1GB to 2MB.
+(This tdh_mem_page_demote() implementation could support 1GB --> 2MB demotion
+theoretically).
+Or maybe for now just warn and return TDX_SW_ERROR if level != PG_LEVEL_2M ?
+
+> > ������������������������������� 
+> > ��������������� if (alloc_pamt_array(pamt_pages, pamt_cache))������������������� 
+After demotion, there would be 512 4KB mappings for this 2MB range.
+Then, in later tdx_sept_remove_leaf_spte(), tdx_pamt_put() would be invoked
+for 512 times. That's why we need to set the refcount to 512 after a successful
+demotion here.
+
+> 
+> > ��������������������������������������������������������������������������������
 
 ---

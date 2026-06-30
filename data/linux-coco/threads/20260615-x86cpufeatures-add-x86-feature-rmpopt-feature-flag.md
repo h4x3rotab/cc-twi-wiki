@@ -1,9 +1,9 @@
 ---
 title: 'x86/cpufeatures: Add X86_FEATURE_RMPOPT feature flag'
 date: 2026-06-15
-last_reply: 2026-06-22
-message_count: 33
-participants: ['Ashish Kalra', 'K Prateek Nayak', 'Borislav Petkov', 'Tom Lendacky', 'Dave Hansen', 'Thomas Gleixner']
+last_reply: 2026-06-23
+message_count: 37
+participants: ['Ashish Kalra', 'K Prateek Nayak', 'Borislav Petkov', 'Tom Lendacky', 'Dave Hansen', 'Thomas Gleixner', 'Jethro Beekman', 'Ackerley Tng']
 ---
 
 ## [1] Ashish Kalra — 2026-06-15
@@ -1768,5 +1768,117 @@ Ashish
 
 > So what's exactly the new core plumbing you need?
 >
+
+---
+
+## [34] Jethro Beekman — 2026-06-23
+*Subject: Re: [PATCH v8 3/7] crypto/ccp: Disable CPU hotplug while SNP is
+ active*
+
+On 2026-06-15 21:49, Ashish Kalra wrote:
+> From: Ashish Kalra <ashish.kalra@amd.com>
+> 
+
+I think this is too broad. If I have a hypervisor that supports SNP virtualization, a (non-confidential) L1 guest running Linux should still support CPU hotplug while also running confidential L2 guests.
+
+--
+Jethro Beekman | CTO | Fortanix
+
+> 
+> SNP is fully torn down only on the SNP_SHUTDOWN_EX x86_snp_shutdown
+
+---
+
+## [35] Ackerley Tng — 2026-06-23
+*Subject: Re: [PATCH v8 3/7] crypto/ccp: Disable CPU hotplug while SNP is active*
+
+Jethro Beekman <jethro@fortanix.com> writes:
+
+> On 2026-06-15 21:49, Ashish Kalra wrote:
+>> From: Ashish Kalra <ashish.kalra@amd.com>
+
+Were any other solutions considered other than disabling CPU hotplug?
+
+Is this temporary until something else is implemented?
+
+I'm not sure how commonly CPU hotplug is used, and if people are okay
+with trading in CPU hotplug to get SNP.
+
+Is it that fundamentally the SEV firmware can't support hotplug, so
+there's no point in keeping it enabled anyway?
+
+Is there some way of supporting hotplug for CPUs that won't be used with
+SNP, for serving non-SNP VMs on the same host as SNP VMs, or is that too
+complicated?
+
+>>
+>> [...snip...]
+
+---
+
+## [36] Ackerley Tng — 2026-06-23
+*Subject: Re: [PATCH v8 4/7] x86/sev: Add support to perform RMP optimizations asynchronously*
+
+"Kalra, Ashish" <ashish.kalra@amd.com> writes:
+
+>
+> [...snip...]
+
+Perhaps have a WARN_ON_ONCE() here so we know rmpopt was not performed?
+Not a huge deal without though.
+
+>                 return;
+>
+
+Definitely better than the version in the original patch :) Thanks!
+
+>  Here, the leader exclusion must use the sibling mask, not clear_cpu(this_cpu). That's why my collapsed version uses:
+>
+
+---
+
+## [37] Kalra, Ashish — 2026-06-23
+*Subject: Re: [PATCH v8 3/7] crypto/ccp: Disable CPU hotplug while SNP is
+ active*
+
+Hello Ackerley,
+
+On 6/23/2026 12:48 PM, Ackerley Tng wrote:
+> Jethro Beekman <jethro@fortanix.com> writes:
+> 
+
+Yes, essentially. The SEV firmware knows nothing about when the OS takes CPUs online or offline. At SNP_INIT it accounts for all
+the CPUs enabled via the BIOS/UEFI and establishes the per-core SNP state for them; it has no notion of the OS bringing CPUs up or
+down afterwards. So OS hotplug actions can diverge from the firmware's expectations and break SNP. Disabling hotplug just makes
+that constraint explicit — there's nothing useful to keep it enabled for:  a hot-removed core still "exists" as far as
+the firmware and the per-core RMP/RMPOPT state are concerned, and a core brought online later was never set up for SNP.
+
+> 
+> Is there some way of supporting hotplug for CPUs that won't be used with
+
+Not really. SNP's memory-integrity guarantee rests on a single invariant: every memory write is subject to RMP checks to protect
+against corruption of SEV-SNP guest memory. The moment any CPU can issue writes that aren't RMP-checked, that protection is
+broken for the whole system — it's not something that can be confined to "that one core."
+
+That's because SNP isn't per-core in that sense — it's a system-wide mode. SYSCFG[SNP_EN] is set on every core, the RMP covers all
+of physical memory, and once SNP is enabled every memory write is subject to RMP checks on every core. A non-SNP guest sharing the
+host still runs on cores that are part of the SNP-enabled system.
+
+By the SNP architecture there simply can't be a CPU that isn't doing RMP checks while SNP is active, so SNP_EN has to be enforced
+on every core. RMP enforcement is gated per-core by SYSCFG[SNP_EN] and it must be set on every core before SNP_INIT; a core with
+SNP_EN clear performs no RMP checks at all, which the architecture doesn't allow once SNP is up. A newly hotplugged CPU comes up
+without SNP_EN (SNP not enabled on it), and since it wasn't present when SNP_INIT ran it isn't part of the initialized SNP
+configuration either — so it does no RMP checking. And because an SNP guest's vCPUs (or any guest for that matter) can be scheduled
+on any online CPU, the guest could end up running on that core, accessing memory with no RMP enforcement and breaking SNP's memory integrity. 
+There's no way to prevent that: KVM doesn't fence SNP guests (or any guests for that matter) off particular online cores.
+And carving out cores for non-SNP-only use isn't possible by the architecture: SNP requires RMP checks on every CPU, so there's no valid
+configuration with SNP active and a subset of cores exempt.
+
+Thanks,
+Ashish
+
+ 
+>>>
+>>> [...snip...]
 
 ---

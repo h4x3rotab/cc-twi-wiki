@@ -1,8 +1,8 @@
 ---
 title: 'dma-mapping: Use DMA_ATTR_CC_SHARED through direct, pool and swiotlb paths'
 date: 2026-06-04
-last_reply: 2026-06-22
-message_count: 65
+last_reply: 2026-06-29
+message_count: 67
 participants: ['Aneesh Kumar K.V (Arm)', 'JAEHOON KIM', 'Petr Tesarik', 'Catalin Marinas', 'Jason Gunthorpe', 'Alexey Kardashevskiy']
 ---
 
@@ -4608,5 +4608,244 @@ Thanks,
 
 > 
 > Jason
+
+---
+
+## [66] Aneesh Kumar K.V — 2026-06-29
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Jason Gunthorpe <jgg@ziepe.ca> writes:
+
+> On Fri, Jun 19, 2026 at 02:36:19PM +0100, Aneesh Kumar K.V wrote:
+>> >> Agreed. If the device can do encrypted DMA and requires bouncing, it
+
+Agreed.
+
+>> Thinking about this more, I guess we should mark the swiotlb as
+>> cc_shared only with  CC_ATTR_GUEST_MEM_ENCRYPT instead of
+
+Are you suggesting to change the struct io_tlb_mem::cc_shared back to
+struct io_tlb_mem::unencrypted?. If we want to split cc_shared and
+unencrypted as two flags, I think we will add quiet a lot of code
+duplication.
+
+> IDK what AMD should do on the host by default. I guess it should setup
+> a swiotlb pool of low dma addrs "unencrypted", but not "cc_shared"?
+
+If by low DMA address you mean using an address with the C-bit
+cleared. Currently the SME code uses force_dma_unencrypted() as the hook to
+determine whether the C-bit needs to be cleared. Therefore,
+force_dma_unencrypted(dev) must be true to use such a pool.
+
+The current code already does this and uses the swiotlb pool correctly
+on SME. The challenge arises when we want to force SWIOTLB
+bouncing even for devices that can handle encrypted DMA addresses (more
+on that below). For such a config force_dma_uencrypted(dev) will return
+false and swiotlb will be marked cc_shared/decrypted = true; This trip
+the new check we added.
+
+	/* swiotlb pool is incorrect for this device */
+	if (unlikely(mem->cc_shared != force_dma_unencrypted(dev)))
+		return (phys_addr_t)DMA_MAPPING_ERROR;
+
+We can also do
+
+	if (cc_platform_has(CC_ATTR_GUEST_MEM_ENCRYPT)) {
+		/* swiotlb pool is incorrect for this device */
+		if (unlikely(mem->cc_shared != force_dma_unencrypted(dev)))
+			return (phys_addr_t)DMA_MAPPING_ERROR;
+
+		/* Force attrs to match the kind of memory in the pool */
+		if (mem->cc_shared)
+			*attrs |= DMA_ATTR_CC_SHARED;
+		else
+			*attrs &= ~DMA_ATTR_CC_SHARED;
+	} else {
+		/*
+		 * Host memory encryption where device requires an
+		 * unencrypted dma_addr_t due to dma mask limit
+    		 */
+		if (force_dma_unencrypted(dev))
+			*attrs |= DMA_ATTR_CC_SHARED;
+		else
+			*attrs &= ~DMA_ATTR_CC_SHARED;
+	}
+
+
+Here I see value in having DMA_ATTR_UNENCRYPTED. The question is do we
+need to split this into two flags and introduce the resulting code
+duplication.
+
+>
+> But if we are operating on the host then this pool is not limited to
+
+If we are not able to reach the memory because of the memory encryption
+bit, then isn't dev_cannot_reach_memory(dev) the same as
+force_dma_unencrypted(dev)? If so, that is how it is already done.
+
+I am wondering whether we can keep this simpler by ignoring the
+swiotlb=force kernel parameter and keeping cc_shared as it is, even
+though that can be confusing when looking at SME.
+
+The three configurations we need to consider here are:
+
+1) SEV-SNP guest
+2) SME host with iommu=translated
+3) SME host with iommu=passthrough
+
+IIUC, all of the above work with the current code because we mark the
+swiotlb as cc_shared/decrypted when CC_ATTR_MEM_ENCRYPT is set (i.e.,
+this applies to an SME host as well).
+
+The challenge arises when the user forces swiotlb bouncing with the
+swiotlb=force command-line option. At that point, all devices, including
+those whose DMA mask can handle encrypted DMA addresses, are forced to
+use SWIOTLB. That becomes a problem because SWIOTLB is marked as
+decrypted by default.
+
+How about something like the following?
+
+x86/dma: Disable forced SWIOTLB bouncing for SME IOMMU passthrough
+
+With host memory encryption and IOMMU passthrough, DMA address handling
+depends on whether a device can address the C-bit. Devices that cannot
+address it need DMA addresses with the C-bit cleared, while devices that
+can address encrypted memory should keep using encrypted DMA addresses.
+
+The default swiotlb pool is marked shared when memory encryption is active.
+Forcing all devices through that pool would also force devices capable of
+encrypted DMA to use shared mappings. Clear the global swiotlb-force-bounce
+state in this mode, and warn when this overrides an explicit swiotlb=force
+command-line request.
+
+Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
+
+modified   arch/x86/kernel/pci-dma.c
+@@ -51,8 +51,24 @@ static void __init pci_swiotlb_detect(void)
+ 	 * Set swiotlb to 1 so that bounce buffers are allocated and used for
+ 	 * devices that can't support DMA to encrypted memory.
+ 	 */
+-	if (cc_platform_has(CC_ATTR_HOST_MEM_ENCRYPT))
++	if (cc_platform_has(CC_ATTR_HOST_MEM_ENCRYPT)) {
+ 		x86_swiotlb_enable = true;
++		/*
++		 * With host memory encryption and IOMMU passthrough, devices
++		 * that cannot address the C-bit need DMA addresses with the
++		 * C-bit cleared, while devices that can address encrypted
++		 * memory should keep using encrypted DMA addresses.
++		 *
++		 * The default SWIOTLB pool is marked shared when memory
++		 * encryption is active, so forcing all devices through it would
++		 * also force devices that support encrypted DMA to use shared
++		 * mappings. Disable global forced bouncing in this mode.
++		 */
++		if (iommu_default_passthrough() &&
++		    clear_swiotlb_force_bounce())
++			pr_warn("Ignoring swiotlb=force with host memory encryption and "
++				"IOMMU passthrough\n");
++	}
+ 
+ 	/*
+ 	 * Guest with guest memory encryption currently perform all DMA through
+modified   include/linux/swiotlb.h
+@@ -40,6 +40,7 @@ void __init swiotlb_init_remap(bool addressing_limit, unsigned int flags,
+ int swiotlb_init_late(size_t size, gfp_t gfp_mask,
+ 	int (*remap)(void *tlb, unsigned long nslabs));
+ extern void __init swiotlb_update_mem_attributes(void);
++bool __init clear_swiotlb_force_bounce(void);
+ 
+ #ifdef CONFIG_SWIOTLB
+ 
+modified   kernel/dma/swiotlb.c
+@@ -208,6 +208,15 @@ unsigned long swiotlb_size_or_default(void)
+ 	return default_nslabs << IO_TLB_SHIFT;
+ }
+ 
++bool __init clear_swiotlb_force_bounce(void)
++{
++	if (!swiotlb_force_bounce)
++		return false;
++
++	swiotlb_force_bounce = false;
++	return true;
++}
++
+ void __init swiotlb_adjust_size(unsigned long size)
+ {
+ 	/*
+
+---
+
+## [67] Aneesh Kumar K.V — 2026-06-29
+*Subject: Re: [PATCH v6 00/20] dma-mapping: Use DMA_ATTR_CC_SHARED through
+ direct, pool and swiotlb paths*
+
+Alexey,
+
+Aneesh Kumar K.V <aneesh.kumar@kernel.org> writes:
+
+> The current code already does this and uses the swiotlb pool correctly
+> on SME. The challenge arises when we want to force SWIOTLB
+
+Can you help to test this patch?
+
+commit 0275ed870ff8dadb4890fe8342e84b294f657c43
+Author: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
+Date:   Mon Jun 29 11:55:08 2026 +0530
+
+    swiotlb: Return unencrypted DMA addresses for SME bounce buffers
+    
+    On hosts with memory encryption, the default swiotlb pool is marked shared
+    and decrypted when memory encryption is active.
+    
+    Make host-memory-encryption swiotlb mappings consistently return
+    unencrypted DMA addresses. This applies regardless of whether the device
+    itself requires unencrypted DMA due to its DMA mask, because the bounce
+    buffer memory backing the mapping is already unencrypted. It also preserves
+    swiotlb=force for devices that can address encrypted memory: forced bounce
+    mappings use the unencrypted swiotlb pool and receive unencrypted DMA
+    addresses.
+    
+    Signed-off-by: Aneesh Kumar K.V (Arm) <aneesh.kumar@kernel.org>
+
+diff --git a/kernel/dma/swiotlb.c b/kernel/dma/swiotlb.c
+index a62e1571ec95..9ba23cf8d97b 100644
+--- a/kernel/dma/swiotlb.c
++++ b/kernel/dma/swiotlb.c
+@@ -1514,15 +1514,26 @@ phys_addr_t swiotlb_tbl_map_single(struct device *dev, phys_addr_t orig_addr,
+ 	if (cc_platform_has(CC_ATTR_MEM_ENCRYPT))
+ 		pr_warn_once("Memory encryption is active and system is using DMA bounce buffers\n");
+ 
+-	/* swiotlb pool is incorrect for this device */
+-	if (unlikely(mem->cc_shared != force_dma_unencrypted(dev)))
+-		return (phys_addr_t)DMA_MAPPING_ERROR;
++	if (cc_platform_has(CC_ATTR_GUEST_MEM_ENCRYPT)) {
++		/* swiotlb pool is incorrect for this device */
++		if (unlikely(mem->cc_shared != force_dma_unencrypted(dev)))
++			return (phys_addr_t)DMA_MAPPING_ERROR;
+ 
+-	/* Force attrs to match the kind of memory in the pool */
+-	if (mem->cc_shared)
++		/* Force attrs to match the kind of memory in the pool */
++		if (mem->cc_shared)
++			*attrs |= DMA_ATTR_CC_SHARED;
++		else
++			*attrs &= ~DMA_ATTR_CC_SHARED;
++	} else if (cc_platform_has(CC_ATTR_HOST_MEM_ENCRYPT)) {
++		/*
++		 * On hosts with memory encryption, SWIOTLB-backed memory
++		 * is unencrypted memory. DMA addresses returned for bounce
++		 * buffers must therefore have the C-bit cleared, even for
++		 * devices that can address encrypted memory. This also
++		 * preserves swiotlb=force for those devices.
++		 */
+ 		*attrs |= DMA_ATTR_CC_SHARED;
+-	else
+-		*attrs &= ~DMA_ATTR_CC_SHARED;
++	}
+ 
+ 	/*
+ 	 * The default swiotlb memory pool is allocated with PAGE_SIZE
 
 ---

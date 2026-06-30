@@ -1,9 +1,9 @@
 ---
 title: 'guest_memfd: In-place conversion support'
 date: 2026-05-22
-last_reply: 2026-06-18
-message_count: 69
-participants: ['Ackerley Tng via B4 Relay', 'Michael Roth', 'Suzuki K Poulose', 'Ackerley Tng', 'Askar Safin', 'Sean Christopherson', 'Vlastimil Babka (SUSE)']
+last_reply: 2026-06-25
+message_count: 70
+participants: ['Ackerley Tng via B4 Relay', 'Michael Roth', 'Suzuki K Poulose', 'Ackerley Tng', 'Askar Safin', 'Sean Christopherson', 'Vlastimil Babka (SUSE)', 'David Hildenbrand (Arm)']
 ---
 
 ## [1] Ackerley Tng via B4 Relay — 2026-05-22
@@ -5852,5 +5852,25 @@ Migration isn't supported for guest_memfd yet, so I think that's ok.
 
 >> Update the kvm_memory_attributes2 structure to include an error_offset
 >> field. This allows KVM to report the exact offset where a conversion
+
+---
+
+## [70] David Hildenbrand (Arm) — 2026-06-25
+*Subject: Re: [PATCH v7 10/42] KVM: guest_memfd: Ensure pages are not in use
+ before conversion*
+
+On 6/19/26 02:17, Ackerley Tng wrote:
+> "Vlastimil Babka (SUSE)" <vbabka@kernel.org> writes:
+> 
+
+I think I raised this in the past as well: ideally, we'd be freezing the
+refcount, then, there is no need to worry about any concurrent access.
+
+However, we could really only get additional page references through PFN walkers
+(or speculative references), not through page tables or GUP pins, which is what
+we care about.
+
+So if we can tolerate a speculative bump+release of a folio reference, likely
+we're good.
 
 ---

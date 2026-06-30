@@ -1,9 +1,9 @@
 ---
 title: 'guest_memfd: In-place conversion support'
 date: 2026-06-18
-last_reply: 2026-06-23
-message_count: 87
-participants: ['Ackerley Tng via B4 Relay', 'Fuad Tabba', 'Suzuki K Poulose', 'Garg, Shivank', 'Julian Braha', 'Yan Zhao', 'Binbin Wu', 'Sean Christopherson', 'Xiaoyao Li']
+last_reply: 2026-06-30
+message_count: 160
+participants: ['Ackerley Tng via B4 Relay', 'Fuad Tabba', 'Suzuki K Poulose', 'Garg, Shivank', 'Julian Braha', 'Yan Zhao', 'Binbin Wu', 'Sean Christopherson', 'Xiaoyao Li', 'Fuad Tabba', 'Ackerley Tng', 'David Hildenbrand (Arm)']
 ---
 
 ## [1] Ackerley Tng via B4 Relay — 2026-06-18
@@ -6053,5 +6053,2008 @@ On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
 > 
 
 Reviewed-by: Binbin Wu <binbin.wu@linux.intel.com>
+
+---
+
+## [88] Binbin Wu — 2026-06-23
+*Subject: Re: [PATCH v8 13/46] KVM: guest_memfd: Add base support for
+ KVM_SET_MEMORY_ATTRIBUTES2*
+
+On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+> From: Ackerley Tng <ackerleytng@google.com>
+> 
+
+s/Christoperson /Christopherson
+
+> Reviewed-by: Fuad Tabba <tabba@google.com>
+> Signed-off-by: Ackerley Tng <ackerleytng@google.com>
+
+[...]
+
+> diff --git a/virt/kvm/Kconfig b/virt/kvm/Kconfig
+> index 297e4399fbd49..cfa2c78ba5fb9 100644
+
+What's this?
+This config is gone.
+
+>         bool
+>
+
+---
+
+## [89] Fuad Tabba — 2026-06-23
+*Subject: Re: [PATCH v8 13/46] KVM: guest_memfd: Add base support for KVM_SET_MEMORY_ATTRIBUTES2*
+
+On Tue, 23 Jun 2026 at 01:22, Sean Christopherson <seanjc@google.com> wrote:
+>
+> On Fri, Jun 19, 2026, Fuad Tabba wrote:
+
+Agree. Sorry, didn't mean to be nit-picky, but this really threw me off :)
+
+Cheers,
+/fuad
+
+---
+
+## [90] Yan Zhao — 2026-06-23
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for
+ KVM_TDX_INIT_MEM_REGION*
+
+On Tue, Jun 23, 2026 at 01:16:14PM +0800, Yan Zhao wrote:
+> On Mon, Jun 22, 2026 at 06:22:45PM -0700, Sean Christopherson wrote:
+> > On Mon, Jun 22, 2026, Yan Zhao wrote:
+
+Another concern with this fix is that:
+commit "KVM: guest_memfd: Zero page while getting pfn" [1] always marks the
+folio uptodate before reaching post_populate().
+
+[1] https://lore.kernel.org/all/20260618-gmem-inplace-conversion-v8-21-9d2959357853@google.com/
+
+> One concern is that TDX now does not much care about the up-to-date flag since
+> TDX doesn't rely on the flag to clear pages on conversions.
+
+---
+
+## [91] Yan Zhao — 2026-06-23
+*Subject: Re: [PATCH v8 21/46] KVM: guest_memfd: Zero page while getting pfn*
+
+On Thu, Jun 18, 2026 at 05:31:58PM -0700, Ackerley Tng via B4 Relay wrote:
+> From: Ackerley Tng <ackerleytng@google.com>
+> 
+Note:
+In the __kvm_gmem_populate() path, this folio_mark_uptodate() call makes the
+later one after post_populate() pointless.
+
+__kvm_gmem_populate
+    |1.__kvm_gmem_get_pfn
+    |     |->folio = kvm_gmem_get_folio()
+    |     |  if (!folio_test_uptodate(folio))
+    |     |     folio_mark_uptodate(folio);
+    |2. ret = post_populate()
+    |3. if (!ret)
+    |       folio_mark_uptodate(folio);
+
+>  	*pfn = folio_file_pfn(folio, index);
+>  	if (max_order)
+
+---
+
+## [92] Fuad Tabba — 2026-06-23
+*Subject: Re: [PATCH v8 15/46] KVM: guest_memfd: Call arch invalidate hooks on conversion*
+
+Hi Sean,
+
+On Tue, 23 Jun 2026 at 02:15, Sean Christopherson <seanjc@google.com> wrote:
+>
+> On Fri, Jun 19, 2026, Fuad Tabba wrote:
+
+No problem on the parts you can't get into. Agreed it's worth cleaning up
+now, and worth doing in this round rather than landing the overloaded
+hook: reworking a generic contract once SNP/TDX (and eventually arm64)
+depend on it is the expensive path.
+
+>
+> > >  virt/kvm/guest_memfd.c | 41 +++++++++++++++++++++++++++++++++++++++++
+
+Agreed on the name and the overload, and for pKVM the split is more than
+cosmetic. The free/teardown path is where pKVM has to scrub a page before
+it goes back to the host; conversion has to leave the page in place with
+its contents intact (no encryption, same physical page in both states).
+Keeping scrub on the free callback and off the conversion path is what
+preserves that, so this helps us, it isn't just tidying SNP.
+
+>
+> To avoid a conflict with patches that are going to have priority over this series,
+
+You're right, and we expect it to hold for both directions, not only
+private->shared. pKVM conversions are driven by the guest's
+share/unshare hypercall: EL2 makes the stage-2 ownership change (grant
+or remove host access) on the hypercall and exits, and the host
+records it via KVM_SET_MEMORY_ATTRIBUTES2 afterwards. So by the time
+guest_memfd updates attributes the EL2 side is already done in either
+direction, and the ioctl is host-side bookkeeping. The only arch
+callback we expect to need is the free/teardown one, nothing on
+convert, and we wouldn't want a make_private hook either.
+
+>
+>         if (!to_private)
+
+Doing it config-only (no separate convert hook) works for us, and nothing
+about it constrains arm64. If connecting pKVM conversion to gmem later
+turns up something we need, we'd add it config-gated in parallel, not by
+overloading the renamed callback.
+
+Cheers,
+/fuad
+
+>
+> E.g. this?  There will still be a looming rename conflict, but that's easy enough
+
+---
+
+## [93] Binbin Wu — 2026-06-23
+*Subject: Re: [PATCH v8 17/46] KVM: guest_memfd: Advertise
+ KVM_SET_MEMORY_ATTRIBUTES2 ioctl*
+
+On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+> From: Ackerley Tng <ackerleytng@google.com>
+> 
+
+Reviewed-by: Binbin Wu <binbin.wu@linux.intel.com>
+
+Two nits below.
+
+
+>  
+> +4.145 KVM_SET_MEMORY_ATTRIBUTES2
+                                                   ^
+                                                 was
+ > +             page aligned, causes an overflow, or size is zero).
+> +  EFAULT     The parameter address was invalid.
+> +  EAGAIN     Some page within requested range had unexpected refcounts. The
+
+[...]
+
+> +
+> +Set attributes for a range of offsets within a guest_memfd to
+                         ^
+                    guest use
+
+> +supported, after a successful call to set
+> +KVM_MEMORY_ATTRIBUTE_PRIVATE, the requested range will not be mappable
+
+---
+
+## [94] Binbin Wu — 2026-06-23
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+> @@ -606,12 +608,20 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
+>  	next = start;
+
+It seems unprivileged userspace is able to trigger lru_add_drain_all() repeatedly
+by invoking KVM_SET_MEMORY_ATTRIBUTES2 in a loop, which could lead to DoS risk?
+
+> +				lru_drained = true;
+> +			} else {
+
+---
+
+## [95] Ackerley Tng — 2026-06-23
+*Subject: Re: [PATCH v8 01/46] KVM: guest_memfd: Introduce per-gmem attributes,
+ use to guard user mappings*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Mon, Jun 22, 2026, Binbin Wu wrote:
+>> On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+
+I guess both are indeed awkward.
+
+> However, in this case I think we're just hosed.  If KVM treats the memory as
+> private, KVM will incorrectly do prepare(), incorrectly allow populate(), and
+
+I was wondering if we should not only return the init state but also set
+the init state, but that would involve performing a conversion to the
+init state... Too complicated for an edge case.
+
+> 	}
+>
+
+Thanks Binbin and Sean!
+
+---
+
+## [96] Ackerley Tng — 2026-06-23
+*Subject: Re: [PATCH v8 04/46] KVM: Decouple kvm_has_arch_private_mem from CONFIG_KVM_VM_MEMORY_ATTRIBUTES*
+
+Binbin Wu <binbin.wu@linux.intel.com> writes:
+
+> On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+>> From: Sean Christopherson <seanjc@google.com>
+
+Sean had this aligned with spaces, and checkpatch complained about
+having no spaces before tabs, so I switched it to tabs instead since I
+don't think alignment like that is officially documented either way.
+
+Either way is fine :)
+
+>>  #define kvm_arch_has_private_mem(kvm) ((kvm)->arch.has_private_mem)
+>>  #endif
+
+---
+
+## [97] Ackerley Tng — 2026-06-23
+*Subject: Re: [PATCH v8 05/46] KVM: Make CONFIG_KVM_VM_MEMORY_ATTRIBUTES selectable*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Fri, Jun 19, 2026, Julian Braha wrote:
+>> Hi Ackerley,
+
+Thanks, didn't notice this when consolidating this revision.
+
+Signed-off-by: Ackerley Tng <ackerleytng@google.com>
+
+---
+
+## [98] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 07/46] KVM: Rename memory attribute APIs to prepare for
+ in-place gmem conversion*
+
+Binbin Wu <binbin.wu@linux.intel.com> writes:
+
+>
+> [...snip...]
+
+Thank you for catching this! I think in some earlier revision this was
+meant to be used from the guest_memfd populate flow.
+
+I think the version of kvm_gmem_range_is_private in this revision is
+good because it is symmetric. If conversion is enabled, call the gmem
+range-has-attributes function, and if conversion is disabled, use the VM
+range-has-attributes function.
+
+Sean, if no new revision is needed would you be able to drop
+kvm_mem_range_is_private() while you're pulling it in?
+
+>>
+>> [...snip...]
+
+---
+
+## [99] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 08/46] KVM: Provide generic interface for checking
+ memory private/shared status*
+
+Suzuki K Poulose <suzuki.poulose@arm.com> writes:
+
+>
+> [...snip...]
+
+Thanks Suzuki, it is used here. kvm_mem_is_private() was and still is
+the function used to check if some gfn is private or shared. Hence, in
+this patch, the usages of kvm_mem_is_private() were not
+updated. Instead, kvm_mem_is_private() is now set up as a static call,
+and the static call is hard-wired to kvm_vm_mem_is_private() in this
+patch.
+
+In the later wiring patch, all the places where attributes are looked up
+are updated all at once: if conversion enabled, take gmem route, else
+take VM route.
+
+kvm_mem_is_private() is special in that the if-else is done at KVM load
+time rather than runtime, and I believe that's for performance reasons
+since this is checked quite often from the KVM fault handling code.
+
+Buut I think perhaps Fuad was referring to kvm_mem_range_is_private(),
+which is indeed not used anywhere. Binbin also asked about this, I think
+we should drop kvm_mem_range_is_private(). My reply to Binbin is at [1].
+
+[1] https://lore.kernel.org/all/CAEvNRgGbBcrX5Fw3vNTsTOBNC=Ypi=9-S07674yPxLU9i4akjA@mail.gmail.com/
+
+---
+
+## [100] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 09/46] KVM: guest_memfd: Introduce function to check
+ GFN private/shared status*
+
+Binbin Wu <binbin.wu@linux.intel.com> writes:
+
+>
+> [...snip...]
+
+Hmm good point. Is the source of confusion that guest_memfd can be used
+for both shared and private memory?
+
+Perhaps this can be rephrased as:
+
+guest_memfd is the only provider of private memory and guest_memfd must
+be used with a memslot, hence if there's no associated memslot, there's
+no chance of this gfn being private.
+
+>> and guest_memfd must be associated with some memslot.
+>> +	 */
+
+---
+
+## [101] Sean Christopherson — 2026-06-24
+*Subject: Re: [PATCH v8 04/46] KVM: Decouple kvm_has_arch_private_mem from CONFIG_KVM_VM_MEMORY_ATTRIBUTES*
+
+On Tue, Jun 23, 2026, Ackerley Tng wrote:
+> Binbin Wu <binbin.wu@linux.intel.com> writes:
+> 
+
+checkpatch is a tool, it is neither omniscient nor authoritative.  And for things
+like this, the *entire* purpose for rules/guildlines like "no tabs after spaces"
+is to help ensure the code is easier to read, e.g. doesn't end up with wonky
+formatting when viewed in certain editors or whatever.  So, ignore checkpatch if
+it complains about formatting that is visually superior to what makes checkpatch
+happy.
+
+> having no spaces before tabs, so I switched it to tabs instead since I
+> don't think alignment like that is officially documented either way.
+
+This exact case may not be "officially" documented, but the general gist is in
+Documentation/process/maintainer-tip.rst:
+
+  When splitting function declarations or function calls, then please align
+  the first argument in the second line with the first argument in the first
+  line::
+
+And there is lots and lots of prior art on-list (from me and others) that is more
+or less as good as official documentation.
+
+> Either way is fine :)
+
+Please restore the alignment.
+
+---
+
+## [102] Sean Christopherson — 2026-06-24
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On Thu, Jun 18, 2026, Ackerley Tng wrote:
+> When checking if a guest_memfd folio is safe for conversion, its refcount
+> is examined. A folio may be present in a per-CPU lru_add fbatch, which
+
+Under what circumstances does this happen, and what alternatives are there for
+userspace to work around the issue?
+
+---
+
+## [103] Sean Christopherson — 2026-06-24
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On Tue, Jun 23, 2026, Binbin Wu wrote:
+> On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+> > @@ -606,12 +608,20 @@ static bool kvm_gmem_is_safe_for_conversion(struct inode *inode, pgoff_t start,
+
+FIW, if there's a risk, then AFAICT fadvise() and memfd's F_ADD_SEALS already
+have the same risk.
+
+---
+
+## [104] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 15/46] KVM: guest_memfd: Call arch invalidate hooks on conversion*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Fri, Jun 19, 2026, Fuad Tabba wrote:
+>> On Fri, 19 Jun 2026 at 01:31, Ackerley Tng via B4 Relay
+
+Thanks, I also didn't like the naming of kvm_gmem_invalidate(),
+especially when conversions also calls
+kvm_gmem_invalidate_{start,end}() and those do different things.
+
+> To avoid a conflict with patches that are going to have priority over this series,
+> to set the stage for arm64 support, and to avoid avoid bleeding vendor details
+
+pKVM needs some arch guest_memfd lifecycle functions that
+
++ for conversion, doesn't do anything,
++ for teardown, resets page state (IIUC it'll be reset to
+  PKVM_PAGE_OWNED (by the host))
+
+So I think we need different functions for those two stages in the
+lifecycle of a page with guest_memfd? What if we have
+
+CONFIG_HAVE_KVM_ARCH_GMEM_SET_PFN_ATTRIBUTES, which gates
+
++ kvm_gmem_should_set_pfn_attributes(attributes) and
+  .gmem_should_set_pfn_attributes
++ kvm_gmem_set_pfn_attributes(start_pfn, end_pfn, attributes) and
+  .gmem_set_pfn_attributes
+
+CONFIG_HAVE_KVM_ARCH_GMEM_TEARDOWN, which gates
+
++ kvm_gmem_teardown() and .gmem_teardown
+
+SNP:
+
++ .gmem_should_set_pfn_attributes = sev_gmem_should_set_pfn_attributes,
+  and sev_gmem_should_set_pfn_attributes returns !is_private
++ Rename .gmem_invalidate and sev_gmem_invalidate to *set_pfn_attributes
++ .gmem_teardown = sev_gmem_set_pfn_attributes
+
+TDX:
+
++ Disable CONFIG_HAVE_KVM_ARCH_GMEM_SET_PFN_ATTRIBUTES
++ Disable CONFIG_HAVE_KVM_ARCH_GMEM_TEARDOWN
+
+pKVM:
+
++ Disable CONFIG_HAVE_KVM_ARCH_GMEM_SET_PFN_ATTRIBUTES
++ .gmem_teardown = pkvm_gmem_set_pfn_attributes
+
+Suzuki, does this work for ARM CCA?
+
+This way,
+
++ The if (is_private) check doesn't leak SNP details into guest_memfd
++ .gmem_make_shared doesn't stick out without a .gmem_make_private
++ .gmem_set_pfn_attributes, .gmem_prepare and .gmem_teardown are aligned
+  conceptually as lifecycle hooks
+
++ I think the private/shared check for prepare can also be folded into
+  preparation.
+    + Preparation perhaps doesn't need a should_prepare equivalent since
+      there's no iteration and getting the gfn is just doing some math?
+    + In another patch series?
+
+> E.g. this?  There will still be a looming rename conflict, but that's easy enough
+> to handle.
+
+---
+
+## [105] Fuad Tabba — 2026-06-24
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the default*
+
+On Fri, 19 Jun 2026 at 01:31, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+compile _time_
+
+> CONFIG_KVM_VM_MEMORY_ATTRIBUTES, or at KVM load time through a module
+> parameter.
+
+> ---
+>  arch/x86/kvm/Kconfig   | 7 ++++++-
+
+nit:
+are->is
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+
+
+
+
+> +         of tracking PRIVATE state in guest_memfd.  Select this if you need
+> +         to run CoCo VMs using a VMM that doesn't support guest_memfd memory
+
+---
+
+## [106] Fuad Tabba — 2026-06-24
+*Subject: Re: [PATCH v8 28/46] KVM: selftests: Add support for mmap() on
+ guest_memfd in core library*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/kvm_util.h     |  7 +++++-
+
+---
+
+## [107] Fuad Tabba — 2026-06-24
+*Subject: Re: [PATCH v8 29/46] KVM: selftests: Add selftests global for guest
+ memory attributes capability*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/test_util.h | 2 ++
+
+---
+
+## [108] Fuad Tabba — 2026-06-24
+*Subject: Re: [PATCH v8 30/46] KVM: selftests: Add helpers for calling ioctls
+ on guest_memfd*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/kvm_util.h | 94 +++++++++++++++++++++++---
+
+---
+
+## [109] Fuad Tabba — 2026-06-24
+*Subject: Re: [PATCH v8 31/46] KVM: selftests: Test basic single-page
+ conversion flow*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/Makefile.kvm           |   1 +
+
+---
+
+## [110] Fuad Tabba — 2026-06-24
+*Subject: Re: [PATCH v8 32/46] KVM: selftests: Test conversion flow when INIT_SHARED*
+
+On Fri, 19 Jun 2026 at 01:31, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../testing/selftests/kvm/x86/guest_memfd_conversions_test.c | 12 ++++++++++++
+
+---
+
+## [111] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 10/46] KVM: guest_memfd: Wire up core private/shared
+ attribute interfaces*
+
+Binbin Wu <binbin.wu@linux.intel.com> writes:
+
+> On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+>
+
+With Sean's suggestion for patch 1, I'll update this one to default to
+the "init" state if xa_to_value(entry) is NULL.
+
+Thanks!
+
+---
+
+## [112] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 13/46] KVM: guest_memfd: Add base support for KVM_SET_MEMORY_ATTRIBUTES2*
+
+Fuad Tabba <fuad.tabba@linux.dev> writes:
+
+>
+> [...snip...]
+
+I took Sean's patches (off-list) and tried to combine it onto my
+existing state. (I'm using b4 [1] to manage these series and I didn't
+know I had to manually update the base-commit. Will try again next
+revision.
+
+[1] https://b4.docs.kernel.org/en/latest/
+
+>>
+>> Ya, Ackerley used a slightly older kvm/next to send the patches.  I at least was
+
+Should I base v9 on kvm/next, or kvm-x86/next?
+
+>
+> Agree. Sorry, didn't mean to be nit-picky, but this really threw me off :)
+
+---
+
+## [113] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 13/46] KVM: guest_memfd: Add base support for KVM_SET_MEMORY_ATTRIBUTES2*
+
+Binbin Wu <binbin.wu@linux.intel.com> writes:
+
+> On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+>> From: Ackerley Tng <ackerleytng@google.com>
+
+Thanks!
+
+>> Reviewed-by: Fuad Tabba <tabba@google.com>
+>> Signed-off-by: Ackerley Tng <ackerleytng@google.com>
+
+I'm surprised this compiles... I'll fix it, thanks!
+
+>>         bool
+>>
+
+---
+
+## [114] Suzuki K Poulose — 2026-06-24
+*Subject: Re: [PATCH v8 15/46] KVM: guest_memfd: Call arch invalidate hooks on
+ conversion*
+
+On 24/06/2026 18:46, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> 
+
+Yep, that works for us. For CCA we would :
+
++ Disable CONFIG_HAVE_KVM_ARCH_GMEM_SET_PFN_ATTRIBUTES
++ Disable CONFIG_HAVE_KVM_ARCH_GMEM_TEARDOWN
+
+In the future we might utilise the gmem_set_pfn_attributes call back.
+
+Thanks
+Suzuki
+
+
+> 
+> This way,
+
+---
+
+## [115] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Thu, Jun 18, 2026, Ackerley Tng wrote:
+>> When checking if a guest_memfd folio is safe for conversion, its refcount
+
+It happened 100% of the time in selftests. Perhaps it's because in the
+selftests the pages are almost always freshly allocated and so the
+lru_add fbatch isn't full yet? (and that the host isn't super busy so
+lru_add fbatch doesn't get drained yet).
+
+I've not tested without this beyond selftests.
+
+I don't think we can depend on workloads to drain the lru_add fbatch?
+
+> and what alternatives are there for
+> userspace to work around the issue?
+
+The thing is, the refcounts don't come with a label of who added the
+refcount so we can't really return a different error for lru_add fbatch
+presence. All folios get added to the lru_add fbatch even if they're
+unevictable and eventually not participate in LRU.
+
+We could make userspace try fadvise(POSIX_FADV_DONTNEED)? I think that
+has other problems, and this kind of makes userspace have one more user
+to guess. Userspace already needs to check if the page is pinned for
+DMA, and if it's not pinned for DMA, userspace already needs to retry
+because of other possible kernel users...
+
+---
+
+## [116] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 21/46] KVM: guest_memfd: Zero page while getting pfn*
+
+Yan Zhao <yan.y.zhao@intel.com> writes:
+
+> On Thu, Jun 18, 2026 at 05:31:58PM -0700, Ackerley Tng via B4 Relay wrote:
+>> From: Ackerley Tng <ackerleytng@google.com>
+
+Good point! I'll remove the folio_mark_uptodate() in the populate path
+then. Thanks!
+
+>>
+>> [...snip...]
+
+---
+
+## [117] Sean Christopherson — 2026-06-24
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION*
+
+On Tue, Jun 23, 2026, Yan Zhao wrote:
+> On Tue, Jun 23, 2026 at 01:16:14PM +0800, Yan Zhao wrote:
+> > On Mon, Jun 22, 2026 at 06:22:45PM -0700, Sean Christopherson wrote:
+
+Yes?  I didn't actually look at the implementation details.
+
+> > if (!src_page) {
+> > 	src_page = pfn_to_page(pfn);
+
+The alignment case is different.  If userspace provides an unaligned value, KVM
+*can't* do what userspace is asking because hardware and thus KVM only supports
+converting on page boundaries.
+
+For a NULL source, KVM can still do what userspace is asking.  Rejecting userspace's
+request would then be making assumptions about what userspace wants.
+
+> > Since userspace already needs to perform additional steps to enable in-place
+> > copy, specifying a dedicated flag to indicate that the NULL source_addr is
+
+I don't see how it adds any value.  I wouldn't be at all surprised if most VMMs
+just wen up with code that does:
+
+	if (in-place) {
+		src = NULL;
+		flags |= KVM_TDX_IN_PLACE_COPY_INITIAL_MEMORY_REGION;
+	}
+
+---
+
+## [118] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 22/46] KVM: SEV: Make 'uaddr' parameter optional for KVM_SEV_SNP_LAUNCH_UPDATE*
+
+Fuad Tabba <tabba@google.com> writes:
+
+>
+> [...snip...]
+
+Will fix in the next revision. Thanks!
+
+> Cheers,
+> /fuad
+
+---
+
+## [119] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION*
+
+Sean Christopherson <seanjc@google.com> writes:
+
+> On Tue, Jun 23, 2026, Yan Zhao wrote:
+>> On Tue, Jun 23, 2026 at 01:16:14PM +0800, Yan Zhao wrote:
+
+Yan is right that with the earlier patch "Zero page while getting pfn",
+folio_test_uptodate() here will always return true.
+
+Actually, this is an alternative fix for the issue Sashiko pointed out
+on v7 where userspace can do a populate() (either TDX or SNP) without
+first allocating the page, with src_address == NULL, and leak
+uninitialized memory into the guest.
+
+Advantage of using the uptodate check in populate: if the host never
+allocates the page, populate doesn't incur zeroing before writing the
+page anyway in populate().
+
+Disadvantage: Both TDX and SNP will have to implement this uptodate
+check. guest_memfd can't check centrally because for SNP, for a
+PAGE_TYPE_ZERO, !src_page should be allowed with a !uptodate page since
+firmware will zero and there's no leakage of uninitialized host memory?
+
+>>
+>> Another concern with this fix is that:
+
+Yan, is your concern that userspace forgot to update the code and
+forgets to provide a src_page, and if we keep the "Zero page while
+getting pfn" patch, ends up with the guest silently having a zero page?
+I think that would be found quite early in userspace VMM testing...
+
+>> > I mean if userspace specifies a NULL source_addr by mistake, it's better for
+>> > kernel to detect this mistake, similar to how it validates whether source_addr
+
+Also, +1 on this, what if userspace, knowing that pages are zeroed on
+allocation, actually wants to rely on that to get a zero page in the guest?
+
+>> > Since userspace already needs to perform additional steps to enable in-place
+>> > copy, specifying a dedicated flag to indicate that the NULL source_addr is
+
+---
+
+## [120] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the default*
+
+Yan Zhao <yan.y.zhao@intel.com> writes:
+
+>
+> [...snip...]
+
+I asked Sean about this after getting some fixes off list. Sean said
+gmem_in_place_conversion is named for a host admin to use, and something
+like gmem_memory_attributes is too much implementation details for the
+admin.
+
+Sean, would you reconsider since Yan also asked? If the admin compiled
+the kernel knowing what CONFIG_KVM_VM_MEMORY_ATTRIBUTES means, then the
+admin would also be able to use a param like gmem_memory_attributes?
+
+There's the additional benefit that the similar naming aids in
+understanding for both the admin and software engineers.
+
+Either way, in the next revision, I'll also add this documentation for
+this module_param:
+
+  Setting the module parameter gmem_in_place_conversion to true will
+  enable the KVM_SET_MEMORY_ATTRIBUTES2 guest_memfd ioctl and disables
+  the KVM_SET_MEMORY_ATTRIBUTES VM ioctl. If gmem_in_place_conversion is
+  true, the private/shared attribute will be tracked per-guest_memfd
+  instead of per-VM.
+
+Let me know what y'all think of the wording!
+
+>>
+>> [...snip...]
+
+---
+
+## [121] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 00/46] guest_memfd: In-place conversion support*
+
+"Garg, Shivank" <shivankg@amd.com> writes:
+
+>
+> [...snip...]
+
+Thanks for testing!
+
+>
+> Best regards,
+
+---
+
+## [122] Ackerley Tng — 2026-06-24
+*Subject: Re: [PATCH v8 00/46] guest_memfd: In-place conversion support*
+
+Xiaoyao Li <xiaoyao.li@intel.com> writes:
+
+> On 6/19/2026 8:31 AM, Ackerley Tng via B4 Relay wrote:
+>> TODOs
+
+Thanks for reviewing!
+
+---
+
+## [123] Sean Christopherson — 2026-06-24
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On Wed, Jun 24, 2026, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> 
+
+I chatted with Ackerley about this.  What I wanted to understand is why guest_memfd
+pages were getting put onto per-CPU batches for lru_add(), given that guest_memfd
+pages are unevictable.  The answer (assuming I read the code right), is that
+lruvec_add_folio() updates stats and other per-lru metadata for the unevictable
+lru, and does so under a per-lru lock.  I.e. we don't want to skip that stuff
+entirely.
+
+One thought I had, to avoid the IPIs that draining all per-CPU caches requires,
+was to disallow putting guest_memfd pages in folio batches, e.g. by hacking
+something into folio_may_be_lru_cached().  But due to taking a per-lru lock,
+that would penalize the relatively hot path and definitely common operation of
+faulting in guest memory.  On the other hand, memory conversion is already a
+relatively slow operation and is relatively uncommon compared to page faults,
+(and likely very uncommon for real world setups).  I.e. having to drain all
+caches if conversion isn't safe penalizes a relatively slow, relatively uncommon
+path.
+
+If we're concerned about noisy neighbor problems, or outright abuse, I think a
+simple (per process?) ratelimit would suffice.  But it's not clear to me that we
+even need that, because there are already many flows in the kernel that allow
+blasting IPIs without too much effort.
+
+---
+
+## [124] Sean Christopherson — 2026-06-24
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the default*
+
+On Wed, Jun 24, 2026, Ackerley Tng wrote:
+> Yan Zhao <yan.y.zhao@intel.com> writes:
+> > With gmem_in_place_conversion=true, userspace can create guest_memfd without the
+
+KVM module params are pretty much always about what KVM supports, not what is
+guaranteed to happen.
+
+  - enable_mmio_caching doesn't guarantee there will actually be MMIO SPTEs,
+    because maybe the guest never accesses emulated MMIO.
+  - enable_pmu doesn't guarantee VMs will get a PMU, because userspace may elect
+    not to advertise one.
+  - and so on and so forth...
+
+Yes, there's a small mental jump to get from "KVM supports in-place conversion"
+to "I need to set memory attributes on the guest_memfd instance, not the VM",
+but I don't see that as a big hurdle, certainly not in the long term.  And once
+the VMM code is written, I really do think most people are going to care about
+whether or not KVM supports in-place conversion, not where PRIVATE is tracked.
+
+> > To avoid confusion, could we rename this module parameter to something more
+> > accurate, such as gmem_memory_attribute?
+
+No, because it's not all memory attributes, it's very specifically the PRIVATE
+attribute that will get moved to guest_memfd.  I don't want to pick a name that
+will become stale and confusing when RWX attributes come along.  The RWX bits
+will be per-VM, while PRIVATE will be per-guest_memfd.
+
+---
+
+## [125] Yan Zhao — 2026-06-25
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the
+ default*
+
+On Wed, Jun 24, 2026 at 05:05:44PM -0700, Ackerley Tng wrote:
+> Yan Zhao <yan.y.zhao@intel.com> writes:
+> 
+Thanks for this background.
+
+Some more context on why I'm asking:
+
+Currently, I'm testing TDX huge pages with the following two gmem components:
+1. The gmem memory attribute in this gmem in-place conversion v8.
+2. The gmem 2MB from buddy allocator. (for development/testing only). 
+
+The gmem 2MB from buddy allocator allocates 2MB folios from buddy for private
+memory, while shared memory is allocated from a different backend.
+(To avoid fragmentation, only private mappings are split during private-to-shared
+conversions. In this approach, the 2MB folios are always retained in the gmem
+inode filemap cache without splitting.)
+
+Since shared memory is not allocated from gmem, there're no in-place conversions.
+The reason I'm using "gmem memory attribute" is that the per-VM attribute is
+being deprecated, as suggested by Sean [1].
+
+Besides my current usage, there may be other scenarios where gmem memory
+attributes is preferred without allocating shared memory from gmem.
+(e.g., PAGE.ADD from a temp extra shared source memory).
+
+For such use cases, I'm concerns that the admins may find it confusing if they
+enable gmem_in_place_conversion but still observe extra memory consumptions for
+shared memory.
+
+[1] https://lore.kernel.org/kvm/aWmEegVP_A613WIr@google.com/
+
+> Sean, would you reconsider since Yan also asked? If the admin compiled
+> the kernel knowing what CONFIG_KVM_VM_MEMORY_ATTRIBUTES means, then the
+
+---
+
+## [126] Binbin Wu — 2026-06-25
+*Subject: Re: [PATCH v8 09/46] KVM: guest_memfd: Introduce function to check
+ GFN private/shared status*
+
+On 6/24/2026 10:38 PM, Ackerley Tng wrote:
+> Binbin Wu <binbin.wu@linux.intel.com> writes:
+> 
+
+Yes.
+
+> 
+> Perhaps this can be rephrased as:
+
+LGTM.
+
+> 
+>>> and guest_memfd must be associated with some memslot.
+
+---
+
+## [127] Yan Zhao — 2026-06-25
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the
+ default*
+
+On Wed, Jun 24, 2026 at 05:41:58PM -0700, Sean Christopherson wrote:
+> On Wed, Jun 24, 2026, Ackerley Tng wrote:
+> > Yan Zhao <yan.y.zhao@intel.com> writes:
+Sorry, I just saw this mail after posting my reply in [1].
+
+I'm ok with gmem_in_place_conversion=true just means KVM supports in-place
+conversion, while we can still create VMs with shared memory not from gmem.
+
+Though it still feels a bit odd to require TDX huge pages to depend on
+gmem_in_place_conversion=true when shared memory is not currently allocated from
+gmem, it should become more natural over time once gmem supports in-place
+conversions for huge page.
+
+[1] https://lore.kernel.org/all/ajyCn0PnFtQK+Nka@yzhao56-desk.sh.intel.com
+
+
+> > > To avoid confusion, could we rename this module parameter to something more
+> > > accurate, such as gmem_memory_attribute?
+
+---
+
+## [128] Yan Zhao — 2026-06-25
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for
+ KVM_TDX_INIT_MEM_REGION*
+
+On Wed, Jun 24, 2026 at 04:00:32PM -0700, Ackerley Tng wrote:
+> Sean Christopherson <seanjc@google.com> writes:
+> 
+Another disadvantage: the uptodate flag is per-folio. What if the folio
+is only partially initialized by the userspace especially after huge page is
+supported?
+
+
+> >> Another concern with this fix is that:
+> >> commit "KVM: guest_memfd: Zero page while getting pfn" [1] always marks the
+Yes. Previously, it would be rejected after GUP fails.
+
+> getting pfn" patch, ends up with the guest silently having a zero page?
+> I think that would be found quite early in userspace VMM testing...
+I actually encountered this during testing this patch.
+I update most code path to follow this sequence. However, still some corner ones
+for TDVF HOB, which are less obvious and harder to update.
+The TD just booted up and hang silently.
+
+> >> > I mean if userspace specifies a NULL source_addr by mistake, it's better for
+> >> > kernel to detect this mistake, similar to how it validates whether source_addr
+What if 0 uaddr is a valid address? :)
+
+> >> > Since userspace already needs to perform additional steps to enable in-place
+> >> > copy, specifying a dedicated flag to indicate that the NULL source_addr is
+
+---
+
+## [129] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 15/46] KVM: guest_memfd: Call arch invalidate hooks on conversion*
+
+On Wed, 24 Jun 2026 at 18:46, Ackerley Tng <ackerleytng@google.com> wrote:
+>
+> Sean Christopherson <seanjc@google.com> writes:
+
+Yes, the split is what I was after. One PFN-range hook for both
+teardown and private->shared conversion can't tell them apart, and for
+pKVM the two want opposite content semantics.
+
+Two configs rather than one is right, since the needs are independent.
+pKVM wants teardown but not conversion.
+
+>
+> CONFIG_HAVE_KVM_ARCH_GMEM_SET_PFN_ATTRIBUTES, which gates
+
+Right for pKVM:
+
+- teardown is not a no-op: it scrubs the page and resets the host
+  state to PKVM_PAGE_OWNED before the page returns to the host. Your
+  "reset to PKVM_PAGE_OWNED" reading is correct.
+
+- the arch conversion hook is a no-op, so disabling SET_PFN_ATTRIBUTES
+  is correct. Conversions in pKVM are guest-initiated: the
+  share/unshare hypercall does the stage-2 and page-state transition
+  at EL2. The host still runs the generic conversion path (safety
+  check, attribute update) and accepts the conversion, but EL2 has
+  already done the transition, so there is nothing arch-specific left
+  for a hook to do. The page is preserved in place (no scrub).
+
+  If pKVM does turn out to need a step on conversion, it stays
+  non-destructive either way, and it can opt in later without touching
+  a contract others depend on.
+
+
+Folding the direction check behind .gmem_should_set_pfn_attributes is
+a good cleanup, it keeps the !to_private check out of generic gmem.
+
+On naming: gmem_teardown is better. gmem_set_pfn_attributes reads a
+bit close to KVM_SET_MEMORY_ATTRIBUTES, but naming is hard. :)
+
+>
+> Suzuki, does this work for ARM CCA?
+
+Agreed, separate series.
+
+Thank you Ackerley!
+
+
+/fuad
+
+>
+> > E.g. this?  There will still be a looming rename conflict, but that's easy enough
+
+---
+
+## [130] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 33/46] KVM: selftests: Test conversion precision in guest_memfd*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+
+> ---
+>  .../kvm/x86/guest_memfd_conversions_test.c         | 66 ++++++++++++++++++++++
+
+---
+
+## [131] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 34/46] KVM: selftests: Test conversion before allocation*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../selftests/kvm/x86/guest_memfd_conversions_test.c       | 14 ++++++++++++++
+
+---
+
+## [132] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 35/46] KVM: selftests: Convert with allocated folios in
+ different layouts*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../kvm/x86/guest_memfd_conversions_test.c         | 30 ++++++++++++++++++++++
+
+---
+
+## [133] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 36/46] KVM: selftests: Test that truncation does not
+ change shared/private status*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../selftests/kvm/x86/guest_memfd_conversions_test.c       | 14 ++++++++++++++
+
+---
+
+## [134] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 37/46] KVM: selftests: Test that shared/private status
+ is consistent across processes*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Two things below, otherwise:
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+
+>  .../kvm/x86/guest_memfd_conversions_test.c         | 118 +++++++++++++++++++++
+>  1 file changed, 118 insertions(+)
+
+nit: include order
+
+>
+> @@ -323,6 +325,122 @@ GMEM_CONVERSION_TEST_INIT_SHARED(truncate)
+
+Not sure it's worth it, but if you want to silence Sashiko, waitid
+with WNOWAIT might be the way to go (not tested, just from looking at
+the man page). This is though very unlikely, mentioning it since
+Sashiko complained.
+
+
+> +                               TEST_ASSERT(alive, "Other process exited prematurely"); \
+> +                       } else {                                                \
+
+---
+
+## [135] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 38/46] KVM: selftests: Add helpers to pin pages with CONFIG_GUP_TEST*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+nit below, otherwise:
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/kvm_util.h |  3 +++
+
+nit: should you close this/reset it to -1 after the tests?
+
+> +
+> +       TEST_ASSERT_EQ(ioctl(gup_test_fd, PIN_LONGTERM_TEST_START, &args), 0);
+
+---
+
+## [136] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 39/46] KVM: selftests: Test conversion with elevated
+ page refcount*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Not sure Sashiko's concern is worth it.
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../kvm/x86/guest_memfd_conversions_test.c         | 56 ++++++++++++++++++++++
+
+---
+
+## [137] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 40/46] KVM: selftests: Reset shared memory after hole-punching*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/x86/private_mem_conversions_test.c | 9 ++++++---
+
+---
+
+## [138] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 41/46] KVM: selftests: Provide function to look up
+ guest_memfd details from gpa*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/kvm_util.h |  3 +++
+
+---
+
+## [139] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 42/46] KVM: selftests: Provide common function to set
+ memory attributes*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/kvm_util.h | 46 +++++++++++++++++++-------
+
+---
+
+## [140] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 43/46] KVM: selftests: Check fd/flags provided to
+ mmap() when setting up memslot*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/lib/kvm_util.c | 3 +++
+
+---
+
+## [141] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 44/46] KVM: selftests: Make TEST_EXPECT_SIGBUS thread-safe*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  tools/testing/selftests/kvm/include/test_util.h | 32 +++++++++++++------------
+
+---
+
+## [142] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 45/46] KVM: selftests: Update private_mem_conversions_test
+ to mmap() guest_memfd*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Ackerley Tng <ackerleytng@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../kvm/x86/private_mem_conversions_test.c         | 44 ++++++++++++++++++----
+
+---
+
+## [143] Fuad Tabba — 2026-06-25
+*Subject: Re: [PATCH v8 46/46] KVM: selftests: Update private memory exits test
+ to work with per-gmem attributes*
+
+On Fri, 19 Jun 2026 at 01:32, Ackerley Tng via B4 Relay
+<devnull+ackerleytng.google.com@kernel.org> wrote:
+>
+> From: Sean Christopherson <seanjc@google.com>
+
+Reviewed-by: Fuad Tabba <tabba@google.com>
+
+Cheers,
+/fuad
+
+> ---
+>  .../selftests/kvm/x86/private_mem_kvm_exits_test.c | 36 ++++++++++++++++++----
+
+---
+
+## [144] Yan Zhao — 2026-06-25
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the
+ default*
+
+On Thu, Jun 25, 2026 at 09:51:01AM +0800, Yan Zhao wrote:
+> On Wed, Jun 24, 2026 at 05:41:58PM -0700, Sean Christopherson wrote:
+> > On Wed, Jun 24, 2026, Ackerley Tng wrote:
+Or what about "allow_gmem_in_place_conversion" ?
+
+
+> Though it still feels a bit odd to require TDX huge pages to depend on
+> gmem_in_place_conversion=true when shared memory is not currently allocated from
+
+---
+
+## [145] David Hildenbrand (Arm) — 2026-06-25
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On 6/25/26 02:35, Sean Christopherson wrote:
+> On Wed, Jun 24, 2026, Ackerley Tng wrote:
+>> Sean Christopherson <seanjc@google.com> writes:
+
+Hm. Our pages don't participate in any LRU activity (including
+isolation+migration). Isolation+migration would only apply once we'd support
+page migration.
+
+But yes, secretmem also does it like that: filemap_add_folio() will call
+folio_add_lru().
+
+Traditionally we used the unevictable LRU only for mlock purposes.
+
+But yeah, there are "unevictable" stats involved ....
+
+> 
+> One thought I had, to avoid the IPIs that draining all per-CPU caches requires,
+
+Yeah, the lru_add_drain_all is rather messy.
+
+We have similar code in
+
+collect_longterm_unpinnable_folios(), where we first try a lru_add_drain(), to
+then escalate to a lru_add_drain_all().
+
+Maybe we could factor that (suboptimal code) out to not have to reinvent the
+same thing multiple times?
+
+---
+
+## [146] Sean Christopherson — 2026-06-25
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the default\*
+
+On Thu, Jun 25, 2026, Yan Zhao wrote:
+> On Thu, Jun 25, 2026 at 09:51:01AM +0800, Yan Zhao wrote:
+> > On Wed, Jun 24, 2026 at 05:41:58PM -0700, Sean Christopherson wrote:
+
+No, because turning on the param also disallows setting PRIVATE in the VM-scoped
+KVM_SET_MEMORY_ATTRIBUTES ioctl.
+
+> > Though it still feels a bit odd to require TDX huge pages to depend on
+> > gmem_in_place_conversion=true when shared memory is not currently allocated
+
+I fully expect that to be a transient state, and in all likelihood not something
+that is *ever* shipped in production.  Landing TDX hugepages without guest_memfd
+hugepage support is all about avoiding unnecessary serialization of series and
+features that aren't strictly dependent on each other.
+
+> > it should become more natural over time once gmem supports in-place
+> > conversions for huge page.
+
+Yes, and I want to prioritize the steady state for end users, not the in-progress
+state for developers.  Once all of this settles out, I fully expect the majority
+of deployments to only support in-place conversion, at which point the end user
+is only going to care whether or not in-place conversion is enabled in KVM, not
+the subtle detail that it's still possible to do out-of-place conversions (and
+that will always hold true, it's not like VMA-based memslots are being deprecated).
+
+> > Besides my current usage, there may be other scenarios where gmem memory
+> > attributes is preferred without allocating shared memory from gmem.
+
+KVM can help with documentation, but beyond that, it's not KVM's problem to solve.
+If a VMM *and* platform owner chooses to deploy a setup that utilizes out-of-place
+conversions, then it's on the VMM and/or plaform owner to understand and communicate
+the implications to the end user.
+
+And I'm not remotely convinced that prepending allow_ to the param will help
+end users diagnose "unexpected" memory consumption, in quotes because anyone that
+is deploying a stack that utilizes out-of-place conversion absolutely needs to
+understand and plan for the additional memory consumption.  I.e. if the memory
+consumption is "unexpected" to the end user, they likely have far bigger problems.
+
+---
+
+## [147] Sean Christopherson — 2026-06-25
+*Subject: Re: [PATCH v8 18/46] KVM: guest_memfd: Handle lru_add fbatch
+ refcounts during conversion safety check*
+
+On Thu, Jun 25, 2026, David Hildenbrand (Arm) wrote:
+> On 6/25/26 02:35, Sean Christopherson wrote:
+> > One thought I had, to avoid the IPIs that draining all per-CPU caches requires,
+
+As discussed in the guest_memfd call, we should do this straightaway, i.e. instead
+of merging this series as-is, so that we don't export lru_add_drain_all() only to
+drop the export a kernel or two later, and can instead export the helper to drain
+any batches for a folio (or set of folios/pages).
+
+---
+
+## [148] Ackerley Tng — 2026-06-25
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the default*
+
+Yan Zhao <yan.y.zhao@intel.com> writes:
+
+> On Wed, Jun 24, 2026 at 05:05:44PM -0700, Ackerley Tng wrote:
+>> Yan Zhao <yan.y.zhao@intel.com> writes:
+
+v8 of conversions series changed that slightly, per-VM attributes is
+going to stay around (because of work on RWX attributes, coming up) and
+RWX will stay tracked at the VM level.
+
+For v8 and beyond, only tracking of private/shared in per-VM attributes
+is being deprecated.
+
+By extension the entire thing about using guest_memfd for private memory
+and a different backing memory for shared memory is being deprecated.
+
+> Besides my current usage,
+
+I think you can set up guest_memfd+2M for private memory and shared
+memory from some other source, and that's the deprecated usage pattern.
+
+> there may be other scenarios where gmem memory
+> attributes is preferred without allocating shared memory from gmem.
+
+Is this TDH.MEM.PAGE.ADD, used indirectly from
+tdx_gmem_post_populate()? This use case isn't blocked. Even if
+gmem_in_place_conversion=true, you can still set src_address to
+non-guest_memfd memory and load from anywhere you like.
+
+Please let me know if that is broken! I think I accidentally used that
+setup in selftests and it worked. The selftests are now defaulting to
+in-place conversion.
+
+> For such use cases, I'm concerns that the admins may find it confusing if they
+> enable gmem_in_place_conversion but still observe extra memory consumptions for
+
+Hmm but I guess if someone enables gmem_in_place_conversion but still
+allocates from elsewhere, they'd have to figure it out?
+
+> [1] https://lore.kernel.org/kvm/aWmEegVP_A613WIr@google.com/
+>
+
+---
+
+## [149] Yan Zhao — 2026-06-26
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the
+ default*
+
+On Thu, Jun 25, 2026 at 11:20:30AM -0700, Ackerley Tng wrote:
+> Yan Zhao <yan.y.zhao@intel.com> writes:
+> 
+Thanks for the info. I was actually referring to the per-VM shared/private
+attribute, which is being deprecated. Sean hoped TDX huge page would be the
+first mandated user of the per-gmem shared/private attribute.
+
+
+> > Besides my current usage,
+> 
+
+Yes, though this is the deprecated usage pattern, gmem_in_place_conversion=true
+allows it.
+
+In fact, even without huge pages, v8 allows userspace to have shared memory
+allocated from other source when gmem_in_place_conversion=true.
+(My default testing of this series for the 4KB setting is with this
+configuration).
+
+> > there may be other scenarios where gmem memory
+> > attributes is preferred without allocating shared memory from gmem.
+It's not broken. I tested it with my hacked-up QEMU.
+
+> setup in selftests and it worked. The selftests are now defaulting to
+> in-place conversion.
+
+If gmem_in_place_conversion=true means gmem in place conversion is allowed (but
+not enforced), I agree.
+
+I'm wondering if we could rename it to "allow_gmem_in_place_conversion":)
+
+> > [1] https://lore.kernel.org/kvm/aWmEegVP_A613WIr@google.com/
+> >
+
+---
+
+## [150] Ackerley Tng — 2026-06-25
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION*
+
+Yan Zhao <yan.y.zhao@intel.com> writes:
+
+> On Wed, Jun 24, 2026 at 04:00:32PM -0700, Ackerley Tng wrote:
+>> Sean Christopherson <seanjc@google.com> writes:
+
+Good point on huge pages!
+
+The uptodate flag on the folio in guest_memfd means "this folio has been
+written to". As of now (before patch at [1]), this happens when
+
++ folio is zeroed on first use by userspace
++ folio is zeroed on first use of the guest
++ folio is populated
+
+When huge pages are supported, the folio can't partially be initialized?
+
+On allocation, if any part is shared, we split the page. The parts are
+separate folios that have their own uptodate flags.
+
+On splitting, if the huge page is uptodate, the split pages will also be
+uptodate. If the huge page is not uptodate, the split pages won't be
+uptodate, but that's ok since they will be marked uptodate on first use.
+
+On merging, the non-uptodate parts have to be zeroed and then marked
+uptodate. Any parts that are in use would have been marked uptodate
+already, so there's no overwriting data that is in use. I'll need to
+think more about when it's safe to zero.
+
+I'm still on the fence between the two options
+
+1. Using uptodate check in populate to reject src_pages that have never
+   been written to or
+2. Always zero before populate
+
+but whether the uptodate flag is per-folio or not doesn't affect these
+two options in terms of fixing the leak of uninitialized host memory,
+right?
+
+>
+>> >> Another concern with this fix is that:
+
+I see, didn't realize previously it would be rejected because GUP
+fails. GUP failed because it wasn't faulted into the host?
+
+That's kind of orthogonal, I don't think GUP fail leading to rejecting
+populate was meant to help userspace catch these issues. GUP would also
+fail if the user did mmap(), write to it, unmap using
+madvise(MADV_DONTNEED), then forget and pass 0 as src_address.
+
+>> getting pfn" patch, ends up with the guest silently having a zero page?
+>> I think that would be found quite early in userspace VMM testing...
+
+I think this is just the life of a close-to-hardware software engineer
+:P no errors, got stuck somewhere, root cause is some unitialized
+thing.
+
+>> >> > I mean if userspace specifies a NULL source_addr by mistake, it's better for
+>> >> > kernel to detect this mistake, similar to how it validates whether source_addr
+
+---
+
+## [151] Yan Zhao — 2026-06-26
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the
+ default\*
+
+On Thu, Jun 25, 2026 at 07:36:28AM -0700, Sean Christopherson wrote:
+> On Thu, Jun 25, 2026, Yan Zhao wrote:
+> > On Thu, Jun 25, 2026 at 09:51:01AM +0800, Yan Zhao wrote:
+Thanks for all the explanations!
+Documentation that choosing a different source after enabling
+gmem_in_place_conversion is deprecated looks good to me.
+ 
+> And I'm not remotely convinced that prepending allow_ to the param will help
+> end users diagnose "unexpected" memory consumption, in quotes because anyone that
+My first impression of gmem_in_place_conversion=true was that it enforces gmem
+in-place conversion. However, it actually only enforces per-gmem private/shared
+attribute.
+My worry was that people might think it's a kernel bug if userspace can still
+have shared memory from other sources after they configured
+gmem_in_place_conversion=true.
+
+However, I have no strong opinion if you think gmem_in_place_conversion is good,
+and with the above documentation. :)
+
+---
+
+## [152] Yan Zhao — 2026-06-26
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for
+ KVM_TDX_INIT_MEM_REGION*
+
+On Thu, Jun 25, 2026 at 05:07:23PM -0700, Ackerley Tng wrote:
+> Yan Zhao <yan.y.zhao@intel.com> writes:
+> 
+If that's true, it would be good.
+
+> uptodate. Any parts that are in use would have been marked uptodate
+> already, so there's no overwriting data that is in use. I'll need to
+2 does not work?
+The flow is
+1. mmap gmem_fd, make GFN shared, and write initial content.
+2. convert GFN to private
+3. invoke ioctl to trigger populate.
+
+> but whether the uptodate flag is per-folio or not doesn't affect these
+> two options in terms of fixing the leak of uninitialized host memory,
+yes, provided "On merging, the non-uptodate parts have to be zeroed and then
+marked uptodate".
+
+> >
+> >> >> Another concern with this fix is that:
+GUP fails if 0 is not a valid user address.
+But GUP would not fail if 0 is a valid address. e.g., in below scenario: 
+
+#include <sys/mman.h>
+#include <stdio.h>
+int main(void)
+{
+        void *p=mmap((void*)0,4096,PROT_READ|PROT_WRITE, MAP_FIXED|MAP_PRIVATE|MAP_ANONYMOUS,-1,0);
+        if (p==MAP_FAILED) {
+                perror("mmap");
+                return 1;
+        }
+        *(char*)0='Y';
+        printf("addr0=%p val=%c\n",p,*(char*)0);
+        return 0;
+}
+
+
+> That's kind of orthogonal, I don't think GUP fail leading to rejecting
+> populate was meant to help userspace catch these issues. GUP would also
+The original uAPI did not explicitly define 0 as an invalid uaddr. Whether 0 was
+rejected depended on whether the user mmap()'d address 0. If 0 was a valid
+mapping, populate() could proceed.
+
+commit 2a62345b3052 ("KVM: guest_memfd: GUP source pages prior to populating
+guest memory") changed the behavior though. It would return -EOPNOTSUPP for a 0
+uaddr.
+
+But if a user configures 0 uaddr as valid, writes to it, and then passes 0 as
+source_addr(not from gmem), I'm not sure if it's good for the kernel to silently
+treat 0 uaddr as an identifier for in-place copy from the private PFN in gmem.
+
+
+> >> getting pfn" patch, ends up with the guest silently having a zero page?
+> >> I think that would be found quite early in userspace VMM testing...
+
+---
+
+## [153] Ackerley Tng — 2026-06-26
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION*
+
+Yan Zhao <yan.y.zhao@intel.com> writes:
+
+> On Thu, Jun 25, 2026 at 05:07:23PM -0700, Ackerley Tng wrote:
+>> Yan Zhao <yan.y.zhao@intel.com> writes:
+
+This flow is correct, is what users of in-place conversion should do.
+
+"Always" is the wrong word, I should have said "zero if not uptodate
+before populate", as in, with patch at [1].
+
+By doing the zeroing in __kvm_gmem_get_pfn instead, by the time populate
+gets the pfn, the page would be zeroed, either because userspace faulted
+it in, and the zeroing happened in kvm_gmem_fault_user_mapping(), or if
+userspace never faulted it in, the zeroing would happen because
+populate() allocated the page.
+
+>> but whether the uptodate flag is per-folio or not doesn't affect these
+>> two options in terms of fixing the leak of uninitialized host memory,
+
+Thank you so much for bringing this up, I hadn't considered this
+before. I'll do that when I get to guest_memfd hugepage restructuring.
+
+>> >
+>> >> >> Another concern with this fix is that:
+
+I see, I only looked at this after commit 2a62345b3052.
+
+> But if a user configures 0 uaddr as valid, writes to it, and then passes 0 as
+> source_addr(not from gmem), I'm not sure if it's good for the kernel to silently
+
+I'd say the original uAPI perhaps just didn't document 0 as an
+unsupported uaddr. Given that commit 2a62345b3052 already merged, uAPI
+was perhaps accidentally changed and no customer complained, I think we
+can move forward with 0 as an invalid src_address? I wouldn't think
+anyone relies on 0 intentionally being a valid address.
+
+I could document that, if it helps?
+
+>
+>> >> getting pfn" patch, ends up with the guest silently having a zero page?
+
+---
+
+## [154] Sean Christopherson — 2026-06-26
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the default\*
+
+On Fri, Jun 26, 2026, Yan Zhao wrote:
+> On Thu, Jun 25, 2026 at 07:36:28AM -0700, Sean Christopherson wrote:
+> > On Thu, Jun 25, 2026, Yan Zhao wrote:
+
+Ah, I see where you're coming from.  FWIW, truly enforcing in-place conversion
+is flat out impossible.  E.g. userspace can simply replace the memslot, at which
+point the memory effectively reverts to shared.
+
+> However, I have no strong opinion if you think gmem_in_place_conversion is good,
+> and with the above documentation. :)
+
+Ya, I think this largely a documentation problem.  I agree that a param name
+like gmem_private_memory_attributes would be more precise, but I think it'd be
+far less informative for the vast majority of users that only care whether or
+not KVM can do in-place conversion, and don't care about how that is done.
+
+---
+
+## [155] Yan Zhao — 2026-06-29
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for
+ KVM_TDX_INIT_MEM_REGION*
+
+On Fri, Jun 26, 2026 at 08:28:32AM -0700, Ackerley Tng wrote:
+> Yan Zhao <yan.y.zhao@intel.com> writes:
+> 
+
+I see.
+
+> >> but whether the uptodate flag is per-folio or not doesn't affect these
+> >> two options in terms of fixing the leak of uninitialized host memory,
+What about just documenting that 0 is an unsupported uaddr which will be
+re-purposed as an indicator to use the target pfn as the source, regardless of
+whether gmem_in_place_conversion is true? i.e.,
+
+if (!src_page) 
+	src_page = pfn_to_page(pfn);
+
+I don't get why the two scenarios should be treated differently:
+1. gmem_in_place_conversion==true, shared memory is not from gmem 
+2. gmem_in_place_conversion==false, shared memory is not from gmem
+
+In both case, a 0 uaddr could be mapped to a valid page not from gmem.
+So why not update the uAPI to handle both cases consistently? :) 
+
+> >> >> getting pfn" patch, ends up with the guest silently having a zero page?
+> >> >> I think that would be found quite early in userspace VMM testing...
+
+---
+
+## [156] Yan Zhao — 2026-06-29
+*Subject: Re: [PATCH v8 24/46] KVM: guest_memfd: Make in-place conversion the
+ default\*
+
+On Fri, Jun 26, 2026 at 12:06:40PM -0700, Sean Christopherson wrote:
+> On Fri, Jun 26, 2026, Yan Zhao wrote:
+> > On Thu, Jun 25, 2026 at 07:36:28AM -0700, Sean Christopherson wrote:
+Ok.
+
+---
+
+## [157] Ackerley Tng — 2026-06-29
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION*
+
+Yan Zhao <yan.y.zhao@intel.com> writes:
+
+> On Fri, Jun 26, 2026 at 08:28:32AM -0700, Ackerley Tng wrote:
+>> Yan Zhao <yan.y.zhao@intel.com> writes:
+
+This is true, but this check isn't about whether the page is from gmem.
+
+> So why not update the uAPI to handle both cases consistently? :)
+>
+
+Wait, but before this series, if region.src_address = 0, src_page = NULL
+and that's not supported so it returns -EOPNOTSUPP.
+
+If that's dropped, then suddenly if region.src_address = 0 and
+!gmem_in_place_conversion, tdx_gmem_post_populate() will now load the
+memory (zeroed) after [1] into the guest? I don't think we want to
+change that behavior.
+
+I could document that 0 is an unsupported uaddr only for TDX, and only
+when gmem_in_place_conversion = false.
+
+Since it is unsupported only when gmem_in_place_conversion = false, the
+check two lines marked with <<==== can't go away?
+
+	if (!src_page) {
+		if (!gmem_in_place_conversion)  <<====
+			return -EOPNOTSUPP;     <<====
+
+		src_page = pfn_to_page(pfn);
+	}
+
+Also, for SNP, src_address == 0 is permitted (and desired, I believe, to
+avoid a pointless kernel memcpy) if the type of population is
+KVM_SEV_SNP_PAGE_TYPE_ZERO.
+
+>> >> >> getting pfn" patch, ends up with the guest silently having a zero page?
+>> >> >> I think that would be found quite early in userspace VMM testing...
+
+---
+
+## [158] Sean Christopherson — 2026-06-29
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for KVM_TDX_INIT_MEM_REGION*
+
+Gah, I thought I had sent this out this morning, long before Ackerley's response.
+But I got distracted by a meeting and forgot to get back to this... *sigh*
+
+Sending what I already wrote, even though there's a lot of overlap with Ackerley's
+mail.
+
+On Mon, Jun 29, 2026, Yan Zhao wrote:
+> On Fri, Jun 26, 2026 at 08:28:32AM -0700, Ackerley Tng wrote:
+> > Yan Zhao <yan.y.zhao@intel.com> writes:
+
+Because KVM can't generally use the target page as the source without in-place
+conversion, it's not supported today, and out-of-place conversion is being
+deprecated.
+
+> I don't get why the two scenarios should be treated differently:
+> 1. gmem_in_place_conversion==true, shared memory is not from gmem 
+
+That's immaterial.  KVM's ABI (that we're solidifying) is that an address of '0'
+for the source means NULL.  The fact that userspace could have a valid mapping
+at virtual address '0' is irrelevant.
+
+Again, just because something is technically possible doesn't mean it needs to
+be supported by every piece of KVM's uAPI.
+
+> So why not update the uAPI to handle both cases consistently? :)
+
+Because retroactively adding support for out-of-place conversion is pointless
+(requires a userspace update for a feature that's being deprecated), KVM can't
+generally support using the source for out-of-place conversion (it's effectively
+an obscure zero-page optimization), and IMO rejecting the out-of-place conversion
+scenario is valuable for KVM developers, e.g. to help newcomers understand what
+exactly is and isn't possible.
+
+Side topic, isn't TDX broken if target page has already been added to the TD?
+IIUC, kvm_tdp_mmu_map_private_pfn() will be a glorified nop due to the page
+already having a valid S-EPT mapping, and so KVM will incorrectly allow a double
+add.  Ahhh, no, because KVM will return RET_PF_SPURIOUS and
+kvm_tdp_mmu_map_private_pfn() will then return -EIO.
+
+---
+
+## [159] Yan Zhao — 2026-06-30
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for
+ KVM_TDX_INIT_MEM_REGION*
+
+On Mon, Jun 29, 2026 at 05:00:02PM -0700, Ackerley Tng wrote:
+> >> > The original uAPI did not explicitly define 0 as an invalid uaddr. Whether 0 was
+> >> > rejected depended on whether the user mmap()'d address 0. If 0 was a valid
+Hmm. TDX's in-place add does not rely on gmem in-place conversion, which means
+when gmem_in_place_conversion==false, TDX's in-place add can still be successful.
+
+Since checking gmem_in_place_conversion==true also can't guarantee the share
+memory is from gmem, it makes me feel odd to reject scenario 2 while turning
+scenario 1 to in-place add.
+
+> > So why not update the uAPI to handle both cases consistently? :)
+> >
+As in our previous discussion, no customer complaining about the previous change
+to -EOPNOTSUPP means no one uses 0 uaddr today.
+
+> If that's dropped, then suddenly if region.src_address = 0 and
+> !gmem_in_place_conversion, tdx_gmem_post_populate() will now load the
+This rejecting scenario 2.
+
+> 		src_page = pfn_to_page(pfn);
+This turning scenario 1 to in-place add.
+
+> 	}
+>
+
+---
+
+## [160] Yan Zhao — 2026-06-30
+*Subject: Re: [PATCH v8 23/46] KVM: TDX: Make source page optional for
+ KVM_TDX_INIT_MEM_REGION*
+
+On Tue, Jun 30, 2026 at 08:35:49AM +0800, Sean Christopherson wrote:
+> Gah, I thought I had sent this out this morning, long before Ackerley's response.
+> But I got distracted by a meeting and forgot to get back to this... *sigh*
+By "out-of-place conversion", do you mean using per-VM memory attribute
+conversion?
+
+> > I don't get why the two scenarios should be treated differently:
+> > 1. gmem_in_place_conversion==true, shared memory is not from gmem 
+So, I'm wondering if we can document that 0 uaddr could always mean using target
+PFN.
+i.e., for both scenarios 1 and 2, al long as 0 uaddr is specified, we always
+use target PFN as source for in-place add.
+
+> Again, just because something is technically possible doesn't mean it needs to
+> be supported by every piece of KVM's uAPI.
+Ok. You mean per-VM memory attribute is deprecating, and source page from !gmem
+backend is also deprecating, so we don't want to change uAPI for scenarios under
+gmem_in_place_conversion==false. Right?
+
+> Side topic, isn't TDX broken if target page has already been added to the TD?
+> IIUC, kvm_tdp_mmu_map_private_pfn() will be a glorified nop due to the page
+Not sure if my understand out-of-place conversion correctly.
+Given target PFNs and GFNs are not duplicated, what would cause double add? :)
+
+> add.  Ahhh, no, because KVM will return RET_PF_SPURIOUS and
+> kvm_tdp_mmu_map_private_pfn() will then return -EIO.
+My asking was if we could document uaddr always means using target PFN, since
+TDX's in-place add does not rely on gmem in-place conversion.
 
 ---

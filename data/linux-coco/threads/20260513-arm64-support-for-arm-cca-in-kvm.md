@@ -1,8 +1,8 @@
 ---
 title: 'arm64: Support for Arm CCA in KVM'
 date: 2026-05-13
-last_reply: 2026-06-15
-message_count: 147
+last_reply: 2026-06-28
+message_count: 156
 participants: ['Steven Price', 'Aneesh Kumar K.V', 'Gavin Shan', 'Suzuki K Poulose', 'Marc Zyngier', 'Wei-Lin Chang', 'Lorenzo Pieralisi', 'Dan Williams (nvidia)']
 ---
 
@@ -10730,5 +10730,314 @@ rule that out.
 
 Thanks,
 Steve
+
+---
+
+## [148] Gavin Shan — 2026-06-25
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 6/6/26 12:35 AM, Lorenzo Pieralisi wrote:
+> On Fri, Jun 05, 2026 at 06:11:11PM +1000, Gavin Shan wrote:
+>> On 6/5/26 5:28 PM, Lorenzo Pieralisi wrote:
+
+Not sure if there are other known issues in this series. It seems the stage2
+page fault handling on the shared space isn't working well. In my test, the
+vring (struct vring_desc) of virtio-net-pci is updated by the guest, and the
+data isn't seen by QEMU, I'm suspecting if the host-page-frame-number is properly
+resolved in the s2 page fault handler for shared (unprotected) space.
+
+- I rebased Jean's latest qemu branch to the upstream qemu;
+
+- On the host, which is emulated by qemu/tcg, the THP (transparent huge page) is
+   disabled.
+
+- On the guest, I can see the virtio vring (struct vring_desc) is updated. The
+   S1 page-table entry looks correct because the corresponding physical address
+   0x10046880000 is a sane shared (unprotected) space address.
+
+   [   52.094143] software IO TLB: Memory encryption is active and system is using DMA bounce buffers
+   [   52.289746] virtqueue_add_desc_split: desc[0]@0xffff000006880000, [00000100b983f000  00000640  0002  0001]
+   [   52.432150] PTE 0x00e8010046880707 at address 0xffff000006880000
+
+- On the host, the s2 page-table-entry is unmapped due to attribute transition (private -> shared).
+   A subsequent S2 page fault is raised against the adress and the s2 page-table-entry is built.
+
+   [  109.259077] ====> realm_unmap_shared_range: tracked_unprot_addr=0x10046880000
+   [  109.260249] realm_unmap_shared_range: unmapped shared range at 0x10046880000
+   [  109.317786] realm_unmap_shared_range: unmapped shared range at 0x10046880000
+   [  109.629939] ====> kvm_handle_guest_abort: fault_ipa=0x10046880000, esr=0x92000007
+   [  109.630245] realm_map_non_secure: ipa=0x10046880000, pfn=0xb8b59, size=0x1000, prot=0xf
+   [  109.630331] realm_map_non_secure: ipa=0x10046880000, ipa_top=0x10046881000, flags=0x1e0001, range_desc=0xb8b59004
+
+- On QEMU, the updated vring (struct vring_desc) at GPA 0x46880000 isn't seen. All the
+   data in that adress are zeros.
+
+   ====> virtqueue_split_pop: vdev=<virtio-net>, sz=0x38, queue_index=0x0, vq->vring.num=0x100
+   virtqueue_split_pop: last_avail_idx=0x0, head=0x0
+   address_space_read_cached_slow: cache@0xffff1c036440, addr=0x0, buf=0xffffeee34880, len=0x10
+   address_space_read_cached_slow: cache: ptr=0x0, xlat=0x10046880000, len=0x1000, mrs=<realm-dma-region>, is_write=no
+   address_space_read_cached_slow: translated to mr=<mach-virt.ram>, mr_addr=0x6880000, l=0x10
+   flatview_read_continue_step: mr=<mach-virt.ram>, host=0xffff23e00000, mr_addr=0x6880000, ram_ptr=0xffff2a680000
+   virtqueue_split_pop: desc: 0000000000000000 - 00000000 - 00000000 - 00000000
+   qemu-system-aarch64: virtio: zero sized buffers are not allowed
+
+
+Thanks,
+Gavin
+
+---
+
+## [149] Suzuki K Poulose — 2026-06-25
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 25/06/2026 14:53, Gavin Shan wrote:
+> On 6/6/26 12:35 AM, Lorenzo Pieralisi wrote:
+>> On Fri, Jun 05, 2026 at 06:11:11PM +1000, Gavin Shan wrote:
+
+Are you able to correlate the order of the transitions and the Guest
+access with RMM log ? We haven't seen this from our end. We are aware
+of permission fault issues with Unprotected IPA when backing the memslot
+with MAP_PRIVATE areas. But this looks different.
+
+Lorenzo, have you run into this ?
+
+Suzuki
+
+
+> 
+> - On QEMU, the updated vring (struct vring_desc) at GPA 0x46880000 isn't
+
+---
+
+## [150] Suzuki K Poulose — 2026-06-25
+*Subject: Re: [PATCH v14 26/44] arm64: RMI: Allow populating initial contents*
+
+On 08/06/2026 14:53, Steven Price wrote:
+> On 08/06/2026 10:41, Suzuki K Poulose wrote:
+>> On 08/06/2026 10:36, Steven Price wrote:
+
+Good point, but I think this may not fail to allow the hugepages in the
+future. The DELEGATE_RANGE would skip the granules in DELEGATED/DATA 
+state. I am getting this clarified in the spec.
+
+
+Suzuki
+
+> 
+> Thanks,
+
+---
+
+## [151] Gavin Shan — 2026-06-26
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 6/26/26 1:58 AM, Suzuki K Poulose wrote:
+> On 25/06/2026 14:53, Gavin Shan wrote:
+>> On 6/6/26 12:35 AM, Lorenzo Pieralisi wrote:
+
+[...]
+
+>>>>
+>>>> I tried to rebase Jean's latest QEMU series [1] to upstream QEMU, and found
+
+It's hard to correlate the order since the logs are collected from two separate
+consoles. For the write permission, I add code to the host where the permission
+is always added for all s2 page faults in the shared space. Otherwise, qemu can
+be killed by -EFAULT or similar error.
+
+There are more findings after more experiments: this virtio-net-pci device has 3
+queues or vrings (Rx/Tx/Ctrl). The Rx/Tx/Ctrl queue are populated in order one after
+one. In the guest kernel, I intentionally write fixed data (0x0123456789abcdef) to
+the first 8 bytes of the queue when it gets populated, and stop the guest at random
+points to see if the data is gone. I found that the data written to Rx/Tx queue are
+lost after Ctrl queue is allocated.
+
+The data written to Rx/Tx queue is lost if the guest stops (B). The data written to
+Rx/Tx queue isn't lost if the guest stops at (A). I can see the pattern (0x0123...cdef)
+by dumping the physcial memory through 'pmemsave' command in qemu.
+
+DMA allocation
+==============
+dma_alloc_coherent
+   dma_alloc_attrs
+     dma_direct_alloc
+       __dma_direct_alloc_pages
+       dma_set_decrypted                    // (A) No data lost if being stopped here for the Ctrl queue
+       memset(ret, 0, size)                 // (B) Data lost after being stopped after memset() for the Ctrl queue
+
+The memset() on the Ctrl queue should trigger a stage2 page fault. It seems the page
+fault enforces the shared pages for Rx/Tx queue to be dropped? I need to add more
+debugging code and track it down.
+
+> Suzuki
+> 
+Thanks,
+Gavin
+
+---
+
+## [152] Suzuki K Poulose — 2026-06-26
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 26/06/2026 08:43, Gavin Shan wrote:
+> On 6/26/26 1:58 AM, Suzuki K Poulose wrote:
+>> On 25/06/2026 14:53, Gavin Shan wrote:
+
+This is the problem. We can't add WRITE permission by default. I believe
+you may have MAP_PRIVATE mapping and it has to be mapped as READ only
+and on a permission fault, we replace it with a writable page. By
+overriding the WRITE permission, you let the guest write to a page
+that may not be seen by the VMM.
+
+We identified this as a bug in the KVM driver in this series (reported
+by Lorenzo) and there is a corresponding tf-RMM change that is required
+to get this working. So, please could you wait until the next series
+when this will be addressed ? Or you could switch to using MAP_SHARED
+for the "shared" memory in the memslot.
+
+
+Suzuki
+
+
+> 
+> There are more findings after more experiments: this virtio-net-pci
+
+---
+
+## [153] Suzuki K Poulose — 2026-06-26
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 26/06/2026 09:47, Suzuki K Poulose wrote:
+> On 26/06/2026 08:43, Gavin Shan wrote:
+>> On 6/26/26 1:58 AM, Suzuki K Poulose wrote:
+
+For the record, you need something like this :
+
+--- a/arch/arm64/kvm/rmi.c
++++ b/arch/arm64/kvm/rmi.c
+
+@@ -838,8 +838,17 @@ int realm_map_non_secure(struct realm *realm,
+                 if (RMI_RETURN_STATUS(ret) == RMI_ERROR_RTT) {
+                         /* Create missing RTTs and retry */
+                         int level = RMI_RETURN_INDEX(ret);
++                       int req_level = find_map_level(realm, ipa, ipa_top);
++
++                       /*
++                        * There already exists a mapping at the level. 
+May be
++                        * we are relaxing a permission for the given 
+range ?
++                        */
++                       if (level >= req_level) {
++                               realm_unmap_shared_range(kvm, ipa, 
+ipa_top, false);
++                               continue;
++                       }
+
+-                       WARN_ON(level == KVM_PGTABLE_LAST_LEVEL);
+                         ret = realm_create_rtt_levels(realm, ipa, level,
+  
+KVM_PGTABLE_LAST_LEVEL,
+                                                       memcache);
+
+
+Thanks
+Suzuki
+
+
+> 
+>
+
+---
+
+## [154] Gavin Shan — 2026-06-26
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 6/26/26 6:47 PM, Suzuki K Poulose wrote:
+> On 26/06/2026 08:43, Gavin Shan wrote:
+>> On 6/26/26 1:58 AM, Suzuki K Poulose wrote:
+
+Exactly. the syntax for MAP_PRIVATE is broken if the write permission is
+enforced for a read fault in the shared space. In my case, the host page can
+be the zero page and eventually multiple s2 page-table entries (for multiple
+unprotected or shared pages) point to the zero page. It's why clearing the
+3rd queue (Ctrl queue) also clears the first queue (Rx queue) in my case.
+
+Yes, this issue can be avoid by using a shared memory backend in qemu, something
+like below. With this, I'm able to see virtio-net-pci starts to work...
+
+     -object memory-backend-ram,id=mem0,size=2G,share=yes
+
+Thanks,
+Gavin
+
+> 
+> Suzuki
+
+---
+
+## [155] Lorenzo Pieralisi — 2026-06-26
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On Fri, Jun 26, 2026 at 09:43:03PM +1000, Gavin Shan wrote:
+> On 6/26/26 6:47 PM, Suzuki K Poulose wrote:
+> > On 26/06/2026 08:43, Gavin Shan wrote:
+
+Yes, as Suzuki said that's what we have been fixing. QEmu patches
+will be on the mailing lists very shortly - the KVM/tf-RMM fixes
+to make MAP_PRIVATE work will be included in the next posting.
+
+Feel free to drop your QEmu command line so that I can give it
+a shot and check whether the fixes solve the problem you hit
+(I think so because that's precisely the kind of issue I got
+into when I started debugging THP/MAP_PRIVATE but it is better
+to check).
+
+Thanks,
+Lorenzo
+
+---
+
+## [156] Gavin Shan — 2026-06-28
+*Subject: Re: [PATCH v14 29/44] arm64: RMI: Runtime faulting of memory*
+
+On 6/27/26 2:44 AM, Lorenzo Pieralisi wrote:
+> On Fri, Jun 26, 2026 at 09:43:03PM +1000, Gavin Shan wrote:
+>> On 6/26/26 6:47 PM, Suzuki K Poulose wrote:
+
+The virtio-net-pci doesn't work with the following command lines. The guest
+kernel image is built from upstream kernel (v7.1.rc7).
+
+     qemu-system-aarch64 -enable-kvm -object rme-guest,id=rme0,             \
+     -machine virt,gic-version=3,confidential-guest-support=rme0            \
+     -cpu host,pmu=off                                                      \
+     -smp maxcpus=2,cpus=2,sockets=1,clusters=1,cores=1,threads=2           \
+     -m 2G -object memory-backend-ram,id=mem0,size=2G                       \
+     -numa node,nodeid=0,cpus=0-1,memdev=mem0                               \
+     -serial mon:stdio -monitor none -nographic -nodefaults                 \
+     -kernel /mnt/linux/arch/arm64/boot/Image                               \
+     -initrd /mnt/buildroot/output/images/rootfs.cpio.xz                    \
+     -append earlycon=pl011,mmio,0x10009000000                              \
+     -device pcie-root-port,bus=pcie.0,chassis=1,id=pcie.1                  \
+     -device pcie-root-port,bus=pcie.0,chassis=2,id=pcie.2                  \
+     -device pcie-root-port,bus=pcie.0,chassis=3,id=pcie.3                  \
+     -device pcie-root-port,bus=pcie.0,chassis=4,id=pcie.4                  \
+     -netdev tap,id=tap1,vhost=on,script=/etc/qemu-ifup,downscript=/etc/qemu-ifdown  \
+     -device virtio-net-pci,bus=pcie.2,netdev=tap1,mac=b8:3f:d2:1d:3e:c0
+
+The virtio-net-pci starts to work with the shareable memory-backend.
+
+     -object memory-backend-ram,id=mem0,size=2G,share=yes
+
+Note that THP is disabled on my host.
+
+     root@host:~# cat /sys/kernel/mm/transparent_hugepage/enabled
+     always madvise [never]
+
+Thanks,
+Gavin
+
+> Thanks,
+> Lorenzo
 
 ---

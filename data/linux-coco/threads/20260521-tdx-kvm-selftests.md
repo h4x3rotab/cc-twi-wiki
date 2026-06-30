@@ -1,8 +1,8 @@
 ---
 title: 'TDX KVM selftests'
 date: 2026-05-21
-last_reply: 2026-06-23
-message_count: 63
+last_reply: 2026-06-25
+message_count: 67
 participants: ['Lisa Wang', 'Yosry Ahmed', 'Sean Christopherson', 'Ackerley Tng', 'Binbin Wu', 'Chenyi Qiang', 'Xiaoyao Li']
 ---
 
@@ -3882,5 +3882,90 @@ above cli?
 
 > +	movl $TD_BOOT_PARAMETERS_GPA, %ebx
 > +
+
+---
+
+## [64] Xiaoyao Li — 2026-06-24
+*Subject: Re: [PATCH v13 13/22] KVM: selftests: Set first memory region as
+ shared if guest_memfd*
+
+On 6/16/2026 7:46 AM, Ackerley Tng wrote:
+> Lisa Wang <wyihan@google.com> writes:
+> 
+
+GUEST_MEMFD_FLAG_INIT_SHARED is valid only when the memory attributes is 
+per-gmem.
+
+we need to check KVM_CAP_GUEST_MEMFD_FLAGS or kvm_has_gmem_attributes.
+
+---
+
+## [65] Xiaoyao Li — 2026-06-25
+*Subject: Re: [PATCH v13 11/22] KVM: selftests: Set up TDX boot parameters
+ region*
+
+On 5/22/2026 7:16 AM, Lisa Wang wrote:
+> +void tdx_vm_load_common_boot_parameters(struct kvm_vm *vm)
+> +{
+
+Why TDX needs to check it explicitly?
+
+x86's virt_arch_pgd_alloc() already has such assertation. I think we can 
+just drop it.
+
+---
+
+## [66] Lisa Wang — 2026-06-24
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On Wed, Jun 17, 2026 at 11:21:49AM +0800, Xiaoyao Li wrote:
+> > +++ b/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h
+> > @@ -11,4 +11,34 @@ static inline bool is_tdx_vm(struct kvm_vm *vm)
+
+Thanks for the review. I will change all comments for this patch I did
+not reply here in the next version.
+
+> > +/*
+> > + * TDX ioctls
+
+Most vm_ioctl() and vcpu_ioctl() used MACRO.
+I prefer to use MACRO for `tdx_vm_ioctl()` for the `#cmd`, but I am ok
+to change `__tdx_vm_ioctl()` to static inline function.
+If we can only change part of it, do you think it is better to change it
+as the static inline fucntion ?
+
+> > +}
+> > +
+
+I think we cannot use `get_cpuid_entry()` directly here.
+This function is called by `tdx_filter_cpuid()` to check if KVM's
+supported CPUID entries are present in the TDX capabilities list. Since
+the TDX list only contains a subset of CPUID leaves, some queries will
+naturally return NULL (which we want to gracefully filter out) However,
+`get_cpuid_entry()` has an embedded TEST_FAIL(), which would abort for
+any missing leaf.
+How about I add a `__get_cpuid_entry()` to share the same part of them?
+
+Lisa
+
+---
+
+## [67] Xiaoyao Li — 2026-06-25
+*Subject: Re: [PATCH v13 03/22] KVM: selftests: Initialize the TDX VM*
+
+On 6/25/2026 7:50 AM, Lisa Wang wrote:
+> On Wed, Jun 17, 2026 at 11:21:49AM +0800, Xiaoyao Li wrote:
+>>> +++ b/tools/testing/selftests/kvm/include/x86/tdx/tdx_util.h
+
+Personally, I like function over MARCO, but it doesn't make a huge 
+difference either way. Let's keep it as-is and move on.
+
+>>> +}
+>>> +
+
+yes, please.
+
+> Lisa
+>
 
 ---
