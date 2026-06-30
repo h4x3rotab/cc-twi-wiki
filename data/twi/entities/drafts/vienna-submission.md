@@ -5,14 +5,15 @@ date: 2026-04-29
 tags: [ietf, rats, vienna, draft, rup, 2026, in-progress]
 ---
 
-The SIG's third IETF deliverable, **in active drafting as of late April 2026**. Targets the IETF meeting in **Vienna (July 2026)**. The early draft was circulated by [Mark Novak](../people/mark-novak.md) on 2026-04-24[^early].
+The SIG's third IETF deliverable, in **final drafting sprint as of June 2026**. Targets the IETF meeting in **Vienna (July 2026)**. The early draft was circulated by [Mark Novak](../people/mark-novak.md) on 2026-04-24[^early]; protocol details documented in table form by June 9[^jun9].
 
 [^early]: [118990275-early-draft-of-the-vienna-submission.md](../../threads/118990275-early-draft-of-the-vienna-submission.md)
+[^jun9]: [119717344-agenda-for-tuesday-june-9-2026.md](../../threads/119717344-agenda-for-tuesday-june-9-2026.md)
 ## Quick facts
 
 | | |
 |---|---|
-| **Status** | Early draft circulated 2026-04-24; pending review at TWI meeting on 2026-04-29 / 30 |
+| **Status** | Final drafting sprint — protocol variants documented in table; RATS session slot being sought; Mark offline Jun 25–Jul 6 but presenting in Vienna in person |
 | **Repository** | `github.com/confidential-computing/twi-rats` (reused; previous draft moved to `archive/2025/`)[^repo] |
 | **Author so far** | Mark Novak |
 | **Likely WG target** | RATS |
@@ -57,6 +58,26 @@ Mark floated narrowing the Vienna submission to *only* the **"Anticipating Refer
 
 [^antrv]: [118845083-fw-anticipating-reference-values.md](../../threads/118845083-fw-anticipating-reference-values.md)
 [^attsig]: [118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md](../../threads/118956224-fw-ccc-attestation-documents-from-today-39-s-presentation.md)
+## May–June 2026 Drafting Sprint
+
+**Three competing directions identified (Jun 2)[^jun2]:**
+
+| # | Direction | Status |
+|---|---|---|
+| 1 | TWI SIG IETF draft (replica workloads) | **Primary** — being actively edited |
+| 2 | Michael Richardson's repo (`mcr/twi-rats`) | Radical departure in content; passport + background-check models borrowed |
+| 3 | CCC TAC "Identity Bridge" blueprint | Overemphasizes short-lived bearer tokens; still requires RPs to change |
+
+Mark's convergence plan: short-term, drive (1) to submission by Jun 25 incorporating key ideas from (2) — notably support for both **passport** and **background-check** models and introduction of the **"Credential Broker" / "Key Broker"** role. Longer-term, bring (3) into the TWI fold.
+
+Bearer tokens (antithetical to TWI's long-term vision) are on the table for short-term pragmatism but remain contested.
+
+[^jun2]: [119596145-agenda-for-tuesday-june-2-2026.md](../../threads/119596145-agenda-for-tuesday-june-2-2026.md)
+
+**Impossibility papers (May 13)[^impossibility]:** Two companion documents formally prove (1) it is architecturally impossible to handle RATS-unaware RPs within RATS proper, and (2) such RPs are unavoidable in practice. These provide the definitive foundation for the Vienna extension. See [RATS-Unaware Relying Parties](../../concepts/rats-unaware-relying-parties.md#the-formal-impossibility-papers-may-2026).
+
+[^impossibility]: [119273859-impossibility-of-rats-unaware-relying-parties-in-the-rats-ar.md](../../threads/119273859-impossibility-of-rats-unaware-relying-parties-in-the-rats-ar.md)
+
 ## See also
 
 - [RATS-Unaware Relying Parties](../../concepts/rats-unaware-relying-parties.md) — the conceptual page

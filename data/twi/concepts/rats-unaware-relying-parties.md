@@ -61,6 +61,17 @@ flowchart LR
 
 This is the live design tension inside the SIG as of April 2026: whether the IETF deliverable should be an architecture extension (Mark) or remain on the issuer side without touching the architecture (Markus).
 
+## The Formal Impossibility Papers (May 2026)
+
+Mark Novak circulated two companion documents to both the TWI SIG and the CCC Attestation SIG (May 12–13)[^impossibility]:
+
+1. **Proof of architectural impossibility**: It is impossible to convert an existing workload using non-human identity to run inside a TEE *without making any changes to its Relying Party*, within the RATS architecture as currently specified.
+2. **Proof that RATS-unaware RPs are unavoidable**: In the real world, RPs are frequently intransigent; broad CC adoption therefore requires handling them, not assuming them away.
+
+Together, these documents make the definitive formal case for the Vienna submission's extension to the RATS architecture.
+
+[^impossibility]: [119273859-impossibility-of-rats-unaware-relying-parties-in-the-rats-ar.md](../threads/119273859-impossibility-of-rats-unaware-relying-parties-in-the-rats-ar.md)
+
 ## See also
 
 - [Vienna submission](../entities/drafts/vienna-submission.md) — the document this concept lives in

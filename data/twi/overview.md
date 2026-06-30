@@ -7,9 +7,9 @@ tags: [twi, ccc, ietf, workload-identity, confidential-computing, hub]
 
 This wiki tracks the work of the **Trustworthy Workload Identity SIG** at the Confidential Computing Consortium (CCC). The SIG defines how workloads running in Trusted Execution Environments (TEEs) should obtain and present cryptographic identity, and feeds those ideas into IETF — primarily the [WIMSE](entities/orgs/ietf-wimse.md) and [RATS](entities/orgs/ietf-rats.md) working groups.
 
-The corpus indexed here is the public groups.io mailing-list archive: **119 threads / 169 messages**, from the SIG's first post on **2025-03-31** through **2026-04-28**[^src].
+The corpus indexed here is the public groups.io mailing-list archive: **130 threads / ~183 messages**, from the SIG's first post on **2025-03-31** through **2026-06-30**[^src].
 
-[^src]: Source: 119 thread markdown files in this knowledge base, each derived from one [groups.io topic](https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG).
+[^src]: Source: 130 thread markdown files in this knowledge base, each derived from one [groups.io topic](https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG).
 
 ## Scope
 

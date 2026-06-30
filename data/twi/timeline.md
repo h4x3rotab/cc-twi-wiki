@@ -149,6 +149,21 @@ The first message in the archive — *"Moving the conversation over to our shiny
 - **2026-04-24** — Vienna draft circulated; Markus Rudy's critique on the same day[^vienna].
 - **2026-04-28** — *Brokered and agentless modes for SPIFFE* — proposals queued for SIG review[^spiffe].
 
+## May–June 2026 — Impossibility papers and Vienna sprint
+
+- **2026-05-12/13** — Mark Novak circulates two **impossibility papers**, cross-posted to the CCC Attestation SIG[^impossibility]: (1) proof that RATS-unaware RPs cannot be handled within the RATS architecture proper; (2) proof that such RPs are unavoidable in practice. Together these provide the formal foundation for the Vienna extension.
+- **2026-06-01** — Three competing draft directions identified[^jun2]: the TWI SIG replica-workload draft (primary), Michael Richardson's `mcr/twi-rats` (passport + background-check models borrowed), and the CCC TAC "Identity Bridge" blueprint (bearer-token emphasis). Mark introduces the **Credential Broker / Key Broker** role and proposes short-term convergence on direction (1).
+- **2026-06-09** — Protocol variants documented in table form; SIG seeks a RATS session slot at Vienna IETF[^jun9].
+- **2026-06-16** — Meeting cancelled — insufficient confirmed attendance[^cancelled].
+- **2026-06-25** — Submission deadline: Mark goes offline (returns Jul 6); will present in Vienna in person.
+- **2026-06-30** — No TWI SIG meeting this week[^nomtg].
+
+[^impossibility]: [119273859-impossibility-of-rats-unaware-relying-parties-in-the-rats-ar.md](threads/119273859-impossibility-of-rats-unaware-relying-parties-in-the-rats-ar.md)
+[^jun2]: [119596145-agenda-for-tuesday-june-2-2026.md](threads/119596145-agenda-for-tuesday-june-2-2026.md)
+[^jun9]: [119717344-agenda-for-tuesday-june-9-2026.md](threads/119717344-agenda-for-tuesday-june-9-2026.md)
+[^cancelled]: [119827237-meeting-tomorrow-cancelled.md](threads/119827237-meeting-tomorrow-cancelled.md)
+[^nomtg]: [120041110-no-meeting-this-week-lt-eom-gt.md](threads/120041110-no-meeting-this-week-lt-eom-gt.md)
+
 [^prov]: [118625119-let-39-s-discuss-provenance.md](threads/118625119-let-39-s-discuss-provenance.md)
 [^antrv]: [118845083-fw-anticipating-reference-values.md](threads/118845083-fw-anticipating-reference-values.md)
 [^tac]: [118843190-please-review-tomorrow-39-s-draft-presentation.md](threads/118843190-please-review-tomorrow-39-s-draft-presentation.md)
