@@ -7,7 +7,7 @@ tags: [linux-coco, confidential-computing, tdx, sev-snp, arm-cca, hub]
 
 This wiki covers the **linux-coco** mailing list (`linux-coco@lists.linux.dev`), the central coordination point for confidential computing support in the Linux kernel. The archive mirrors at [lore.kernel.org/linux-coco](https://lore.kernel.org/linux-coco).
 
-The corpus indexed here: **659 threads / ~10,200 messages**, from **2024-05-08** through **2026-06-22**[^src].
+The corpus indexed here: **669 threads / ~10,300 messages**, from **2024-05-08** through **2026-06-29**[^src].
 
 [^src]: Source: public-inbox git mirror at `https://lore.kernel.org/linux-coco/git/0.git`, indexed with public-inbox 1.9.0.
 
@@ -82,9 +82,9 @@ graph TD
 
 ## Source Inventory
 
-- **Total threads (25 months):** 659 (271 from May 2024–May 2025 + 388 from May 2025–Jun 2026)
-- **Total messages:** ~10,200
-- **Date range:** 2024-05-08 → 2026-06-22
+- **Total threads (25 months):** 669 (271 from May 2024–May 2025 + 398 from May 2025–Jun 2026)
+- **Total messages:** ~10,300
+- **Date range:** 2024-05-08 → 2026-06-29
 - **Most active areas (year 2):** ARM CCA (859 msgs), TDX module update (619+), PCI/TSM (750+), guest_memfd (390+, v8 thread alone has 87 msgs)
 - **Most active areas (year 1):** Secure VFIO/TDISP RFC (128), TDX kexec (115+57), TDX MMIO (109), ARM CCA KVM (multiple revisions)
 

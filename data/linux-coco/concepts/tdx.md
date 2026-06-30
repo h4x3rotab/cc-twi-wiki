@@ -91,7 +91,19 @@ DICE replaces SGX-based attestation with a standards-based certificate chain. Al
 
 Peter Fang (Meta) posted a 2-patch series (Jun 12, 9 messages)[^tdx-quote-buf] making the TDX attestation driver's Quote buffer size dynamic. The fixed 128 KB buffer, introduced to accommodate DICE Quotes, is not future-proof: post-quantum cryptography (PQC) certificate chains are 10–15× larger than conventional ones, potentially growing Quote sizes to several megabytes. The fix: query `QUOTE_MAX_SIZE` from TDX module metadata and use that value when available; older modules fall back to 128 KB.
 
-### virtio-mem Memory Hotplug in TDX Guests
+### TDX Memory Hotplug/Unplug — RFCv2
+
+Zhenzhong Duan posted RFCv2 (Jun 23, 13 messages)[^tdx-hotplug-v2] — a substantially more complete design than v1, now covering both **virtio-mem** and **ACPI DIMM** memory hotplug/unplug for TDX guests. Key changes from v1:
+
+- Eliminated the callback infrastructure (no separate `plug` callback); replaced `unplug` callback with a platform-level `unaccept` function hooked into core MM hotplug and virtio-mem subsystems.
+- Added a **"plugged" bitmap** alongside the existing unaccepted bitmap to track populated hotplug memory states, needed to support `load_unaligned_zeropad()` correctly.
+- Added an **EFI stub SRAT parser** that identifies hotpluggable ranges early (before the full ACPI subsystem initializes), adjusting bitmap boundaries at boot.
+
+The series still uses the `TDG.MEM.PAGE.RELEASE` start-private approach for re-plug semantics. Seeking feedback from Kiryl (CoCo guest implementation) and MM experts; not yet seeking x86 maintainer review.
+
+[^tdx-hotplug-v2]: [20260623-rfcv2-patch-06-support-memory-hotplugunplug-for-tdx-coco-gue.md](../threads/20260623-rfcv2-patch-06-support-memory-hotplugunplug-for-tdx-coco-gue.md)
+
+### virtio-mem Memory Hotplug in TDX Guests (RFCv1)
 
 Zhenzhong Duan posted an RFC (Jun 4, 7 messages)[^virtio-mem-tdx] exploring **virtio-mem memory hotplug for TDX guests** using a "start-private" memory approach via `TDG.MEM.PAGE.RELEASE`. The challenge: TDX guests must accept (`TDG.MEM.PAGE.ACCEPT`) newly added memory before use, but re-accepting already-accepted pages on re-plug returns errors. The series proposes tracking accepted/unaccepted state separately from plugged/unplugged to handle the re-plug case cleanly. Seeking feedback from Kiryl (CoCo guest implementation), MM experts (callback infrastructure), and the virtio-mem community; not yet seeking x86 maintainer review.
 

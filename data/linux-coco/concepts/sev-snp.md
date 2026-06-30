@@ -111,16 +111,30 @@ Patch series: `KVM: SEV: Disable SEV-SNP support on initialization failure`. If 
 
 ## June 2026 Updates
 
+### KVM SEV: Launch Update Fixes (Sashiko-Reported)
+
+Jörg Rödel posted a 4-patch series (Jun 23, 9 messages)[^sev-sashiko] fixing three pre-existing bugs in the SEV-SNP `snp_launch_update` path, surfaced by the Sashiko AI code reviewer during review of an unrelated patch:
+
+1. **User-triggerable WARN_ON**: passing `uaddr=0` from userspace caused `src_page = NULL` to propagate into `sev_gmem_post_populate()`, triggering an unconditional NULL dereference — a host userspace → kernel WARN. Fixed by validating `src` before calling `kvm_gmem_populate()`.
+2. **Writeable page reference for CPUID pages**: CPUID pages must be written during `LAUNCH_UPDATE`; the code was holding only a read reference, risking write to a read-only page.
+3. **kunmap_local() ordering**: Pages were unmapped in the wrong order in `sev_gmem_post_populate()`, violating the LIFO requirement for `kunmap_local`.
+
+Sean Christopherson and Tom Lendacky reviewed. The series also adds a `write` parameter to `kvm_gmem_populate()` to distinguish read vs. write GUP calls — touching TDX paths as well.
+
+[^sev-sashiko]: [20260623-kvm-sev-fix-issues-reported-by-sashiko.md](../threads/20260623-kvm-sev-fix-issues-reported-by-sashiko.md)
+
 ### RMPOPT — Continued Iteration (v2–v4 + CPU Feature Flag)
 
 RMPOPT iteration accelerated through June 2026. **v2** (Jun 2, 7 messages) and **v3** (Jun 8, 7 messages)[^rmpopt-v2][^rmpopt-v3] incorporated successive rounds of review feedback with the core design stable. **v4** was posted Jun 15 (1 message) alongside a companion patch[^rmpopt-v4].
 
-Separately, the `X86_FEATURE_RMPOPT` CPU feature flag series (Jun 15, 33 messages)[^rmpopt-cpu-flag] attracted heavyweight review from **Borislav Petkov**, **Dave Hansen**, and **Thomas Gleixner** — the x86 maintainers — confirming the instruction detection approach via `scattered.c` and `cpufeatures.h`. The series received `Reviewed-by: Dave Hansen` and `Reviewed-by: Ackerley Tng` in the thread.
+Separately, the `X86_FEATURE_RMPOPT` CPU feature flag series (Jun 15, 33 messages)[^rmpopt-cpu-flag] attracted heavyweight review from **Borislav Petkov**, **Dave Hansen**, and **Thomas Gleixner** — the x86 maintainers — confirming the instruction detection approach via `scattered.c` and `cpufeatures.h`. The series received `Reviewed-by: Dave Hansen` and `Reviewed-by: Ackerley Tng`. **v5** of the full RMPOPT series was posted Jun 24[^rmpopt-v5], and the CPU feature flag was reposted as **v2** (Jun 24, 19 messages)[^rmpopt-cpu-flag-v2] incorporating Petkov's tightening of the `CPUID` detection logic in `scattered.c`.
 
 [^rmpopt-v2]: [20260602-add-rmpopt-support.md](../threads/20260602-add-rmpopt-support.md)
 [^rmpopt-v3]: [20260608-add-rmpopt-support.md](../threads/20260608-add-rmpopt-support.md)
 [^rmpopt-v4]: [20260615-add-rmpopt-support.md](../threads/20260615-add-rmpopt-support.md)
+[^rmpopt-v5]: [20260624-add-rmpopt-support.md](../threads/20260624-add-rmpopt-support.md)
 [^rmpopt-cpu-flag]: [20260615-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md](../threads/20260615-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md)
+[^rmpopt-cpu-flag-v2]: [20260624-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md](../threads/20260624-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md)
 
 ### PV Clocks vs. TSC — Security Fix for CoCo Guests
 

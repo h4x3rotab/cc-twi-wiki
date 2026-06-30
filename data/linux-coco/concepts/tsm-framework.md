@@ -87,6 +87,12 @@ Aneesh Kumar K.V posted v3 (Jun 4, 22 messages)[^dma-cc-v3] of the DMA_ATTR_CC_S
 
 [^dma-cc-v3]: [20260604-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md](../threads/20260604-dma-mapping-use-dma-attr-cc-shared-through-direct-pool-and-s.md)
 
+### TSM MR Attribute Allocation Hardening
+
+Yousef Alhouseen posted a 1-patch fix (Jun 24)[^tsm-mr-harden] hardening `tsm_mr_create_attribute_group()` against integer overflow. The function combines a `bin_attribute` pointer table and generated MR name strings into a single allocation, using open-coded arithmetic for both the aggregate name length and the final allocation size. Since this helper is exported for use by confidential-computing guest drivers (not just the small static in-tree MR table), the fix rejects impossible MR definitions using `size_add()` and `array_size()` instead of plain addition and multiplication, preventing arithmetic wraparound from under-allocating the combined buffer.
+
+[^tsm-mr-harden]: [20260624-virt-coco-harden-tsm-mr-attribute-allocation.md](../threads/20260624-virt-coco-harden-tsm-mr-attribute-allocation.md)
+
 ### vmalloc_decrypted() / vzalloc_decrypted() RFC
 
 Catalin Marinas (Arm) reviewed an RFC (Jun 8, 8 messages)[^vmalloc-dec] proposing `vmalloc_decrypted()` and `vzalloc_decrypted()` — vmalloc variants that allocate memory in the "decrypted" (shared/unencrypted) state for use in CoCo environments (ARM CCA, x86 SEV/TDX). Cross-list discussion with Jason Gunthorpe raised the question of whether this API is the right level of abstraction vs. `dma_alloc_coherent()`. Key findings from review: the re-encryption path must call `vm_unmap_aliases()` before `vm_pages_encrypt()` to flush lazy vmalloc aliases; the zeroing window between `set_memory_decrypted()` and `memset()` is safe on ARM CCA (memory is scrubbed). Status: RFC with open design questions.

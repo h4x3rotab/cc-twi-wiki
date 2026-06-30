@@ -5,6 +5,18 @@ date: 2026-05-08
 tags: [log, meta]
 ---
 
+## 2026-06-30 — Incremental update (Jun 23–29, 2026)
+
+- Fetched new mail and reindexed; scraper produced 398 threads (10 new since last sync).
+- Noise filtered (4 skipped): SVSM dev call, bi-weekly guest_memfd invite, 2× x86 MSR cleanup (not CoCo-specific).
+- Signal incorporated (6 threads):
+  - `concepts/sev-snp.md` — KVM SEV launch_update fixes (Sashiko-found bugs); RMPOPT v5 + CPU flag v2
+  - `concepts/tdx.md` — TDX memory hotplug/unplug RFCv2 (virtio-mem + ACPI DIMM, plugged-bitmap, EFI SRAT parser)
+  - `concepts/svsm.md` — COCONUT-SVSM v2026.06-devel (99 commits, UEFI vars, scheduler rework, Apple Silicon)
+  - `concepts/tsm-framework.md` — TSM MR attribute allocation hardening (overflow protection)
+  - `overview.md` — corpus updated to 669 threads / ~10,300 messages through 2026-06-29
+  - `timeline.md` — June 2026 week 4 section added
+
 ## 2026-06-23 — Incremental update (Jun 6–22, 2026)
 
 - Fetched new mail and reindexed; scraper produced 388 threads (15 new since last sync).

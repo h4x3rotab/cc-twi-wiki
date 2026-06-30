@@ -108,6 +108,20 @@ The SVSM specification is developed publicly. Draft #3 of v1.01 was posted for c
 
 ## June 2026 Updates
 
+### COCONUT-SVSM Development Release v2026.06-devel
+
+Jörg Rödel announced the June 2026 release (Jun 29)[^coconut-jun26]: **99 non-merge commits, 42 merges, 9 contributors**. Key additions:
+
+- **UEFI variable store**: New UEFI MM protocol implementation (`uefivars`), including secure boot support, manifest attestation wiring, and a spec draft for the UEFI MM protocol.
+- **Upstream virtio-drivers**: Replaced the in-tree VirtIO driver fork with the upstream `virtio-drivers` crate (plus `safe-mmio`); fixed unaligned MMIO and resource drop ordering.
+- **Scheduler rework** (Jon Lange): Fixed cross-CPU races, simplified affinity and context switching, added `wait_for_termination` and a `PENDING` task state, corrected register/reference handling. Bldr now relocates from 8 MB down to 64 KB.
+- **APIC emulation**: ICR/EOI field validation, LDR register reads, NMI self-IPI fix, PPR calculation fix, error reporting for invalid register access.
+- **Apple Silicon cross-compile**: `libtcgtpm` cross-build support; switched to Rust's default linker. COCONUT-SVSM can now be cross-compiled on macOS.
+- **xbuild** (Carlos López): Can now build test kernels; supports per-recipe toolchain, environment, and feature settings.
+- Memory layout: SVSM moved to 128 MiB on QEMU and Hyper-V.
+
+[^coconut-jun26]: [20260629-coconut-svsm-development-release-v202606-devel.md](../threads/20260629-coconut-svsm-development-release-v202606-devel.md)
+
 ### COCONUT-SVSM Development Release v2026.05-devel
 
 Jörg Rödel announced the May 2026 COCONUT-SVSM development release (May 28)[^coconut-may26], the largest monthly release yet: **33 merges, 91 non-merge commits, 9 contributors**. Key areas:

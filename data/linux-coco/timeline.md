@@ -70,6 +70,10 @@ timeline
                        : DICE TDX Quoting v2 — drops RFC tag
                        : guest_memfd in-place v8 (87 msgs)
                        : PCI/TSM D0 resume fix for CMA-SPDM
+        Jun 23-29 2026 : KVM SEV launch_update fixes (Sashiko AI report)
+                       : TDX memory hotplug/unplug RFCv2
+                       : RMPOPT v5 + CPU flag v2
+                       : COCONUT-SVSM v2026.06-devel (99 commits, UEFI vars)
 ```
 
 ## May–June 2024 — Foundations
@@ -247,6 +251,13 @@ The month falls into two halves. The first two weeks are dominated by RMPOPT ite
 - **DICE TDX Quoting Extension v2** (Xu Yilun, 22 msgs): drops RFC tag for the quoting portion; Extension SEAMCALL infrastructure (patches 1–6) + DICE quoting for x86/KVM (patches 7+); Quote generation moves into the TDX Module, eliminating the userspace Quoting Engine dependency[^tdxext-v2].
 - **guest_memfd in-place conversion v8** (Ackerley Tng, 87 msgs): VM memory attributes no longer deprecated; both the legacy VM-fd path and the new guest_memfd-native ioctl coexist; broadest review participation yet[^inplace-v8].
 
+**Week 4 (Jun 23–29):**
+- **KVM SEV launch_update fixes** (Jörg Rödel, 9 msgs): three pre-existing bugs surfaced by the Sashiko AI reviewer — user-triggerable WARN_ON, wrong kunmap_local order, write access missing for CPUID pages. Sean Christopherson and Tom Lendacky reviewed[^sev-sashiko].
+- **TDX memory hotplug/unplug RFCv2** (Zhenzhong Duan, 13 msgs): now covers both virtio-mem and ACPI DIMM; adds plugged-bitmap and EFI stub SRAT parser; still using `TDG.MEM.PAGE.RELEASE` start-private approach[^tdx-hotplug-v2].
+- **RMPOPT v5 + CPU flag v2**: continued iteration on AMD's 1GB RMP bypass; feature flag v2 (19 msgs) addresses Borislav Petkov's `scattered.c` review comments[^rmpopt-v5][^rmpopt-cpu-flag-v2].
+- **TSM MR attribute allocation hardening** (Yousef Alhouseen): replaces open-coded arithmetic with `size_add()`/`array_size()` to prevent integer overflow in exported helper[^tsm-mr-harden].
+- **COCONUT-SVSM v2026.06-devel** (Jörg Rödel, 99 commits): UEFI variable store, upstream virtio-drivers, major scheduler/task rework, Apple Silicon cross-compile support[^coconut-jun26].
+
 [^pvclocks]: [20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md](threads/20260529-x86-try-to-wrangle-pv-clocks-vs-tsc.md)
 [^coconut-may26]: [20260528-coconut-svsm-development-release-v202605-devel.md](threads/20260528-coconut-svsm-development-release-v202605-devel.md)
 [^rmpopt-v2]: [20260602-add-rmpopt-support.md](threads/20260602-add-rmpopt-support.md)
@@ -261,6 +272,12 @@ The month falls into two halves. The first two weeks are dominated by RMPOPT ite
 [^d0-resume]: [20260615-pcitsm-resume-device-to-d0-for-cma-spdm-operation.md](threads/20260615-pcitsm-resume-device-to-d0-for-cma-spdm-operation.md)
 [^tdxext-v2]: [20260618-enable-dice-based-tdx-quoting-extension.md](threads/20260618-enable-dice-based-tdx-quoting-extension.md)
 [^inplace-v8]: [20260618-guest-memfd-in-place-conversion-support.md](threads/20260618-guest-memfd-in-place-conversion-support.md)
+[^sev-sashiko]: [20260623-kvm-sev-fix-issues-reported-by-sashiko.md](threads/20260623-kvm-sev-fix-issues-reported-by-sashiko.md)
+[^tdx-hotplug-v2]: [20260623-rfcv2-patch-06-support-memory-hotplugunplug-for-tdx-coco-gue.md](threads/20260623-rfcv2-patch-06-support-memory-hotplugunplug-for-tdx-coco-gue.md)
+[^rmpopt-v5]: [20260624-add-rmpopt-support.md](threads/20260624-add-rmpopt-support.md)
+[^rmpopt-cpu-flag-v2]: [20260624-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md](threads/20260624-x86cpufeatures-add-x86-feature-rmpopt-feature-flag.md)
+[^tsm-mr-harden]: [20260624-virt-coco-harden-tsm-mr-attribute-allocation.md](threads/20260624-virt-coco-harden-tsm-mr-attribute-allocation.md)
+[^coconut-jun26]: [20260629-coconut-svsm-development-release-v202606-devel.md](threads/20260629-coconut-svsm-development-release-v202606-devel.md)
 
 ## May 2026 — Acceleration Toward 7.2
 
