@@ -34,10 +34,12 @@ One synthesis pass keeps voice, structure, and cross-references coherent across 
 
 ### TWI SIG (groups.io)
 
-1. **Scrape** — `make scrape-twi`. Idempotent; `data/raw/` cache makes reruns free. Cookie may need refreshing in `.env` if you see 402s.
-2. **Read** — filter out agendas/admin noise (~half the corpus). Substantive threads are anything that's *not*: `agenda-for-…`, `meeting-(agenda|minutes)-…`, `no-(twi-)?meeting-…`, `cannot-attend-…`, single-sentence threads.
-3. **Write** — `Write` tool directly to `data/twi/wiki/`. Cite every factual claim with the originating thread filename.
-4. **Append to `log.md`**, then **commit** (separate commits for raw thread `.md` additions and wiki authoring).
+1. **Refresh cookie if needed** — `make scrape-twi` will produce `found 0 topics` if the Spur MCL bot detection blocks it (see scraping notes below). Refresh cookie using Chrome MCP: navigate to `https://lists.confidentialcomputing.io/login` → authenticates via Linux Foundation SSO → navigate to TWI SIG topics page → capture `Cookie:` header from a network request → update `.env`.
+2. **Discover new topics via browser** — Bot detection blocks the `/topics` listing page for curl_cffi. Use Chrome MCP `evaluate_script` on the topics page to extract new topic IDs/slugs (see scraping notes).
+3. **Scrape individual topics** — Individual topic pages work fine with curl_cffi. Use `scraper/thread.py` + `scraper/render.py` directly with the known IDs (see scraping notes).
+4. **Read** — filter out agendas/admin noise (~half the corpus). Substantive threads are anything that's *not*: `agenda-for-…`, `meeting-(agenda|minutes)-…`, `no-(twi-)?meeting-…`, `cannot-attend-…`, `respond-if-you-plan-to-attend-…`, single-sentence threads.
+5. **Write** — `Write` tool directly to `data/twi/`. Cite every factual claim with the originating thread filename.
+6. **Append to `log.md`**, then **commit** (separate commits for raw thread `.md` additions and wiki authoring).
 
 ### linux-coco (public-inbox)
 
@@ -66,10 +68,13 @@ PORT=3001 npm start   # repoview binds 0.0.0.0 by default
 
 ## Scraping notes (TWI SIG)
 
-- **Groups.io blocks unauthenticated/non-Chrome traffic** with a 402. We use `curl_cffi` with `impersonate="chrome"` + a logged-in session cookie from `.env` (`GROUPSIO_COOKIE`).
-- Cookies expire — when you see `402`, refresh the cookie from a logged-in browser (DevTools → Network → reload `/topics` → copy the `Cookie` header) and rerun.
-- `data/raw/` is the response cache (gitignored). `make clean-cache` wipes it.
-- `discover_all_topics` walks `/topics?page=N` until a page yields no new topic IDs.
+- **Bot detection on listing pages**: groups.io added Spur MCL JavaScript bot detection to `/topics` listing pages in mid-2026. `curl_cffi` (even with `impersonate="chrome"`) gets a 2 KB challenge page instead of content, so `discover_all_topics` returns 0. **Individual topic pages are not affected** — curl_cffi fetches them fine.
+- **Workaround — two-phase scrape**:
+  1. **Topic discovery**: Use Chrome MCP to navigate to `https://lists.confidentialcomputing.io/g/Trustworthy-Workload-Identity-SIG/topics` (already authenticated), then `evaluate_script` → `[...document.querySelectorAll('a[href*="/topic/"]')].map(a => ({href: a.href, text: a.textContent.trim()}))` to get topic IDs and slugs. Extract only IDs greater than the last known topic ID.
+  2. **Individual scrape**: For each new topic, call `scraper/thread.py::parse_thread()` + `scraper/render.py::write_thread()` directly.
+- **Cookie refresh**: Navigate to `https://lists.confidentialcomputing.io/login` (NOT `groups.io/login`) → redirects to Linux Foundation SSO at `sso.linuxfoundation.org` → sign in with `hangyin@phala.network` / stored password → "Proceed To List" → navigate to TWI SIG topics page → capture the `Cookie:` request header from a network request (`list_network_requests` + `get_network_request`) → update `GROUPSIO_COOKIE` in `.env`. Note: `document.cookie` only returns `cookieconsent_status`; the `groupsio` session cookie is httpOnly and only visible in network headers.
+- **Cookie domain**: `lists.confidentialcomputing.io` (a groups.io custom-domain instance). Login via plain `groups.io` does NOT work — the account uses Linux Foundation SSO.
+- `data/raw/` is the response cache (gitignored). `make clean-cache` wipes it. Only topic content pages are cached; topic listing pages are no longer cached (Spur challenge pages would poison the cache).
 
 ## Scraping notes (linux-coco)
 
